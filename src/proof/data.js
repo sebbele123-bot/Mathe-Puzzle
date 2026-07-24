@@ -87,6 +87,23 @@ export const FACTS = {
   q2_setR: { id: "q2_setR", name: "ℝ", sub: "reelle Zahlen", tag: "Menge" }, // Distraktor: falsche Menge
   q2_plus: { id: "q2_plus", name: "+", sub: "Addition", tag: "Verknüpfung" }, // Distraktor: falsche Verknüpfung
   q2_goal: { id: "q2_goal", name: "ℚ²", sub: "ℚ × ℚ", role: "begriff" },
+
+  // ---- Ü4.1 · cos/sin als Seitenverhältnisse (Begriffs-Gate) ----
+  len_ank: { id: "len_ank", name: "Ankathete", sub: "anliegende Seite", tag: "Länge" },
+  len_geg: { id: "len_geg", name: "Gegenkathete", sub: "gegenüberliegende Seite", tag: "Länge" },
+  len_hyp: { id: "len_hyp", name: "Hypotenuse", sub: "längste Seite", tag: "Länge" },
+  op_ratio: { id: "op_ratio", name: "÷", sub: "Seitenverhältnis", tag: "Verhältnis" },
+  def_cos: { id: "def_cos", name: "cos", sub: "Ankathete / Hypotenuse", role: "begriff" },
+  def_sin: { id: "def_sin", name: "sin", sub: "Gegenkathete / Hypotenuse", role: "begriff" },
+
+  // ---- Ü4.1 · Cosinus-Satz (Beweis) ----
+  c41_setup: { id: "c41_setup", name: "C=(0,0), B=(a,0), ∠γ", sub: "Dreieck gelegt" },
+  c41_A: { id: "c41_A", name: "A = (b·cosγ, b·sinγ)", sub: "" },
+  c41_X: { id: "c41_X", name: "X = (b·cosγ, 0)", sub: "Lotfußpunkt" },
+  c41_legs: { id: "c41_legs", name: "Katheten: b·sinγ und a − b·cosγ", sub: "im Dreieck ABX" },
+  c41_pyth: { id: "c41_pyth", name: "c² = (b·sinγ)² + (a − b·cosγ)²", sub: "" },
+  c41_trig: { id: "c41_trig", name: "sin²γ + cos²γ = 1", sub: "" },
+  c41_goal: { id: "c41_goal", name: "c² = a² + b² − 2ab·cosγ", sub: "Cosinus-Satz", role: "ziel" },
 };
 
 // Schlussregeln — Text nennt nur die allgemeine Form der Regel,
@@ -134,6 +151,15 @@ export const RULES = {
   r83_insert: { id: "r83_insert", name: "einsetzen", sub: "t in die Gerade" },
   r83_orth: { id: "r83_orth", name: "Orthogonalprojektion", sub: "(x,y,z) ↦ (x,y)" },
   r83_norm: { id: "r83_norm", name: "Normieren", sub: "auf Länge 1" },
+
+  // M · Ü4.1 · Cosinus-Satz
+  r41_coordsA: { id: "r41_coordsA", name: "A in Koordinaten", sub: "Punkt auf Kreis mit Radius b" },
+  r41_foot: { id: "r41_foot", name: "Lot auf die Grundlinie", sub: "Fußpunkt auf der x-Achse" },
+  r41_legs: { id: "r41_legs", name: "Katheten ablesen", sub: "waagerecht & senkrecht" },
+  r41_pyth: { id: "r41_pyth", name: "Pythagoras", sub: "im rechtwinkligen Dreieck" },
+  r41_expand: { id: "r41_expand", name: "ausmultiplizieren", sub: "und sin²+cos² = 1" },
+  r41_sinsatz: { id: "r41_sinsatz", name: "Sinussatz", sub: "sinα/a = sinβ/b" },
+  r41_area: { id: "r41_area", name: "Flächenformel", sub: "½·a·b·sinγ" },
 
   // Begriffs-Gate — Tag "Definition" klein über dem Zeichen :=
   r_define: { id: "r_define", name: ":=", sub: "Begriff := Bestandteile", tag: "Definition" },
@@ -319,6 +345,55 @@ export const MISSIONS = [
     depths: [
       { label: "Mit Gerade", given: ["z83_setup", "z83_line"] },
       { label: "Von vorn", given: ["z83_setup"] },
+    ],
+  },
+
+  {
+    id: "p_cos41",
+    title: "Ü4.1 — Cosinus-Satz",
+    ref: "Übung 4.1",
+    kind: "beweis",
+    // Begriffs-Gate: erst cos und sin aus elementaren Seitenverhältnissen bauen
+    vocab: [
+      {
+        term: "cos",
+        goal: "def_cos",
+        prompt: "Bau „cos :=“ aus den richtigen Seiten. (Ankathete oder Gegenkathete?)",
+        note: "cos = Ankathete/Hypotenuse — die anliegende Seite. Die Gegenkathete gehört zu sin.",
+        given: ["len_ank", "len_geg", "len_hyp", "op_ratio"],
+        pool: { facts: ["len_ank", "len_geg", "len_hyp", "op_ratio", "def_cos"], rules: ["r_define"] },
+        steps: [
+          { rule: "r_define", premises: ["len_ank", "len_hyp", "op_ratio"], produces: "def_cos", idea: "cos definiert: Ankathete/Hypotenuse" },
+        ],
+      },
+      {
+        term: "sin",
+        goal: "def_sin",
+        prompt: "Bau „sin :=“ aus den richtigen Seiten.",
+        note: "sin = Gegenkathete/Hypotenuse — die gegenüberliegende Seite.",
+        given: ["len_ank", "len_geg", "len_hyp", "op_ratio"],
+        pool: { facts: ["len_ank", "len_geg", "len_hyp", "op_ratio", "def_sin"], rules: ["r_define"] },
+        steps: [
+          { rule: "r_define", premises: ["len_geg", "len_hyp", "op_ratio"], produces: "def_sin", idea: "sin definiert: Gegenkathete/Hypotenuse" },
+        ],
+      },
+    ],
+    claim: "In jeder Kongruenzebene gilt der Cosinus-Satz: c² = a² + b² − 2ab·cosγ.",
+    goal: "c41_goal",
+    pool: {
+      facts: ["c41_setup", "def_cos", "def_sin", "c41_A", "c41_X", "c41_legs", "c41_pyth", "c41_trig", "c41_goal"],
+      rules: ["r41_coordsA", "r41_foot", "r41_legs", "r41_pyth", "r41_expand", "r41_sinsatz", "r41_area"],
+    },
+    steps: [
+      { rule: "r41_coordsA", premises: ["def_cos", "def_sin", "c41_setup"], produces: "c41_A", idea: "A in Koordinaten ausgedrückt" },
+      { rule: "r41_foot", premises: ["c41_A"], produces: "c41_X", idea: "Lot von A auf die Grundlinie gefällt" },
+      { rule: "r41_legs", premises: ["c41_A", "c41_X"], produces: "c41_legs", idea: "Katheten des Dreiecks ABX abgelesen" },
+      { rule: "r41_pyth", premises: ["c41_legs"], produces: "c41_pyth", idea: "Pythagoras in ABX angewandt" },
+      { rule: "r41_expand", premises: ["c41_pyth", "c41_trig"], produces: "c41_goal", idea: "ausmultipliziert, sin²+cos²=1 benutzt" },
+    ],
+    depths: [
+      { label: "Ab Katheten", given: ["c41_setup", "def_cos", "def_sin", "c41_trig", "c41_A", "c41_X", "c41_legs"] },
+      { label: "Standard", given: ["c41_setup", "def_cos", "def_sin", "c41_trig"] },
     ],
   },
 ];

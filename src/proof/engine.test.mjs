@@ -47,6 +47,13 @@ const SOLUTIONS = {
     ["r83_setzero", ["z83_zcomp"]],
     ["r83_insert", ["z83_line", "z83_t"]],
   ],
+  p_cos41: [
+    ["r41_coordsA", ["def_cos", "def_sin", "c41_setup"]],
+    ["r41_foot", ["c41_A"]],
+    ["r41_legs", ["c41_A", "c41_X"]],
+    ["r41_pyth", ["c41_legs"]],
+    ["r41_expand", ["c41_pyth", "c41_trig"]],
+  ],
 };
 
 for (const m of MISSIONS) {
