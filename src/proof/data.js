@@ -40,6 +40,29 @@ export const FACTS = {
   c_exists: { id: "c_exists", name: "∃ g: Strahl → Strahl", sub: "g·ℚ≥0(1,0) = ℚ≥0(1,1)" },
   c_factor: { id: "c_factor", name: "Skalierung √2", sub: "" },
   c_goal: { id: "c_goal", name: "Widerspruch", sub: "Behauptung folgt", role: "ziel" },
+
+  // ---- M4 · Ü5.1 · Verkettung von Drehungen (Fixpunkt) ----
+  r51_d: { id: "r51_d", name: "d: p+z ↦ p+iz", sub: "90°-Drehung um p" },
+  r51_dlin: { id: "r51_dlin", name: "d(z) = iz + p(1−i)", sub: "" },
+  r51_comp: { id: "r51_comp", name: "(w+)∘d: z ↦ iz + p(1−i) + w", sub: "" },
+  r51_1mi: { id: "r51_1mi", name: "1 − i ≠ 0", sub: "" },
+  r51_fixeq: { id: "r51_fixeq", name: "p′ = i·p′ + p(1−i) + w", sub: "Fixpunktgleichung" },
+  r51_goal: { id: "r51_goal", name: "p′ = p + w/(1−i)", sub: "Fixpunkt der neuen Drehung", role: "ziel" },
+
+  // ---- M5 · Ü6.1 · Kreisspiegelung an K(i; 2) ----
+  k61_setup: { id: "k61_setup", name: "Kreisspiegelung an K(i; 2)", sub: "Zentrum i, Radius 2" },
+  k61_formula: { id: "k61_formula", name: "s(z) = i + 4/(z̄ + i)", sub: "" },
+  k61_ionc: { id: "k61_ionc", name: "i liegt auf S¹", sub: "|i| = 1" },
+  k61_line: { id: "k61_line", name: "Bild von S¹ ist eine Gerade", sub: "" },
+  k61_pts: { id: "k61_pts", name: "s(1)=2−i, s(−1)=−2−i", sub: "" },
+  k61_goal: { id: "k61_goal", name: "Bild von S¹: Gerade Im z = −1", sub: "", role: "ziel" },
+
+  // ---- M6 · Ü8.3 · Zentralprojektion aus (0,0,1) ----
+  z83_setup: { id: "z83_setup", name: "Zentralprojektion, Zentrum (0,0,1)", sub: "auf die xy-Ebene" },
+  z83_line: { id: "z83_line", name: "(0,0,1) + t·((x,y,z)−(0,0,1))", sub: "Verbindungsgerade" },
+  z83_zcomp: { id: "z83_zcomp", name: "z-Komponente: 1 + t(z−1)", sub: "" },
+  z83_t: { id: "z83_t", name: "t = 1/(1−z)", sub: "" },
+  z83_goal: { id: "z83_goal", name: "(x,y,z) ↦ (x/(1−z), y/(1−z))", sub: "", role: "ziel" },
 };
 
 // Schlussregeln — Text nennt nur die allgemeine Form der Regel,
@@ -64,6 +87,27 @@ export const RULES = {
   r_orth: { id: "r_orth", name: "Norm erhalten", sub: "orthogonal ⇒ ‖gv‖ = ‖v‖" },
   r_widerspruch: { id: "r_widerspruch", name: "Widerspruch ziehen", sub: "unvereinbare Aussagen" },
   r_detNaiv: { id: "r_detNaiv", name: "Determinante", sub: "det einer orthogonalen Abbildung" },
+
+  // M4 · Ü5.1  (r_fixansatz und r_solve werden wiederverwendet)
+  r51_center: { id: "r51_center", name: "Drehung linear schreiben", sub: "Drehung um Zentrum p" },
+  r51_after: { id: "r51_after", name: "Translation danach", sub: "g∘d mit g = (w+)" },
+  r51_before: { id: "r51_before", name: "Translation davor", sub: "d∘g mit g = (w+)" },
+  r51_conj: { id: "r51_conj", name: "Konjugation", sub: "z ↦ z̄" },
+
+  // M5 · Ü6.1
+  r61_center: { id: "r61_center", name: "Kreis durch das Zentrum", sub: "↦ Gerade" },
+  r61_imgpts: { id: "r61_imgpts", name: "Punkte spiegeln", sub: "s auf einzelne Punkte" },
+  r61_line: { id: "r61_line", name: "Gerade festlegen", sub: "durch zwei Bildpunkte" },
+  r61_conj: { id: "r61_conj", name: "Konjugation", sub: "z ↦ z̄" },
+  r61_transl: { id: "r61_transl", name: "Verschiebung", sub: "z ↦ z + c" },
+
+  // M6 · Ü8.3
+  r83_line: { id: "r83_line", name: "Verbindungsgerade", sub: "Zentrum und Punkt" },
+  r83_zcomp: { id: "r83_zcomp", name: "z-Koordinate", sub: "der Geraden" },
+  r83_setzero: { id: "r83_setzero", name: "Ebene schneiden", sub: "z = 0 setzen" },
+  r83_insert: { id: "r83_insert", name: "einsetzen", sub: "t in die Gerade" },
+  r83_orth: { id: "r83_orth", name: "Orthogonalprojektion", sub: "(x,y,z) ↦ (x,y)" },
+  r83_norm: { id: "r83_norm", name: "Normieren", sub: "auf Länge 1" },
 };
 
 // steps: gültige Inferenzen  { rule, premises:[factId...], produces }
@@ -136,6 +180,74 @@ export const MISSIONS = [
     depths: [
       { label: "Mit Existenz", given: ["c_annahme", "c_sqrt2", "c_norm10", "c_norm11", "c_det", "c_exists"] },
       { label: "Standard", given: ["c_annahme", "c_sqrt2", "c_norm10", "c_norm11", "c_det"] },
+    ],
+  },
+
+  {
+    id: "p_rot51",
+    title: "Ü5.1 — Verkettung von Drehungen",
+    ref: "Übung 5.1",
+    kind: "beweis",
+    claim:
+      "Die Verkettung (w+)∘d der 90°-Drehung d mit Fixpunkt p und der Translation um w ist wieder eine 90°-Drehung; ihr Fixpunkt ist p′ = p + w/(1−i).",
+    goal: "r51_goal",
+    pool: {
+      facts: ["r51_d", "r51_dlin", "r51_comp", "r51_1mi", "r51_fixeq", "r51_goal"],
+      rules: ["r51_center", "r51_after", "r51_before", "r_fixansatz", "r_solve", "r51_conj"],
+    },
+    steps: [
+      { rule: "r51_center", premises: ["r51_d"], produces: "r51_dlin" },
+      { rule: "r51_after", premises: ["r51_dlin"], produces: "r51_comp" },
+      { rule: "r_fixansatz", premises: ["r51_comp"], produces: "r51_fixeq" },
+      { rule: "r_solve", premises: ["r51_fixeq", "r51_1mi"], produces: "r51_goal" },
+    ],
+    depths: [
+      { label: "Ab Linearform", given: ["r51_dlin", "r51_1mi"] },
+      { label: "Von vorn", given: ["r51_d", "r51_1mi"] },
+    ],
+  },
+
+  {
+    id: "p_inv61",
+    title: "Ü6.1 — Kreisspiegelung",
+    ref: "Übung 6.1",
+    kind: "beweis",
+    claim:
+      "Die Kreisspiegelung am Kreis K(i; 2) bildet den Einheitskreis S¹ — der durch das Zentrum i läuft — auf die Gerade Im z = −1 ab.",
+    goal: "k61_goal",
+    pool: {
+      facts: ["k61_setup", "k61_formula", "k61_ionc", "k61_line", "k61_pts", "k61_goal"],
+      rules: ["r61_center", "r61_imgpts", "r61_line", "r61_conj", "r61_transl"],
+    },
+    steps: [
+      { rule: "r61_center", premises: ["k61_setup", "k61_ionc"], produces: "k61_line" },
+      { rule: "r61_imgpts", premises: ["k61_formula"], produces: "k61_pts" },
+      { rule: "r61_line", premises: ["k61_line", "k61_pts"], produces: "k61_goal" },
+    ],
+    depths: [{ label: "Standard", given: ["k61_setup", "k61_formula", "k61_ionc"] }],
+  },
+
+  {
+    id: "p_proj83",
+    title: "Ü8.3 — Zentralprojektion",
+    ref: "Übung 8.3",
+    kind: "beweis",
+    claim:
+      "Die Zentralprojektion mit Zentrum (0,0,1) auf die xy-Ebene ist in Koordinaten (x,y,z) ↦ (x/(1−z), y/(1−z)).",
+    goal: "z83_goal",
+    pool: {
+      facts: ["z83_setup", "z83_line", "z83_zcomp", "z83_t", "z83_goal"],
+      rules: ["r83_line", "r83_zcomp", "r83_setzero", "r83_insert", "r83_orth", "r83_norm"],
+    },
+    steps: [
+      { rule: "r83_line", premises: ["z83_setup"], produces: "z83_line" },
+      { rule: "r83_zcomp", premises: ["z83_line"], produces: "z83_zcomp" },
+      { rule: "r83_setzero", premises: ["z83_zcomp"], produces: "z83_t" },
+      { rule: "r83_insert", premises: ["z83_line", "z83_t"], produces: "z83_goal" },
+    ],
+    depths: [
+      { label: "Mit Gerade", given: ["z83_setup", "z83_line"] },
+      { label: "Von vorn", given: ["z83_setup"] },
     ],
   },
 ];

@@ -28,6 +28,23 @@ const SOLUTIONS = {
     ["r_orth", ["c_exists", "c_norm10", "c_norm11"]],
     ["r_widerspruch", ["c_factor", "c_sqrt2"]],
   ],
+  p_rot51: [
+    ["r51_center", ["r51_d"]],
+    ["r51_after", ["r51_dlin"]],
+    ["r_fixansatz", ["r51_comp"]],
+    ["r_solve", ["r51_fixeq", "r51_1mi"]],
+  ],
+  p_inv61: [
+    ["r61_center", ["k61_setup", "k61_ionc"]],
+    ["r61_imgpts", ["k61_formula"]],
+    ["r61_line", ["k61_line", "k61_pts"]],
+  ],
+  p_proj83: [
+    ["r83_line", ["z83_setup"]],
+    ["r83_zcomp", ["z83_line"]],
+    ["r83_setzero", ["z83_zcomp"]],
+    ["r83_insert", ["z83_line", "z83_t"]],
+  ],
 };
 
 for (const m of MISSIONS) {
