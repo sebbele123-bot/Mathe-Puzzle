@@ -32,7 +32,8 @@ export default function BeweisCrafter() {
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null);
   const [hint, setHint] = useState("");
-  const [protocol, setProtocol] = useState([]); // [{rule, premises, produces}]
+  const [lastIdea, setLastIdea] = useState(null); // Idee des zuletzt gebauten Schritts
+  const [protocol, setProtocol] = useState([]); // [{rule, premises, produces, idea}]
 
   const benchRef = useRef(null);
   const uidRef = useRef(1);
@@ -62,6 +63,7 @@ export default function BeweisCrafter() {
     setBench([]);
     setFlash(null);
     setHint("");
+    setLastIdea(null);
     setProtocol([]);
   };
   const resetMission = () => loadMission(missionId, depth);
@@ -108,7 +110,8 @@ export default function BeweisCrafter() {
     const delay = reduce.current ? 60 : 640;
     setTimeout(() => {
       setHave((h) => (h.includes(res.produces) ? h : [...h, res.produces]));
-      setProtocol((p) => [...p, { rule: res.rule, premises: res.premises, produces: res.produces }]);
+      setProtocol((p) => [...p, { rule: res.rule, premises: res.premises, produces: res.produces, idea: res.idea }]);
+      setLastIdea(res.idea || null);
       setFlash(res.produces);
       setBench((prev) => [
         ...prev.filter((b) => !uids.has(b.uid)),
@@ -346,9 +349,15 @@ export default function BeweisCrafter() {
                 boxShadow: bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)" }}>
               <Hammer size={16} /> Hammer
             </button>
-            <p className="text-xs" style={{ color: hint ? C.warn : "#8595a4" }}>
-              {hint || "Regel + passende Aussagen zusammenschieben, dann Hammer."}
-            </p>
+            {hint ? (
+              <p className="text-xs" style={{ color: C.warn }}>{hint}</p>
+            ) : lastIdea ? (
+              <p className="text-xs inline-flex items-center gap-1.5" style={{ color: C.ziel }}>
+                <Check size={13} /> <span>Gerade gezeigt: <b>{lastIdea}</b></span>
+              </p>
+            ) : (
+              <p className="text-xs" style={{ color: "#8595a4" }}>Regel + passende Aussagen zusammenschieben, dann Hammer.</p>
+            )}
           </div>
         </section>
 
@@ -388,17 +397,33 @@ export default function BeweisCrafter() {
             </button>
           </div>
           {protocol.length === 0 ? (
-            <p className="text-xs text-slate-400" style={{ fontFamily: "Georgia, serif" }}>noch keine Schritte</p>
+            <p className="text-xs text-slate-400" style={{ fontFamily: "Georgia, serif" }}>
+              noch keine Schritte — hier entsteht die Beweis-Idee, Schritt für Schritt.
+            </p>
           ) : (
-            <ol className="space-y-1.5">
+            <ol className="space-y-2.5">
               {protocol.map((step, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm flex-wrap">
-                  <span className="inline-flex items-center justify-center rounded-full shrink-0 text-[10px]" style={{ width: 18, height: 18, background: C.ziel, color: "#fff", fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
-                  {step.premises.map((p) => <span key={p} style={{ fontFamily: "Georgia, serif" }} className="text-slate-600">{FACTS[p].name}</span>)}
-                  <ChevronRight size={13} className="text-slate-400" />
-                  <span className="rounded px-1.5 py-0.5 text-[11px]" style={{ background: "rgba(107,78,158,0.12)", color: C.regel, fontFamily: "ui-monospace, monospace" }}>{RULES[step.rule].name}</span>
-                  <ChevronRight size={13} className="text-slate-400" />
-                  <span style={{ fontFamily: "Georgia, serif", color: C.fakt }} className="font-semibold">{FACTS[step.produces].name}</span>
+                <li key={i} className="flex items-start gap-2.5">
+                  <span className="inline-flex items-center justify-center rounded-full shrink-0 text-[10px] mt-0.5" style={{ width: 18, height: 18, background: C.ziel, color: "#fff", fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
+                  <div className="min-w-0">
+                    {/* Idee zuerst — die lesbare Beweis-Geschichte */}
+                    {step.idea && (
+                      <div style={{ fontFamily: "Georgia, serif" }} className="text-sm text-slate-800 font-medium">{step.idea}</div>
+                    )}
+                    {/* Formel-Detail darunter, gedämpft */}
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400 mt-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>
+                      {step.premises.map((p, k) => (
+                        <React.Fragment key={p}>
+                          {k > 0 && <span>,</span>}
+                          <span>{FACTS[p].name}</span>
+                        </React.Fragment>
+                      ))}
+                      <ChevronRight size={11} />
+                      <span style={{ color: C.regel }}>{RULES[step.rule].name}</span>
+                      <ChevronRight size={11} />
+                      <span style={{ color: C.fakt }} className="font-semibold">{FACTS[step.produces].name}</span>
+                    </div>
+                  </div>
                 </li>
               ))}
             </ol>

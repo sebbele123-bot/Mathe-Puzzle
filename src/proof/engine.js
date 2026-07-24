@@ -35,7 +35,7 @@ export function craftFromCluster(mission, have, tiles) {
   );
   if (!step) return { ok: false, reason: "no-match" };
 
-  return { ok: true, produces: step.produces, rule: ruleId, premises: facts };
+  return { ok: true, produces: step.produces, rule: ruleId, premises: facts, idea: step.idea };
 }
 
 /** Startaussagen für eine Tiefenstufe. */

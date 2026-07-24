@@ -130,9 +130,9 @@ export const MISSIONS = [
       rules: ["r_neutral", "r_trans", "r_kommut"],
     },
     steps: [
-      { rule: "r_neutral", premises: ["n_e2"], produces: "n_eq1" }, // e′ neutral ⇒ e∘e′ = e
-      { rule: "r_neutral", premises: ["n_e"], produces: "n_eq2" }, //  e  neutral ⇒ e∘e′ = e′
-      { rule: "r_trans", premises: ["n_eq1", "n_eq2"], produces: "n_goal" },
+      { rule: "r_neutral", premises: ["n_e2"], produces: "n_eq1", idea: "Produkt e∘e′ von rechts ausgewertet" },
+      { rule: "r_neutral", premises: ["n_e"], produces: "n_eq2", idea: "Produkt e∘e′ von links ausgewertet" },
+      { rule: "r_trans", premises: ["n_eq1", "n_eq2"], produces: "n_goal", idea: "beide Werte gleichgesetzt: e = e′" },
     ],
     depths: [{ label: "Standard", given: ["n_e", "n_e2"] }],
   },
@@ -150,12 +150,12 @@ export const MISSIONS = [
       rules: ["r_orient", "r_antiR", "r_kongkrit", "r_absa", "r_fixansatz", "r_1ma", "r_solve"],
     },
     steps: [
-      { rule: "r_orient", premises: ["s_sim", "s_orient"], produces: "s_hol" },
-      { rule: "r_kongkrit", premises: ["s_sim", "s_notcong"], produces: "s_absne1" },
-      { rule: "r_absa", premises: ["s_absne1"], produces: "s_ane1" },
-      { rule: "r_fixansatz", premises: ["s_hol"], produces: "s_fixeq" },
-      { rule: "r_1ma", premises: ["s_ane1"], produces: "s_1ma" },
-      { rule: "r_solve", premises: ["s_fixeq", "s_1ma"], produces: "s_goal" },
+      { rule: "r_orient", premises: ["s_sim", "s_orient"], produces: "s_hol", idea: "Normalform der Ähnlichkeit bestimmt" },
+      { rule: "r_kongkrit", premises: ["s_sim", "s_notcong"], produces: "s_absne1", idea: "Skalierungsfaktor |a| ≠ 1 gezeigt" },
+      { rule: "r_absa", premises: ["s_absne1"], produces: "s_ane1", idea: "a ≠ 1 gefolgert" },
+      { rule: "r_fixansatz", premises: ["s_hol"], produces: "s_fixeq", idea: "Fixpunktgleichung aufgestellt" },
+      { rule: "r_1ma", premises: ["s_ane1"], produces: "s_1ma", idea: "1 − a invertierbar (≠ 0)" },
+      { rule: "r_solve", premises: ["s_fixeq", "s_1ma"], produces: "s_goal", idea: "eindeutigen Fixpunkt bestimmt" },
     ],
     depths: [
       { label: "Mit |a|≠1", given: ["s_sim", "s_orient", "s_notcong", "s_hol", "s_absne1"] },
@@ -177,9 +177,9 @@ export const MISSIONS = [
       rules: ["r_transit", "r_orth", "r_widerspruch", "r_detNaiv"],
     },
     steps: [
-      { rule: "r_transit", premises: ["c_annahme"], produces: "c_exists" },
-      { rule: "r_orth", premises: ["c_exists", "c_norm10", "c_norm11"], produces: "c_factor" },
-      { rule: "r_widerspruch", premises: ["c_factor", "c_sqrt2"], produces: "c_goal" },
+      { rule: "r_transit", premises: ["c_annahme"], produces: "c_exists", idea: "aus der Annahme ein überführendes g gewonnen" },
+      { rule: "r_orth", premises: ["c_exists", "c_norm10", "c_norm11"], produces: "c_factor", idea: "nötigen Skalierungsfaktor √2 abgelesen" },
+      { rule: "r_widerspruch", premises: ["c_factor", "c_sqrt2"], produces: "c_goal", idea: "Widerspruch: √2 müsste rational sein" },
     ],
     depths: [
       { label: "Mit Existenz", given: ["c_annahme", "c_sqrt2", "c_norm10", "c_norm11", "c_det", "c_exists"] },
@@ -200,12 +200,12 @@ export const MISSIONS = [
       rules: ["r51_center", "r51_expand", "r51_after", "r_fixansatz", "r51_collect", "r_solve", "r51_before", "r51_conj"],
     },
     steps: [
-      { rule: "r51_center", premises: ["r51_d"], produces: "r51_dc" }, //   d(x) = p + i(x−p)
-      { rule: "r51_expand", premises: ["r51_dc"], produces: "r51_dlin" }, // iz + p(1−i)
-      { rule: "r51_after", premises: ["r51_dlin"], produces: "r51_comp" },
-      { rule: "r_fixansatz", premises: ["r51_comp"], produces: "r51_fixeq" },
-      { rule: "r51_collect", premises: ["r51_fixeq"], produces: "r51_factored" }, // p′(1−i) = …
-      { rule: "r_solve", premises: ["r51_factored", "r51_1mi"], produces: "r51_goal" }, // durch (1−i) teilen
+      { rule: "r51_center", premises: ["r51_d"], produces: "r51_dc", idea: "Drehung um p in Punktform gebracht" },
+      { rule: "r51_expand", premises: ["r51_dc"], produces: "r51_dlin", idea: "zur linearen Form iz + p(1−i) ausmultipliziert" },
+      { rule: "r51_after", premises: ["r51_dlin"], produces: "r51_comp", idea: "Translation um w nachgeschaltet" },
+      { rule: "r_fixansatz", premises: ["r51_comp"], produces: "r51_fixeq", idea: "Fixpunktgleichung aufgestellt" },
+      { rule: "r51_collect", premises: ["r51_fixeq"], produces: "r51_factored", idea: "p′-Terme zu p′(1−i) zusammengefasst" },
+      { rule: "r_solve", premises: ["r51_factored", "r51_1mi"], produces: "r51_goal", idea: "durch (1−i) geteilt → Fixpunkt" },
     ],
     depths: [
       { label: "Ab Fixpunktgleichung", given: ["r51_fixeq", "r51_1mi"] },
@@ -227,9 +227,9 @@ export const MISSIONS = [
       rules: ["r61_center", "r61_imgpts", "r61_line", "r61_conj", "r61_transl"],
     },
     steps: [
-      { rule: "r61_center", premises: ["k61_setup", "k61_ionc"], produces: "k61_line" },
-      { rule: "r61_imgpts", premises: ["k61_formula"], produces: "k61_pts" },
-      { rule: "r61_line", premises: ["k61_line", "k61_pts"], produces: "k61_goal" },
+      { rule: "r61_center", premises: ["k61_setup", "k61_ionc"], produces: "k61_line", idea: "Kreis durch das Zentrum ⇒ Bild ist eine Gerade" },
+      { rule: "r61_imgpts", premises: ["k61_formula"], produces: "k61_pts", idea: "zwei Randpunkte gespiegelt" },
+      { rule: "r61_line", premises: ["k61_line", "k61_pts"], produces: "k61_goal", idea: "Gerade festgelegt: Im z = −1" },
     ],
     depths: [{ label: "Standard", given: ["k61_setup", "k61_formula", "k61_ionc"] }],
   },
@@ -247,10 +247,10 @@ export const MISSIONS = [
       rules: ["r83_line", "r83_zcomp", "r83_setzero", "r83_insert", "r83_orth", "r83_norm"],
     },
     steps: [
-      { rule: "r83_line", premises: ["z83_setup"], produces: "z83_line" },
-      { rule: "r83_zcomp", premises: ["z83_line"], produces: "z83_zcomp" },
-      { rule: "r83_setzero", premises: ["z83_zcomp"], produces: "z83_t" },
-      { rule: "r83_insert", premises: ["z83_line", "z83_t"], produces: "z83_goal" },
+      { rule: "r83_line", premises: ["z83_setup"], produces: "z83_line", idea: "Verbindungsgerade Zentrum–Punkt aufgestellt" },
+      { rule: "r83_zcomp", premises: ["z83_line"], produces: "z83_zcomp", idea: "z-Koordinate der Geraden abgelesen" },
+      { rule: "r83_setzero", premises: ["z83_zcomp"], produces: "z83_t", idea: "Schnitt mit der Ebene: Parameter t bestimmt" },
+      { rule: "r83_insert", premises: ["z83_line", "z83_t"], produces: "z83_goal", idea: "t eingesetzt → Bildkoordinaten" },
     ],
     depths: [
       { label: "Mit Gerade", given: ["z83_setup", "z83_line"] },
