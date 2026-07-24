@@ -45,8 +45,8 @@ function stagesOf(mission) {
   return [...vocab, proof];
 }
 
-export default function BeweisCrafter() {
-  const [missionId, setMissionId] = useState(MISSIONS[0].id);
+export default function BeweisCrafter({ initialId }) {
+  const [missionId, setMissionId] = useState(() => (initialId && MISSIONS.some((m) => m.id === initialId) ? initialId : MISSIONS[0].id));
   const [stageIdx, setStageIdx] = useState(0);
   const [depth, setDepth] = useState(0);
   const [have, setHave] = useState([]);
@@ -88,6 +88,11 @@ export default function BeweisCrafter() {
     setHave(st[0].kind === "beweis" ? st[0].depths[0].given.slice() : st[0].given.slice());
     setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
   };
+
+  // Aus der Bibliothek angeforderte Mission laden
+  useEffect(() => {
+    if (initialId && MISSIONS.some((m) => m.id === initialId)) loadMission(initialId);
+  }, [initialId]); // eslint-disable-line
   const goToStage = (i) => {
     if (i >= stages.length) return;
     setStageIdx(i);

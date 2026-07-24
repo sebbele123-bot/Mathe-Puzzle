@@ -397,7 +397,7 @@ const missionIngredients = (mission) => {
 // --- Missionen als Lektionen ---
 // base = fertige Bausteine, ab denen die Lektion spielt (angemessene Starttiefe).
 // steps = die ab dieser Tiefe noch zu bauenden Zwischen- und Zielstrukturen.
-const MISSIONS = [
+export const MISSIONS = [
   // L0 geht bewusst bis zu den Axiomen — das ist ihr Thema
   { id: "m00", task: "L0 · Grundlagen — Körper & Vektorraum", base: ["rset"], steps: ["addgrpR", "fieldR", "vr"] },
   // Geometrie-Lektionen starten auf Vektorraum-Ebene, nicht bei den Axiomen
@@ -421,7 +421,7 @@ const MISSIONS = [
 ];
 
 // ====================================================================
-export default function StrukturBaukasten() {
+export default function StrukturBaukasten({ initialId }) {
   const baseInventory = Object.keys(BLOCKS);
   const [discovered, setDiscovered] = useState([]); // result-ids
   const [bench, setBench] = useState([]); // [{uid, id, x, y}] — frei positioniert
@@ -441,6 +441,13 @@ export default function StrukturBaukasten() {
   useEffect(() => {
     reduce.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
+
+  // Aus der Bibliothek angeforderte Lektion öffnen (im Übungsmodus)
+  useEffect(() => {
+    if (initialId && MISSIONS.some((m) => m.id === initialId)) {
+      setMission(initialId); setPuzzle(true); setBench([]); setHint("");
+    }
+  }, [initialId]); // eslint-disable-line
 
   // kettbare, bereits entdeckte Ergebnisse werden zu ziehbaren Bausteinen
   const chainBlocks = discovered.filter((r) => RESULTS[r].chainable);

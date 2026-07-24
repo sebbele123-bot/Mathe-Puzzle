@@ -1,17 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Boxes, GitBranch, LayoutGrid, Maximize, Minimize } from "lucide-react";
+import { Boxes, GitBranch, LayoutGrid, Library, Maximize, Minimize } from "lucide-react";
 import StrukturBaukasten from "./StrukturBaukasten.jsx";
 import BeweisCrafter from "./proof/BeweisCrafter.jsx";
 import OpenMathPalette from "./OpenMathPalette.jsx";
+import Bibliothek from "./Bibliothek.jsx";
 import Inventory from "./Inventory.jsx";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
 
 export default function App() {
-  const [mode, setMode] = useState("bausteine"); // "definition" | "beweis" | "bausteine"
+  const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "definition" | "beweis" | "bausteine"
+  const [openReq, setOpenReq] = useState({ definition: null, beweis: null }); // aus der Bibliothek angeforderte Mission je Ansicht
   const [fs, setFs] = useState(false);
   const [fsHint, setFsHint] = useState("");
   const rootRef = useRef(null);
+
+  // Aus der Bibliothek eine Mission öffnen: passende Ansicht wählen + laden.
+  // Die Ansichten werden beim Moduswechsel neu gemountet und lesen dann initialId.
+  const openFromLibrary = useCallback((targetMode, targetId) => {
+    setOpenReq((r) => ({ ...r, [targetMode]: targetId }));
+    setMode(targetMode);
+  }, []);
 
   // Vollbildstatus (auch bei Wechsel per Taste/ESC) verfolgen
   useEffect(() => {
@@ -73,6 +82,7 @@ export default function App() {
             Mathe-Puzzle
           </span>
           <div className="flex gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <ModeButton active={mode === "bibliothek"} onClick={() => setMode("bibliothek")} icon={Library} label="Bibliothek" color={C.ink} />
             <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
             <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
             <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
@@ -102,7 +112,15 @@ export default function App() {
         )}
       </div>
 
-      {mode === "definition" ? <StrukturBaukasten /> : mode === "bausteine" ? <OpenMathPalette /> : <BeweisCrafter />}
+      {mode === "bibliothek" ? (
+        <Bibliothek onOpen={openFromLibrary} />
+      ) : mode === "definition" ? (
+        <StrukturBaukasten initialId={openReq.definition} />
+      ) : mode === "bausteine" ? (
+        <OpenMathPalette />
+      ) : (
+        <BeweisCrafter initialId={openReq.beweis} />
+      )}
 
       {/* Minecraft-artiges Inventar: Hotbar (1–8) + volles Inventar (E) */}
       <Inventory />
