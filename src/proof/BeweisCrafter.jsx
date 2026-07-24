@@ -273,21 +273,39 @@ export default function BeweisCrafter() {
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Beweis-Baukasten</h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
             Bausteine auf die Werkbank ziehen, zusammenschieben, <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
-            Missionen mit <b>◆</b> starten mit einem Begriffs-Check: erst den Begriff mit <b>:=</b> festlegen, dann beweisen.
+            Missionen mit <b>Begriffs-Check</b> starten mit einer Definition: erst den Begriff mit <b>:=</b> festlegen, dann beweisen.
           </p>
         </header>
 
-        {/* Missionswahl */}
+        {/* Missionswahl — gleichmäßige Karten mit Kürzel-Badge */}
         <section className="mb-4">
           <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.14em" }} className="text-[11px] uppercase text-slate-500">Beweis wählen</span>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
             {MISSIONS.map((m) => {
               const active = m.id === missionId;
+              const parts = m.title.split(" — ");
+              const hasCode = parts.length > 1;
+              const code = hasCode ? parts[0] : "Basis";
+              const name = hasCode ? parts.slice(1).join(" — ") : m.title;
               return (
                 <button key={m.id} onClick={() => loadMission(m.id)} aria-pressed={active}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors border"
-                  style={{ fontFamily: "ui-monospace, monospace", background: active ? C.ziel : "rgba(255,255,255,0.5)", color: active ? "#fff" : C.ink, borderColor: active ? C.ziel : "#B7C3CF" }}>
-                  {m.vocab ? "◆ " : ""}{m.title}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors border"
+                  style={{ background: active ? C.ziel : "#fff", color: active ? "#fff" : C.ink, borderColor: active ? C.ziel : "#C4D0DB" }}>
+                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg text-[11px] font-semibold"
+                    style={{ fontFamily: "ui-monospace, monospace", minWidth: 44, padding: "4px 6px",
+                      background: active ? "rgba(255,255,255,0.22)" : "rgba(31,122,99,0.10)",
+                      color: active ? "#fff" : C.ziel }}>
+                    {code}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm leading-snug" style={{ fontFamily: "Georgia, serif" }}>{name}</span>
+                    {m.vocab && (
+                      <span className="inline-flex items-center gap-1 mt-0.5 text-[10px]"
+                        style={{ fontFamily: "ui-monospace, monospace", color: active ? "rgba(255,255,255,0.85)" : C.begriff }}>
+                        <BookOpen size={10} /> Begriffs-Check
+                      </span>
+                    )}
+                  </span>
                 </button>
               );
             })}
