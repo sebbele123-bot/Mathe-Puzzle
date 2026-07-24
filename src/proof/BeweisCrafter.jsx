@@ -1,52 +1,112 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Check, RotateCcw, ChevronRight, Sparkles, Hammer } from "lucide-react";
+import { Check, RotateCcw, ChevronRight, Sparkles, Hammer, BookOpen } from "lucide-react";
 import { FACTS, RULES, MISSIONS } from "./data.js";
-import { craftFromCluster, givenFor } from "./engine.js";
+import { craftFromCluster } from "./engine.js";
 
 /* --- Farbwelt (konsistent mit dem Struktur-Baukasten) --------------- */
 const C = {
   paper: "#EAEEF2",
   dot: "#C4D0DB",
   ink: "#1B2430",
-  fakt: "#31597F", // bekannte Aussagen (Blau)
+  fakt: "#31597F",
   faktHi: "#4E7BA6",
-  regel: "#6B4E9E", // Schlussregeln (Violett)
+  regel: "#6B4E9E",
   regelHi: "#8A6BC0",
-  ziel: "#1F7A63", // Ziel / Erfolg (Petrol)
+  ziel: "#1F7A63",
   zielHi: "#2FA588",
-  warn: "#B26A1E", // Hinweis (Ocker)
+  warn: "#B26A1E",
+  begriff: "#4C4BA6", // Indigo — deutlich von Regel-Violett und Fakt-Blau unterscheidbar
+  begriffHi: "#6E6BD0",
 };
 
-// Werkbank-Geometrie (etwas kompakter als der Definitions-Modus, mobiltauglich)
-const TILE_W = 150;
-const TILE_H = 78;
-const GAP = 46;
-const SNAP = 48;
+const TILE_W = 150, TILE_H = 78, GAP = 46, SNAP = 48;
+
+// Stufen einer Mission: erst die Begriffs-Definitionen, dann der Beweis.
+function stagesOf(mission) {
+  const vocab = (mission.vocab || []).map((v) => ({
+    kind: "vocab", term: v.term, goal: v.goal, prompt: v.prompt, note: v.note,
+    pool: v.pool, steps: v.steps, given: v.given,
+  }));
+  const proof = {
+    kind: "beweis", goal: mission.goal, claim: mission.claim, ref: mission.ref,
+    pool: mission.pool, steps: mission.steps, depths: mission.depths,
+  };
+  return [...vocab, proof];
+}
 
 export default function BeweisCrafter() {
   const [missionId, setMissionId] = useState(MISSIONS[0].id);
+  const [stageIdx, setStageIdx] = useState(0);
   const [depth, setDepth] = useState(0);
-  const [have, setHave] = useState(() => MISSIONS[0].depths[0].given.slice());
-  const [bench, setBench] = useState([]); // [{uid, kind:"fakt"|"regel", id, x, y}]
+  const [have, setHave] = useState([]);
+  const [bench, setBench] = useState([]);
   const [drag, setDrag] = useState(null);
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null);
   const [hint, setHint] = useState("");
-  const [lastIdea, setLastIdea] = useState(null); // Idee des zuletzt gebauten Schritts
-  const [protocol, setProtocol] = useState([]); // [{rule, premises, produces, idea}]
+  const [fails, setFails] = useState(0); // fehlgeschlagene Hammer-Versuche auf dieser Stufe
+  const [lastIdea, setLastIdea] = useState(null);
+  const [protocol, setProtocol] = useState([]);
 
   const benchRef = useRef(null);
   const uidRef = useRef(1);
   const reduce = useRef(false);
-  useEffect(() => {
-    reduce.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  }, []);
+  useEffect(() => { reduce.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches; }, []);
 
   const mission = useMemo(() => MISSIONS.find((x) => x.id === missionId), [missionId]);
+  const stages = useMemo(() => stagesOf(mission), [mission]);
+  const stage = stages[Math.min(stageIdx, stages.length - 1)];
+  const isProof = stage.kind === "beweis";
+
+  const stageGiven = (i, d) => {
+    const s = stages[i];
+    return s.kind === "beweis" ? s.depths[Math.min(d, s.depths.length - 1)].given : s.given;
+  };
+
+  // Missionen mit Begriffs-Gate starten den Beweis auf mittlerer Tiefe,
+  // damit der Beweis nach dem Gate nicht trivial kurz ausfällt.
+  const defaultProofDepth = (m) => (m.vocab ? Math.min(1, m.depths.length - 1) : 0);
+
+  // Initialisierung bei Mission-Wechsel
+  const loadMission = (id) => {
+    const m = MISSIONS.find((x) => x.id === id);
+    const st = stagesOf(m);
+    setMissionId(id);
+    setStageIdx(0);
+    setDepth(defaultProofDepth(m));
+    setHave(st[0].kind === "beweis" ? st[0].depths[0].given.slice() : st[0].given.slice());
+    setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
+  };
+  const goToStage = (i) => {
+    if (i >= stages.length) return;
+    setStageIdx(i);
+    setHave(stageGiven(i, depth).slice());
+    setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
+  };
+  const setProofDepth = (d) => {
+    setDepth(d);
+    setHave(stages[stageIdx].depths[Math.min(d, stages[stageIdx].depths.length - 1)].given.slice());
+    setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
+  };
+  const resetStage = () => {
+    setHave(stageGiven(stageIdx, depth).slice());
+    setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
+  };
+  const clearBench = () => { setBench([]); setHint(""); };
+
   const haveSet = useMemo(() => new Set(have), [have]);
-  const givenSet = useMemo(() => new Set(givenFor(mission, depth)), [mission, depth]);
-  const won = haveSet.has(mission.goal);
-  const goal = FACTS[mission.goal];
+  const givenSet = useMemo(() => new Set(stageGiven(stageIdx, depth)), [stageIdx, depth, missionId]); // eslint-disable-line
+  const stageWon = haveSet.has(stage.goal);
+  const missionWon = isProof && stageWon;
+  const goal = FACTS[stage.goal];
+
+  // Begriffs-Stufe geschafft → automatisch zur nächsten Stufe
+  useEffect(() => {
+    if (!isProof && stageWon) {
+      const t = setTimeout(() => goToStage(stageIdx + 1), reduce.current ? 250 : 1000);
+      return () => clearTimeout(t);
+    }
+  }, [stageWon, isProof, stageIdx]); // eslint-disable-line
 
   const paperBg = {
     backgroundColor: C.paper,
@@ -54,33 +114,16 @@ export default function BeweisCrafter() {
     backgroundSize: "22px 22px",
   };
 
-  // --- Mission / Tiefe laden (setzt zurück) ---
-  const loadMission = (id, d = 0) => {
-    const m = MISSIONS.find((x) => x.id === id);
-    setMissionId(id);
-    setDepth(d);
-    setHave(givenFor(m, d).slice());
-    setBench([]);
-    setFlash(null);
-    setHint("");
-    setLastIdea(null);
-    setProtocol([]);
-  };
-  const resetMission = () => loadMission(missionId, depth);
-  const clearBench = () => { setBench([]); setHint(""); };
-
-  // --- Cluster (Zusammenhangskomponenten naher Kacheln) ---
+  // --- Cluster ---
   const clustersOf = (items) => {
     const near = (a, b) => Math.abs(a.x - b.x) < TILE_W + GAP && Math.abs(a.y - b.y) < TILE_H + GAP;
-    const seen = new Set();
-    const groups = [];
+    const seen = new Set(), groups = [];
     for (const it of items) {
       if (seen.has(it.uid)) continue;
       const stack = [it], group = [];
       seen.add(it.uid);
       while (stack.length) {
-        const cur = stack.pop();
-        group.push(cur);
+        const cur = stack.pop(); group.push(cur);
         for (const other of items) if (!seen.has(other.uid) && near(cur, other)) { seen.add(other.uid); stack.push(other); }
       }
       groups.push(group);
@@ -88,46 +131,47 @@ export default function BeweisCrafter() {
     return groups;
   };
 
-  // --- Hammer: ersten passenden Cluster verschmelzen ---
   const build = () => {
     if (snapping) return;
     const groups = clustersOf(bench);
     for (const g of groups) {
-      const res = craftFromCluster(mission, haveSet, g.map((t) => ({ kind: t.kind, id: t.id })));
+      const res = craftFromCluster(stage, haveSet, g.map((t) => ({ kind: t.kind, id: t.id })));
       if (res.ok) return fuse(g, res);
     }
-    // nichts passt — bewusst knappe, nicht verratende Rückmeldung
     const hasPair = groups.some((g) => g.length > 1);
-    setHint(hasPair ? "Das rastet nicht ein — andere Regel oder andere Aussagen?" : "Schieb eine Regel und passende Aussagen zusammen, dann Hammer.");
+    const nf = fails + 1;
+    setFails(nf);
+    // gestufter Tipp: erst neutral, ab dem 3. Fehlversuch die nötige Bausteinzahl
+    // verraten (nicht welche) — Scaffolding ohne die Lösung preiszugeben.
+    if (nf >= 3 && stage.steps.length) {
+      const minPieces = Math.min(...stage.steps.map((s) => s.premises.length + 1));
+      setHint(`Tipp: die kleinste Verknüpfung hier braucht ${minPieces} Bausteine — genau 1 Regel und ${minPieces - 1} ${isProof ? "Aussage(n)" : "Bestandteil(e)"}.`);
+    } else {
+      setHint(hasPair ? "Das rastet nicht ein — andere Regel oder andere Bausteine?" : (isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Bestandteile + „Definition festlegen“ zusammenschieben, dann Hammer."));
+    }
   };
 
   const fuse = (group, res) => {
     const cx = group.reduce((s, g) => s + g.x, 0) / group.length;
     const cy = group.reduce((s, g) => s + g.y, 0) / group.length;
     const uids = new Set(group.map((g) => g.uid));
-    setHint("");
-    setSnapping(true);
+    setHint(""); setFails(0); setSnapping(true);
     const delay = reduce.current ? 60 : 640;
     setTimeout(() => {
       setHave((h) => (h.includes(res.produces) ? h : [...h, res.produces]));
       setProtocol((p) => [...p, { rule: res.rule, premises: res.premises, produces: res.produces, idea: res.idea }]);
       setLastIdea(res.idea || null);
       setFlash(res.produces);
-      setBench((prev) => [
-        ...prev.filter((b) => !uids.has(b.uid)),
-        { uid: uidRef.current++, kind: "fakt", id: res.produces, x: cx, y: cy },
-      ]);
+      setBench((prev) => [...prev.filter((b) => !uids.has(b.uid)), { uid: uidRef.current++, kind: "fakt", id: res.produces, x: cx, y: cy }]);
       setSnapping(false);
       setTimeout(() => setFlash((f) => (f === res.produces ? null : f)), 900);
     }, delay);
   };
 
-  // --- Kacheln ablegen ---
   const addToBenchAt = (kind, id, clientX, clientY) => {
     if (snapping) return;
     const rect = benchRef.current?.getBoundingClientRect();
-    const x = rect ? clientX - rect.left : 60;
-    const y = rect ? clientY - rect.top : 60;
+    const x = rect ? clientX - rect.left : 60, y = rect ? clientY - rect.top : 60;
     const uid = uidRef.current++;
     setBench((prev) => [...prev, { uid, kind, id, x, y }]);
     setHint("");
@@ -139,15 +183,13 @@ export default function BeweisCrafter() {
     const w = rect ? rect.width : 400, h = rect ? rect.height : 300;
     setBench((prev) => {
       const n = prev.length;
-      const x = Math.min(110 + (n % 4) * 92, w - 60);
-      const y = Math.min(70 + Math.floor(n / 4) * 92, h - 50);
+      const x = Math.min(110 + (n % 4) * 92, w - 60), y = Math.min(70 + Math.floor(n / 4) * 92, h - 50);
       return [...prev, { uid: uidRef.current++, kind, id, x, y }];
     });
     setHint("");
   };
   const removeUid = (uid) => { if (!snapping) { setBench((prev) => prev.filter((b) => b.uid !== uid)); setHint(""); } };
 
-  // --- Magnet: bewegte Kachel bündig andocken ---
   const snapMagnet = (uid) => {
     setBench((prev) => {
       const me = prev.find((b) => b.uid === uid);
@@ -156,8 +198,7 @@ export default function BeweisCrafter() {
       for (const other of prev) {
         if (other.uid === uid) continue;
         const dx = me.x - other.x, dy = me.y - other.y;
-        const gapX = Math.abs(dx) - TILE_W, gapY = Math.abs(dy) - TILE_H;
-        const d = Math.hypot(dx, dy);
+        const gapX = Math.abs(dx) - TILE_W, gapY = Math.abs(dy) - TILE_H, d = Math.hypot(dx, dy);
         if (Math.abs(dy) < TILE_H && gapX < SNAP && d < bestD) { bestD = d; best = { other, axis: "x", dir: Math.sign(dx) || 1 }; }
         else if (Math.abs(dx) < TILE_W && gapY < SNAP && d < bestD) { bestD = d; best = { other, axis: "y", dir: Math.sign(dy) || 1 }; }
       }
@@ -168,7 +209,6 @@ export default function BeweisCrafter() {
     });
   };
 
-  // --- Pointer-Drag (Maus + Touch) ---
   const startPaletteDrag = (e, kind, id) => {
     if (snapping) return;
     const t = e.touches ? e.touches[0] : e;
@@ -180,8 +220,7 @@ export default function BeweisCrafter() {
     e.stopPropagation();
     const t = e.touches ? e.touches[0] : e;
     const rect = benchRef.current?.getBoundingClientRect();
-    const offX = rect ? t.clientX - rect.left - item.x : 0;
-    const offY = rect ? t.clientY - rect.top - item.y : 0;
+    const offX = rect ? t.clientX - rect.left - item.x : 0, offY = rect ? t.clientY - rect.top - item.y : 0;
     setDrag({ kind: "bench", id: item.id, uid: item.uid, x: t.clientX, y: t.clientY, ox: t.clientX, oy: t.clientY, offX, offY });
     setFlash(null);
   };
@@ -194,8 +233,7 @@ export default function BeweisCrafter() {
       if (drag.kind === "bench") {
         const rect = benchRef.current?.getBoundingClientRect();
         if (rect) {
-          const nx = t.clientX - rect.left - drag.offX;
-          const ny = t.clientY - rect.top - drag.offY;
+          const nx = t.clientX - rect.left - drag.offX, ny = t.clientY - rect.top - drag.offY;
           setBench((prev) => prev.map((b) => (b.uid === drag.uid ? { ...b, x: nx, y: ny } : b)));
         }
       }
@@ -216,7 +254,12 @@ export default function BeweisCrafter() {
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
   }, [drag, bench, snapping]); // eslint-disable-line
 
-  const factLabel = (id) => (id === mission.goal ? "Ziel" : givenSet.has(id) ? "gegeben" : "gefolgert");
+  const factLabel = (id) => {
+    const f = FACTS[id];
+    if (id === stage.goal) return "Ziel";
+    if (f.role === "begriff") return "Begriff";
+    return givenSet.has(id) ? "gegeben" : "gefolgert";
+  };
 
   return (
     <div style={{ ...paperBg, color: C.ink, minHeight: "100%", fontFamily: "system-ui, sans-serif" }} className="w-full">
@@ -226,13 +269,10 @@ export default function BeweisCrafter() {
           <div style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.18em" }} className="text-[11px] uppercase text-slate-500 mb-1">
             Elementargeometrie · Beweise
           </div>
-          <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">
-            Beweis-Baukasten
-          </h1>
+          <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Beweis-Baukasten</h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            Zieh (oder tippe) aus den Vorräten <b>Aussagen</b> und eine <b>Schlussregel</b> auf die Werkbank, schieb sie nah zusammen und
-            drück den <b>Hammer</b>. Passt es, verschmelzen sie zu einer neuen Aussage. Baue so eine Kette bis zum <b>Ziel</b>.
-            Welche Regel greift und welche Aussagen sie braucht, steht nirgends — das ist die Aufgabe.
+            Bausteine auf die Werkbank ziehen, zusammenschieben, <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
+            Missionen mit <b>◆</b> starten mit einem Begriffs-Check: erst die Definition bauen, dann beweisen.
           </p>
         </header>
 
@@ -243,41 +283,98 @@ export default function BeweisCrafter() {
             {MISSIONS.map((m) => {
               const active = m.id === missionId;
               return (
-                <button key={m.id} onClick={() => loadMission(m.id, 0)} aria-pressed={active}
+                <button key={m.id} onClick={() => loadMission(m.id)} aria-pressed={active}
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors border"
                   style={{ fontFamily: "ui-monospace, monospace", background: active ? C.ziel : "rgba(255,255,255,0.5)", color: active ? "#fff" : C.ink, borderColor: active ? C.ziel : "#B7C3CF" }}>
-                  {m.title}
+                  {m.vocab ? "◆ " : ""}{m.title}
                 </button>
               );
             })}
           </div>
         </section>
 
-        {/* Ziel / Behauptung */}
-        <section className="mb-4 rounded-xl px-4 py-3" style={{ background: won ? "rgba(31,122,99,0.10)" : "rgba(255,255,255,0.55)", border: `1px solid ${won ? C.ziel : "#B7C3CF"}` }}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Zu zeigen</span>
-            <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] text-slate-400">{mission.ref}</span>
-            {won && <span className="inline-flex items-center gap-1 ml-auto text-xs font-medium" style={{ color: C.ziel }}><Check size={13} /> Beweis vollständig</span>}
-          </div>
-          <p className="text-sm text-slate-800 mt-1" style={{ fontFamily: "Georgia, serif" }}>{mission.claim}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Zielaussage</span>
-            <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ fontFamily: "Georgia, serif", background: won ? C.ziel : "rgba(31,122,99,0.10)", color: won ? "#fff" : C.ziel, border: `1px solid ${C.ziel}` }}>
-              {won && <Check size={11} />} {goal.name}
-            </span>
-          </div>
-        </section>
+        {/* Stufen-Anzeige (nur wenn es einen Begriffs-Check gibt) */}
+        {stages.length > 1 && (
+          <section className="mb-4 flex items-center gap-1.5 flex-wrap">
+            {stages.map((s, i) => {
+              const done = i < stageIdx;
+              const cur = i === stageIdx;
+              const label = s.kind === "vocab" ? s.term : "Beweis";
+              return (
+                <React.Fragment key={i}>
+                  {i > 0 && <ChevronRight size={13} className="text-slate-400" />}
+                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] border"
+                    style={{
+                      fontFamily: "ui-monospace, monospace",
+                      background: cur ? (s.kind === "vocab" ? C.begriff : C.ziel) : done ? "rgba(31,122,99,0.10)" : "rgba(255,255,255,0.5)",
+                      color: cur ? "#fff" : done ? C.ziel : "#5b6875",
+                      borderColor: cur ? (s.kind === "vocab" ? C.begriff : C.ziel) : done ? C.ziel : "#B7C3CF",
+                      opacity: i > stageIdx ? 0.5 : 1, // kommende Stufen gedämpft
+                    }}>
+                    {done && <Check size={11} />}
+                    {s.kind === "vocab" && <BookOpen size={11} />}
+                    {label}
+                  </span>
+                </React.Fragment>
+              );
+            })}
+          </section>
+        )}
 
-        {/* Tiefen-Regler */}
-        {mission.depths.length > 1 && (
+        {/* Aufgaben-Panel: Begriff bauen ODER Beweisziel */}
+        {isProof ? (
+          <section className="mb-4 rounded-xl px-4 py-3" style={{ background: missionWon ? "rgba(31,122,99,0.10)" : "rgba(255,255,255,0.55)", border: `1px solid ${missionWon ? C.ziel : "#B7C3CF"}` }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Zu zeigen</span>
+              <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] text-slate-400">{stage.ref}</span>
+              {missionWon && <span className="inline-flex items-center gap-1 ml-auto text-xs font-medium" style={{ color: C.ziel }}><Check size={13} /> Beweis vollständig</span>}
+            </div>
+            <p className="text-sm text-slate-800 mt-1" style={{ fontFamily: "Georgia, serif" }}>{stage.claim}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Zielaussage</span>
+              <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ fontFamily: "Georgia, serif", background: missionWon ? C.ziel : "rgba(31,122,99,0.10)", color: missionWon ? "#fff" : C.ziel, border: `1px solid ${C.ziel}` }}>
+                {missionWon && <Check size={11} />} {goal.name}
+              </span>
+            </div>
+            {mission.vocab && (
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px]">
+                <BookOpen size={12} style={{ color: C.begriff }} />
+                <span style={{ fontFamily: "ui-monospace, monospace" }} className="uppercase tracking-wider text-slate-500">Begriffe:</span>
+                {mission.vocab.map((v) => (
+                  <span key={v.term} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+                    style={{ background: "rgba(76,75,166,0.10)", color: C.begriff, border: `1px solid ${C.begriff}` }}>
+                    <Check size={10} /> <b>{v.term}</b> = {FACTS[v.goal].sub}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : (
+          <section className="mb-4 rounded-xl px-4 py-3" style={{ background: "rgba(138,107,192,0.08)", border: `1px solid ${C.begriff}` }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <BookOpen size={13} style={{ color: C.begriff }} />
+              <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Begriffs-Check</span>
+            </div>
+            <p className="text-sm text-slate-800 mt-1" style={{ fontFamily: "Georgia, serif" }}>{stage.prompt}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Begriff</span>
+              <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ fontFamily: "Georgia, serif", background: stageWon ? C.begriff : "rgba(138,107,192,0.12)", color: stageWon ? "#fff" : C.begriff, border: `1px solid ${C.begriff}` }}>
+                {stageWon && <Check size={11} />} {goal.name}
+              </span>
+              <span className="text-[11px] text-slate-500">Stimmen die Bestandteile, geht es weiter zum Beweis.</span>
+            </div>
+          </section>
+        )}
+
+        {/* Tiefen-Regler (nur Beweis-Stufe) */}
+        {isProof && stage.depths.length > 1 && (
           <section className="mb-5">
             <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.14em" }} className="text-[11px] uppercase text-slate-500">Starttiefe</span>
             <div className="flex flex-wrap gap-2 mt-2 items-center">
-              {mission.depths.map((d, i) => {
+              {stage.depths.map((d, i) => {
                 const active = i === depth;
                 return (
-                  <button key={d.label} onClick={() => loadMission(missionId, i)}
+                  <button key={d.label} onClick={() => setProofDepth(i)}
                     className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors border"
                     style={{ fontFamily: "ui-monospace, monospace", background: active ? C.fakt : "rgba(255,255,255,0.5)", color: active ? "#fff" : C.ink, borderColor: active ? C.fakt : "#B7C3CF" }}>
                     {i + 1}. {d.label}
@@ -298,14 +395,12 @@ export default function BeweisCrafter() {
             </button>
           </div>
           <div ref={benchRef} className="relative rounded-2xl border-2 border-dashed overflow-hidden"
-            style={{ borderColor: drag ? C.zielHi : "#B7C3CF", background: drag ? "rgba(47,165,136,0.06)" : "rgba(255,255,255,0.35)", minHeight: 280, touchAction: "none" }}>
+            style={{ borderColor: drag ? C.zielHi : "#B7C3CF", background: drag ? "rgba(47,165,136,0.06)" : "rgba(255,255,255,0.35)", minHeight: 260, touchAction: "none" }}>
             {bench.length === 0 && !snapping && (
               <span className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 pointer-events-none px-6 text-center" style={{ fontFamily: "Georgia, serif" }}>
-                leer — Aussagen und eine Regel hierher ziehen oder tippen, dann zusammenschieben
+                {isProof ? "leer — Aussagen und eine Regel hierher, dann zusammenschieben" : "leer — die richtigen Bestandteile und „Definition festlegen“ hierher"}
               </span>
             )}
-
-            {/* Cluster-Hüllen */}
             {clustersOf(bench).filter((g) => g.length > 1).map((g, gi) => {
               const xs = g.map((it) => it.x), ys = g.map((it) => it.y);
               const left = Math.min(...xs) - TILE_W / 2 - 8, top = Math.min(...ys) - TILE_H / 2 - 8;
@@ -313,14 +408,11 @@ export default function BeweisCrafter() {
               return <div key={`cl-${gi}`} className="absolute rounded-2xl pointer-events-none transition-all"
                 style={{ left, top, width: right - left, height: bottom - top, border: `2px solid ${C.zielHi}`, background: "rgba(47,165,136,0.07)", zIndex: 0 }} />;
             })}
-
-            {/* Kacheln */}
             {bench.map((item) => {
               const isRule = item.kind === "regel";
               const face = isRule ? RULES[item.id] : FACTS[item.id];
               return (
-                <div key={item.uid} onPointerDown={(e) => startBenchDrag(e, item)}
-                  className="absolute select-none"
+                <div key={item.uid} onPointerDown={(e) => startBenchDrag(e, item)} className="absolute select-none"
                   style={{
                     left: item.x, top: item.y, transform: "translate(-50%, -50%)", touchAction: "none", cursor: "grab",
                     zIndex: drag && drag.uid === item.uid ? 30 : 5,
@@ -329,7 +421,7 @@ export default function BeweisCrafter() {
                     transition: drag && drag.kind === "bench" && drag.uid === item.uid ? "none" : "left .16s ease, top .16s ease",
                   }}>
                   <div style={{ position: "relative" }}>
-                    <TileFace kind={item.kind} block={face} isGoal={!isRule && item.id === mission.goal} flash={flash === item.id} />
+                    <TileFace kind={item.kind} block={face} isGoal={!isRule && item.id === stage.goal} flash={flash === item.id} label={!isRule ? factLabel(item.id) : undefined} />
                     <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); removeUid(item.uid); }}
                       aria-label="entfernen" className="absolute -top-2 -right-2 rounded-full flex items-center justify-center"
                       style={{ width: 20, height: 20, background: "#fff", border: "1px solid #B7C3CF", color: C.ink, fontSize: 13, lineHeight: 1, cursor: "pointer" }}>×</button>
@@ -339,14 +431,12 @@ export default function BeweisCrafter() {
             })}
           </div>
 
-          {/* Hammer + Hinweis */}
           <div className="flex items-center gap-3 mt-2 min-h-[52px]">
             <button onClick={build} disabled={bench.length === 0 || snapping}
               className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium select-none transition-all"
               style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em",
                 background: bench.length === 0 || snapping ? "#C4D0DB" : C.ziel, color: bench.length === 0 || snapping ? "#8595a4" : "#fff",
-                cursor: bench.length === 0 || snapping ? "default" : "pointer",
-                boxShadow: bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)" }}>
+                cursor: bench.length === 0 || snapping ? "default" : "pointer", boxShadow: bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)" }}>
               <Hammer size={16} /> Hammer
             </button>
             {hint ? (
@@ -356,34 +446,52 @@ export default function BeweisCrafter() {
                 <Check size={13} /> <span>Gerade gezeigt: <b>{lastIdea}</b></span>
               </p>
             ) : (
-              <p className="text-xs" style={{ color: "#8595a4" }}>Regel + passende Aussagen zusammenschieben, dann Hammer.</p>
+              <p className="text-xs" style={{ color: "#8595a4" }}>
+                {isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Die richtigen Bestandteile + „Definition festlegen“ zusammenschieben."}
+              </p>
             )}
           </div>
         </section>
 
-        {/* Erfolg */}
-        {won && (
-          <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3" style={{ background: "rgba(31,122,99,0.10)", border: `1px solid ${C.ziel}` }}>
-            <div className="mt-0.5 shrink-0 rounded-full p-1" style={{ background: C.ziel }}><Sparkles size={14} color="#fff" /></div>
+        {/* Begriff geschafft (Zwischen-Toast) */}
+        {!isProof && stageWon && (
+          <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3" style={{ background: "rgba(138,107,192,0.10)", border: `1px solid ${C.begriff}` }}>
+            <div className="mt-0.5 shrink-0 rounded-full p-1" style={{ background: C.begriff }}><Check size={14} color="#fff" /></div>
             <div>
-              <div style={{ fontFamily: "Georgia, serif", color: C.ziel }} className="text-lg font-semibold">Beweis geschafft.</div>
-              <p className="text-sm text-slate-700 mt-0.5">Du hast <b>{goal.name}</b> in {protocol.length} Schritten hergeleitet. Das Protokoll unten ist dein zusammengesetzter Beweis.</p>
+              <div style={{ fontFamily: "Georgia, serif", color: C.begriff }} className="text-base font-semibold">Begriff sitzt: {goal.name}.</div>
+              {stage.note && <p className="text-sm text-slate-700 mt-0.5">{stage.note}</p>}
+              <p className="text-xs text-slate-500 mt-1">Weiter geht’s …</p>
             </div>
           </div>
         )}
 
-        {/* VORRÄTE: Bekannte Aussagen + Schlussregeln (getrennt von der Werkbank) */}
+        {/* Beweis geschafft */}
+        {missionWon && (
+          <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3" style={{ background: "rgba(31,122,99,0.10)", border: `1px solid ${C.ziel}` }}>
+            <div className="mt-0.5 shrink-0 rounded-full p-1" style={{ background: C.ziel }}><Sparkles size={14} color="#fff" /></div>
+            <div>
+              <div style={{ fontFamily: "Georgia, serif", color: C.ziel }} className="text-lg font-semibold">Beweis geschafft.</div>
+              <p className="text-sm text-slate-700 mt-0.5">Du hast <b>{goal.name}</b> in {protocol.length} Schritten hergeleitet.</p>
+              {protocol.some((s) => s.idea) && (
+                <p className="text-sm text-slate-700 mt-1.5" style={{ fontFamily: "Georgia, serif" }}>
+                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500 mr-1.5">Beweis-Idee</span>
+                  {protocol.map((s) => s.idea).filter(Boolean).join(" → ")}.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VORRÄTE */}
         <section className="grid gap-4 md:grid-cols-2 mb-4">
-          <Shelf title="Bekannte Aussagen" dot={C.fakt} hintText="ziehen oder tippen → landet auf der Werkbank">
+          <Shelf title={isProof ? "Bekannte Aussagen" : "Bestandteile"} dot={C.fakt} hintText="ziehen oder tippen → landet auf der Werkbank">
             {have.map((id) => (
-              <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === mission.goal} label={factLabel(id)}
-                onDrag={(e) => startPaletteDrag(e, "fakt", id)} />
+              <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === stage.goal} label={factLabel(id)} onDrag={(e) => startPaletteDrag(e, "fakt", id)} />
             ))}
           </Shelf>
-          <Shelf title="Schlussregeln" dot={C.regel} hintText="genau eine Regel gehört in jede Verknüpfung">
-            {mission.pool.rules.map((id) => (
-              <PaletteTile key={id} kind="regel" block={RULES[id]}
-                onDrag={(e) => startPaletteDrag(e, "regel", id)} />
+          <Shelf title="Schlussregeln" dot={C.regel} hintText={isProof ? "genau eine Regel gehört in jede Verknüpfung" : "„Definition festlegen“ verbindet die Bestandteile"}>
+            {stage.pool.rules.map((id) => (
+              <PaletteTile key={id} kind="regel" block={RULES[id]} onDrag={(e) => startPaletteDrag(e, "regel", id)} />
             ))}
           </Shelf>
         </section>
@@ -391,14 +499,16 @@ export default function BeweisCrafter() {
         {/* Beweisprotokoll */}
         <section>
           <div className="flex items-center gap-3 mb-2">
-            <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.14em" }} className="text-[11px] uppercase text-slate-500">Beweisprotokoll</span>
-            <button onClick={resetMission} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors ml-auto" style={{ fontFamily: "ui-monospace, monospace" }}>
-              <RotateCcw size={12} /> Mission zurücksetzen
+            <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.14em" }} className="text-[11px] uppercase text-slate-500">
+              {isProof ? "Beweisprotokoll" : "Begriffs-Protokoll"}
+            </span>
+            <button onClick={resetStage} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors ml-auto" style={{ fontFamily: "ui-monospace, monospace" }}>
+              <RotateCcw size={12} /> Stufe zurücksetzen
             </button>
           </div>
           {protocol.length === 0 ? (
             <p className="text-xs text-slate-400" style={{ fontFamily: "Georgia, serif" }}>
-              noch keine Schritte — hier entsteht die Beweis-Idee, Schritt für Schritt.
+              noch keine Schritte — hier entsteht die Idee, Schritt für Schritt.
             </p>
           ) : (
             <ol className="space-y-2.5">
@@ -406,17 +516,10 @@ export default function BeweisCrafter() {
                 <li key={i} className="flex items-start gap-2.5">
                   <span className="inline-flex items-center justify-center rounded-full shrink-0 text-[10px] mt-0.5" style={{ width: 18, height: 18, background: C.ziel, color: "#fff", fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
                   <div className="min-w-0">
-                    {/* Idee zuerst — die lesbare Beweis-Geschichte */}
-                    {step.idea && (
-                      <div style={{ fontFamily: "Georgia, serif" }} className="text-sm text-slate-800 font-medium">{step.idea}</div>
-                    )}
-                    {/* Formel-Detail darunter, gedämpft */}
+                    {step.idea && <div style={{ fontFamily: "Georgia, serif" }} className="text-sm text-slate-800 font-medium">{step.idea}</div>}
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400 mt-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>
                       {step.premises.map((p, k) => (
-                        <React.Fragment key={p}>
-                          {k > 0 && <span>,</span>}
-                          <span>{FACTS[p].name}</span>
-                        </React.Fragment>
+                        <React.Fragment key={p}>{k > 0 && <span>,</span>}<span>{FACTS[p].name}</span></React.Fragment>
                       ))}
                       <ChevronRight size={11} />
                       <span style={{ color: C.regel }}>{RULES[step.rule].name}</span>
@@ -431,21 +534,19 @@ export default function BeweisCrafter() {
         </section>
 
         <footer className="mt-8 text-[11px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>
-          Werkbank-Crafting · Distraktoren, Ordnungszwang, Regelwahl und Tiefen-Regler aktiv.
+          Werkbank-Crafting · Begriffs-Check, Distraktoren, Ordnungszwang, Regelwahl und Tiefen-Regler.
         </footer>
       </div>
 
-      {/* Drag-Overlay */}
       {drag && drag.kind === "palette" && (
         <div style={{ position: "fixed", left: drag.x, top: drag.y, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 50 }}>
-          <TileFace kind={drag.tileKind} block={drag.tileKind === "regel" ? RULES[drag.id] : FACTS[drag.id]} isGoal={drag.tileKind === "fakt" && drag.id === MISSIONS.find((m) => m.id === missionId).goal} lifted />
+          <TileFace kind={drag.tileKind} block={drag.tileKind === "regel" ? RULES[drag.id] : FACTS[drag.id]} isGoal={drag.tileKind === "fakt" && drag.id === stage.goal} lifted />
         </div>
       )}
     </div>
   );
 }
 
-/* --- Vorrat-Regal --------------------------------------------------- */
 function Shelf({ title, dot, hintText, children }) {
   const empty = React.Children.count(children) === 0;
   return (
@@ -461,9 +562,6 @@ function Shelf({ title, dot, hintText, children }) {
   );
 }
 
-/* --- Ziehbare Vorrat-Kachel ----------------------------------------- */
-// Tap vs. Drag wird einheitlich im globalen pointerup-Handler entschieden
-// (Tap = kaum bewegt → addByTap; Ziehen auf die Werkbank → addToBenchAt).
 function PaletteTile({ kind, block, isGoal, label, onDrag }) {
   return (
     <div onPointerDown={onDrag} style={{ touchAction: "none", cursor: "grab" }}>
@@ -472,12 +570,12 @@ function PaletteTile({ kind, block, isGoal, label, onDrag }) {
   );
 }
 
-/* --- Gemeinsame Kachel-Optik ---------------------------------------- */
 function TileFace({ kind, block, isGoal, label, lifted, flash }) {
   const isRule = kind === "regel";
-  const base = isRule ? C.regel : isGoal ? C.ziel : C.fakt;
-  const hi = isRule ? C.regelHi : isGoal ? C.zielHi : C.faktHi;
-  const tag = isRule ? "Regel" : label || (isGoal ? "Ziel" : "Aussage");
+  const isBegriff = !isRule && block.role === "begriff";
+  const base = isRule ? C.regel : isGoal ? C.ziel : isBegriff ? C.begriff : C.fakt;
+  const hi = isRule ? C.regelHi : isGoal ? C.zielHi : isBegriff ? C.begriffHi : C.faktHi;
+  const tag = isRule ? "Regel" : label || (isGoal ? "Ziel" : isBegriff ? "Begriff" : "Aussage");
   return (
     <div style={{
       background: `linear-gradient(160deg, ${hi}, ${base})`, color: "#fff", borderRadius: 12, padding: "9px 13px", minWidth: TILE_W - 8,

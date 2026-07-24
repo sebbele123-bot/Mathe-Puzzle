@@ -65,6 +65,20 @@ export const FACTS = {
   z83_zcomp: { id: "z83_zcomp", name: "z-Komponente: 1 + t(z−1)", sub: "" },
   z83_t: { id: "z83_t", name: "t = 1/(1−z)", sub: "" },
   z83_goal: { id: "z83_goal", name: "(x,y,z) ↦ (x/(1−z), y/(1−z))", sub: "", role: "ziel" },
+
+  // ---- Begriffe (Definitionen) — Bausteine für das Begriffs-Gate ----
+  // Fixpunkt = ein Punkt z mit f(z) = z
+  def_fp_pt: { id: "def_fp_pt", name: "ein Punkt z", sub: "Objekt" },
+  def_fp_cond: { id: "def_fp_cond", name: "f(z) = z", sub: "Bedingung" },
+  def_fp_bad1: { id: "def_fp_bad1", name: "f(z) = 0", sub: "Bedingung" }, // Distraktor: Nullstelle
+  def_fp_bad2: { id: "def_fp_bad2", name: "z liegt im Bild von f", sub: "Bedingung" }, // Distraktor
+  def_fixpunkt: { id: "def_fixpunkt", name: "Fixpunkt", sub: "Punkt mit f(z) = z", role: "begriff" },
+  // Translation = Vorschrift z ↦ z + w zu einem Vektor w
+  def_tr_vec: { id: "def_tr_vec", name: "Vektor w", sub: "Objekt" },
+  def_tr_map: { id: "def_tr_map", name: "z ↦ z + w", sub: "Vorschrift" },
+  def_tr_bad1: { id: "def_tr_bad1", name: "z ↦ w·z", sub: "Vorschrift" }, // Distraktor: Streckung
+  def_tr_bad2: { id: "def_tr_bad2", name: "z ↦ z̄ + w", sub: "Vorschrift" }, // Distraktor: Gleitspiegelung
+  def_translation: { id: "def_translation", name: "Translation", sub: "z ↦ z + w", role: "begriff" },
 };
 
 // Schlussregeln — Text nennt nur die allgemeine Form der Regel,
@@ -112,6 +126,9 @@ export const RULES = {
   r83_insert: { id: "r83_insert", name: "einsetzen", sub: "t in die Gerade" },
   r83_orth: { id: "r83_orth", name: "Orthogonalprojektion", sub: "(x,y,z) ↦ (x,y)" },
   r83_norm: { id: "r83_norm", name: "Normieren", sub: "auf Länge 1" },
+
+  // Begriffs-Gate
+  r_define: { id: "r_define", name: "Definition festlegen", sub: "Bestandteile zu einem Begriff" },
 };
 
 // steps: gültige Inferenzen  { rule, premises:[factId...], produces }
@@ -192,6 +209,31 @@ export const MISSIONS = [
     title: "Ü5.1 — Verkettung von Drehungen",
     ref: "Übung 5.1",
     kind: "beweis",
+    // Begriffs-Gate: erst die Definitionen der zentralen Fachbegriffe bauen
+    vocab: [
+      {
+        term: "Fixpunkt",
+        goal: "def_fixpunkt",
+        prompt: "Bau die Definition von „Fixpunkt“: Objekt + Bedingung.",
+        note: "f(z) = 0 wäre eine Nullstelle, „z im Bild von f“ nur ein Wert — ein Fixpunkt bleibt unter f an Ort und Stelle.",
+        given: ["def_fp_pt", "def_fp_cond", "def_fp_bad1", "def_fp_bad2"],
+        pool: { facts: ["def_fp_pt", "def_fp_cond", "def_fp_bad1", "def_fp_bad2", "def_fixpunkt"], rules: ["r_define"] },
+        steps: [
+          { rule: "r_define", premises: ["def_fp_pt", "def_fp_cond"], produces: "def_fixpunkt", idea: "Fixpunkt definiert: ein Punkt mit f(z) = z" },
+        ],
+      },
+      {
+        term: "Translation",
+        goal: "def_translation",
+        prompt: "Bau die Definition von „Translation“: Objekt + Vorschrift.",
+        note: "z ↦ w·z ist eine Streckung/Drehung, z ↦ z̄ + w eine Gleitspiegelung — eine Translation verschiebt nur, ohne zu drehen oder zu spiegeln.",
+        given: ["def_tr_vec", "def_tr_map", "def_tr_bad1", "def_tr_bad2"],
+        pool: { facts: ["def_tr_vec", "def_tr_map", "def_tr_bad1", "def_tr_bad2", "def_translation"], rules: ["r_define"] },
+        steps: [
+          { rule: "r_define", premises: ["def_tr_vec", "def_tr_map"], produces: "def_translation", idea: "Translation definiert: z ↦ z + w" },
+        ],
+      },
+    ],
     claim:
       "Die Verkettung (w+)∘d der 90°-Drehung d mit Fixpunkt p und der Translation um w ist wieder eine 90°-Drehung; ihr Fixpunkt ist p′ = p + w/(1−i).",
     goal: "r51_goal",
