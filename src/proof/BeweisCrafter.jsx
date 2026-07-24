@@ -147,7 +147,7 @@ export default function BeweisCrafter() {
       const minPieces = Math.min(...stage.steps.map((s) => s.premises.length + 1));
       setHint(`Tipp: die kleinste Verknüpfung hier braucht ${minPieces} Bausteine — genau 1 Regel und ${minPieces - 1} ${isProof ? "Aussage(n)" : "Bestandteil(e)"}.`);
     } else {
-      setHint(hasPair ? "Das rastet nicht ein — andere Regel oder andere Bausteine?" : (isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Bestandteile + „Definition festlegen“ zusammenschieben, dann Hammer."));
+      setHint(hasPair ? "Das rastet nicht ein — andere Regel oder andere Bausteine?" : (isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Bestandteile + „:=“ zusammenschieben, dann Hammer."));
     }
   };
 
@@ -272,7 +272,7 @@ export default function BeweisCrafter() {
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Beweis-Baukasten</h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
             Bausteine auf die Werkbank ziehen, zusammenschieben, <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
-            Missionen mit <b>◆</b> starten mit einem Begriffs-Check: erst die Definition bauen, dann beweisen.
+            Missionen mit <b>◆</b> starten mit einem Begriffs-Check: erst den Begriff mit <b>:=</b> festlegen, dann beweisen.
           </p>
         </header>
 
@@ -343,7 +343,7 @@ export default function BeweisCrafter() {
                 {mission.vocab.map((v) => (
                   <span key={v.term} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5"
                     style={{ background: "rgba(76,75,166,0.10)", color: C.begriff, border: `1px solid ${C.begriff}` }}>
-                    <Check size={10} /> <b>{v.term}</b> = {FACTS[v.goal].sub}
+                    <Check size={10} /> <b>{v.term}</b> := {FACTS[v.goal].sub}
                   </span>
                 ))}
               </div>
@@ -398,7 +398,7 @@ export default function BeweisCrafter() {
             style={{ borderColor: drag ? C.zielHi : "#B7C3CF", background: drag ? "rgba(47,165,136,0.06)" : "rgba(255,255,255,0.35)", minHeight: 260, touchAction: "none" }}>
             {bench.length === 0 && !snapping && (
               <span className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 pointer-events-none px-6 text-center" style={{ fontFamily: "Georgia, serif" }}>
-                {isProof ? "leer — Aussagen und eine Regel hierher, dann zusammenschieben" : "leer — die richtigen Bestandteile und „Definition festlegen“ hierher"}
+                {isProof ? "leer — Aussagen und eine Regel hierher, dann zusammenschieben" : "leer — die richtigen Bestandteile und „:=“ hierher"}
               </span>
             )}
             {clustersOf(bench).filter((g) => g.length > 1).map((g, gi) => {
@@ -447,7 +447,7 @@ export default function BeweisCrafter() {
               </p>
             ) : (
               <p className="text-xs" style={{ color: "#8595a4" }}>
-                {isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Die richtigen Bestandteile + „Definition festlegen“ zusammenschieben."}
+                {isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Die richtigen Bestandteile + „:=“ zusammenschieben."}
               </p>
             )}
           </div>
@@ -489,7 +489,7 @@ export default function BeweisCrafter() {
               <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === stage.goal} label={factLabel(id)} onDrag={(e) => startPaletteDrag(e, "fakt", id)} />
             ))}
           </Shelf>
-          <Shelf title="Schlussregeln" dot={C.regel} hintText={isProof ? "genau eine Regel gehört in jede Verknüpfung" : "„Definition festlegen“ verbindet die Bestandteile"}>
+          <Shelf title="Schlussregeln" dot={C.regel} hintText={isProof ? "genau eine Regel gehört in jede Verknüpfung" : "„:=“ verbindet die Bestandteile"}>
             {stage.pool.rules.map((id) => (
               <PaletteTile key={id} kind="regel" block={RULES[id]} onDrag={(e) => startPaletteDrag(e, "regel", id)} />
             ))}

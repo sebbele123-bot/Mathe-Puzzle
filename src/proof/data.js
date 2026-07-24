@@ -128,7 +128,7 @@ export const RULES = {
   r83_norm: { id: "r83_norm", name: "Normieren", sub: "auf Länge 1" },
 
   // Begriffs-Gate
-  r_define: { id: "r_define", name: "Definition festlegen", sub: "Bestandteile zu einem Begriff" },
+  r_define: { id: "r_define", name: ":=", sub: "Begriff := Bestandteile" },
 };
 
 // steps: gültige Inferenzen  { rule, premises:[factId...], produces }
@@ -214,7 +214,7 @@ export const MISSIONS = [
       {
         term: "Fixpunkt",
         goal: "def_fixpunkt",
-        prompt: "Bau die Definition von „Fixpunkt“: Objekt + Bedingung.",
+        prompt: "Bau „Fixpunkt :=“ aus Objekt + Bedingung.",
         note: "f(z) = 0 wäre eine Nullstelle, „z im Bild von f“ nur ein Wert — ein Fixpunkt bleibt unter f an Ort und Stelle.",
         given: ["def_fp_pt", "def_fp_cond", "def_fp_bad1", "def_fp_bad2"],
         pool: { facts: ["def_fp_pt", "def_fp_cond", "def_fp_bad1", "def_fp_bad2", "def_fixpunkt"], rules: ["r_define"] },
@@ -225,7 +225,7 @@ export const MISSIONS = [
       {
         term: "Translation",
         goal: "def_translation",
-        prompt: "Bau die Definition von „Translation“: Objekt + Vorschrift.",
+        prompt: "Bau „Translation :=“ aus Objekt + Vorschrift.",
         note: "z ↦ w·z ist eine Streckung/Drehung, z ↦ z̄ + w eine Gleitspiegelung — eine Translation verschiebt nur, ohne zu drehen oder zu spiegeln.",
         given: ["def_tr_vec", "def_tr_map", "def_tr_bad1", "def_tr_bad2"],
         pool: { facts: ["def_tr_vec", "def_tr_map", "def_tr_bad1", "def_tr_bad2", "def_translation"], rules: ["r_define"] },
