@@ -7,3 +7,15 @@ export const SYM_ALL = PALETTE_CATEGORIES.flatMap((c) =>
 );
 export const SYM_BY_ID = Object.fromEntries(SYM_ALL.map((s) => [s.id, s]));
 export const symLabel = (s) => (s ? DE[s.id] || s.name : "");
+
+// --- gesammeltes Inventar (Minecraft-Lager) im localStorage -----------
+const INV_KEY = "mp_inventory_v1";
+export const loadCollection = () => {
+  try {
+    const c = JSON.parse(localStorage.getItem(INV_KEY) || "[]");
+    return Array.isArray(c) ? c.filter((id) => SYM_BY_ID[id]) : [];
+  } catch { return []; }
+};
+export const saveCollection = (ids) => {
+  try { localStorage.setItem(INV_KEY, JSON.stringify(ids)); } catch { /* ignore */ }
+};

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Grid3x3 } from "lucide-react";
-import { PALETTE_CATEGORIES, PALETTE_META } from "./data/openmath.js";
+import { Search, X, Grid3x3, Plus } from "lucide-react";
+import { PALETTE_CATEGORIES } from "./data/openmath.js";
 import { CAT_COLOR } from "./OpenMathPalette.jsx";
 import { SYM_ALL, SYM_BY_ID, symLabel } from "./data/symbols.js";
 
@@ -31,7 +31,7 @@ const CATS = PALETTE_CATEGORIES.map((c) => ({
 // Inventar startet leer — der Spieler sammelt seine Bausteine selbst ein.
 const DEFAULT_HOTBAR = Array(SLOTS).fill(null);
 
-export default function Inventory({ onActive }) {
+export default function Inventory({ onActive, collection = [], onDiscard, onBrowse }) {
   const [hotbar, setHotbar] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
@@ -98,13 +98,21 @@ export default function Inventory({ onActive }) {
     if (e.shiftKey) quickMove(id); else assign(id);
   };
 
+  // nur die gesammelten Bausteine (Minecraft-Lager) — nicht der ganze Katalog
+  const owned = useMemo(() => collection.map((id) => BY_ID[id]).filter(Boolean), [collection]);
+  // Kategorie-Chips nur für vorhandene Kategorien
+  const ownedCats = useMemo(() => {
+    const present = new Set(owned.map((s) => s.cat));
+    return CATS.filter((c) => present.has(c.id));
+  }, [owned]);
+
   const q = query.trim().toLowerCase();
   const results = useMemo(() => {
-    let list = cat ? ALL.filter((s) => s.cat === cat) : ALL;
+    let list = cat ? owned.filter((s) => s.cat === cat) : owned;
     if (q) list = list.filter((s) => s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) ||
       s.desc.toLowerCase().includes(q) || deLabel(s).toLowerCase().includes(q));
     return list;
-  }, [q, cat]);
+  }, [q, cat, owned]);
 
   // aktuelle Spaltenzahl des Rasters (für Pfeil-hoch/runter)
   const cols = () => {
@@ -210,8 +218,13 @@ export default function Inventory({ onActive }) {
             <div className="px-3 pt-2.5 pb-2 border-b" style={{ borderColor: "#C4D0DB" }}>
               <div className="flex items-center gap-2 mb-2">
                 <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-base font-semibold">Inventar</span>
-                <span className="hidden sm:inline text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {results.length}/{PALETTE_META.count} · Klick → Slot <b>{active + 1}</b></span>
-                <button onClick={() => setOpen(false)} aria-label="schließen" className="ml-auto rounded-lg p-1.5 hover:bg-slate-200 transition-colors"><X size={16} /></button>
+                <span className="hidden sm:inline text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {owned.length} gesammelt · Klick → Slot <b>{active + 1}</b></span>
+                <button onClick={() => { setOpen(false); onBrowse?.(); }} title="in den Bausteinen sammeln"
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs border transition-colors"
+                  style={{ fontFamily: "ui-monospace, monospace", background: "#fff", borderColor: "#B7C3CF", color: C.ink }}>
+                  <Plus size={13} /> sammeln
+                </button>
+                <button onClick={() => setOpen(false)} aria-label="schließen" className="rounded-lg p-1.5 hover:bg-slate-200 transition-colors"><X size={16} /></button>
               </div>
               <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border" style={{ background: "#fff", borderColor: "#B7C3CF" }}>
                 <Search size={14} className="text-slate-400 shrink-0" />
@@ -221,25 +234,27 @@ export default function Inventory({ onActive }) {
               </div>
             </div>
 
-            {/* Kategorie-Chips (horizontal scrollbar) — spart Scrollen im Raster */}
-            <div className="flex gap-1.5 px-3 py-2 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB", scrollbarWidth: "none" }}>
-              <button onClick={() => setCat(null)}
-                className="shrink-0 rounded-full px-2.5 py-1 text-[11px] transition-colors border"
-                style={{ fontFamily: "ui-monospace, monospace",
-                  background: cat === null ? C.ink : "#fff", color: cat === null ? "#fff" : C.ink,
-                  borderColor: cat === null ? C.ink : "#C4D0DB" }}>alle</button>
-              {CATS.map((c) => (
-                <button key={c.id} onClick={() => setCat((x) => (x === c.id ? null : c.id))}
-                  title={`${c.title} (${c.n})`}
-                  className="shrink-0 rounded-full pl-1.5 pr-2.5 py-1 text-[11px] transition-colors border flex items-center gap-1.5"
+            {/* Kategorie-Chips — nur für Kategorien, die im Lager vorkommen */}
+            {ownedCats.length > 0 && (
+              <div className="flex gap-1.5 px-3 py-2 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB", scrollbarWidth: "none" }}>
+                <button onClick={() => setCat(null)}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] transition-colors border"
                   style={{ fontFamily: "ui-monospace, monospace",
-                    background: cat === c.id ? c.color : "#fff", color: cat === c.id ? "#fff" : C.ink,
-                    borderColor: cat === c.id ? c.color : "#C4D0DB" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 99, background: c.color, display: "inline-block", opacity: cat === c.id ? 0 : 1 }} />
-                  {c.title}
-                </button>
-              ))}
-            </div>
+                    background: cat === null ? C.ink : "#fff", color: cat === null ? "#fff" : C.ink,
+                    borderColor: cat === null ? C.ink : "#C4D0DB" }}>alle</button>
+                {ownedCats.map((c) => (
+                  <button key={c.id} onClick={() => setCat((x) => (x === c.id ? null : c.id))}
+                    title={c.title}
+                    className="shrink-0 rounded-full pl-1.5 pr-2.5 py-1 text-[11px] transition-colors border flex items-center gap-1.5"
+                    style={{ fontFamily: "ui-monospace, monospace",
+                      background: cat === c.id ? c.color : "#fff", color: cat === c.id ? "#fff" : C.ink,
+                      borderColor: cat === c.id ? c.color : "#C4D0DB" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 99, background: c.color, display: "inline-block", opacity: cat === c.id ? 0 : 1 }} />
+                    {c.title}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* aktive Slots-Vorschau (kompakt) */}
             <div className="flex gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB", scrollbarWidth: "none" }}>
@@ -256,37 +271,61 @@ export default function Inventory({ onActive }) {
               })}
             </div>
 
-            {/* Baustein-Raster — kleinere Kacheln, mehr pro Bildschirm */}
-            <div ref={gridRef} className="overflow-y-auto p-2 flex-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(50px, 1fr))", gap: 4 }}>
-              {results.map((s, i) => {
-                const focused = i === focusIdx;
-                return (
-                <button key={s.id}
-                  ref={focused ? focusRef : null}
-                  onClick={(e) => itemClick(e, s.id)}
-                  onPointerDown={() => startPress(s.id)}
-                  onPointerUp={endPress}
-                  onPointerEnter={() => { setHovered(s.id); setFocusIdx(i); }}
-                  onPointerLeave={() => { endPress(); setHovered((h) => (h === s.id ? null : h)); }}
-                  onContextMenu={(e) => e.preventDefault()}
-                  title={`${s.glyph} ${deLabel(s)} — Klick: Slot ${active + 1} · Shift/Halten: einsammeln`}
-                  className="rounded-md flex flex-col items-center justify-center transition-all"
-                  style={{ minHeight: 44, padding: "3px 1px", color: "#fff",
-                    background: `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${s.color}`,
-                    border: (hovered === s.id || focused) ? "2px solid #fff" : "1px solid rgba(255,255,255,0.18)",
-                    outline: focused ? "2px solid rgba(255,255,255,0.55)" : "none", outlineOffset: 1,
-                    cursor: "pointer", touchAction: "none" }}>
-                  <span style={{ fontFamily: "Georgia, serif", fontSize: 16, lineHeight: 1 }}>{s.glyph}</span>
-                  <span style={{ fontSize: 7, opacity: 0.85, marginTop: 1, maxWidth: "100%" }} className="truncate px-0.5 text-center">{deLabel(s)}</span>
+            {/* leeres Lager: freundlicher Hinweis + Sammeln-Knopf */}
+            {owned.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <div className="grid" style={{ gridTemplateColumns: "repeat(4, 44px)", gap: 6 }}>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="rounded-md" style={{ width: 44, height: 44, background: "rgba(27,36,48,0.04)", border: "1px dashed #C4D0DB" }} />
+                  ))}
+                </div>
+                <div className="text-sm text-slate-500" style={{ fontFamily: "Georgia, serif" }}>Dein Inventar ist leer.</div>
+                <button onClick={() => { setOpen(false); onBrowse?.(); }}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm" style={{ background: C.ink, color: "#fff", fontFamily: "ui-monospace, monospace" }}>
+                  <Plus size={14} /> Bausteine sammeln
                 </button>
-                );
-              })}
-              {results.length === 0 && <span className="text-sm text-slate-400 p-2" style={{ fontFamily: "Georgia, serif" }}>Nichts gefunden.</span>}
-            </div>
+                <div className="text-[11px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>In den <b>Bausteinen</b> ein Symbol mit <b>+</b> einsammeln — es landet hier.</div>
+              </div>
+            ) : (
+              <>
+                {/* Lager-Raster: gesammelte Bausteine + leere Slots (Truhen-Optik) */}
+                <div ref={gridRef} className="overflow-y-auto p-2 flex-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(50px, 1fr))", gridAutoRows: 52, alignContent: "start", gap: 4 }}>
+                  {results.map((s, i) => {
+                    const focused = i === focusIdx;
+                    return (
+                    <button key={s.id}
+                      ref={focused ? focusRef : null}
+                      onClick={(e) => itemClick(e, s.id)}
+                      onPointerDown={() => startPress(s.id)}
+                      onPointerUp={endPress}
+                      onPointerEnter={() => { setHovered(s.id); setFocusIdx(i); }}
+                      onPointerLeave={() => { endPress(); setHovered((h) => (h === s.id ? null : h)); }}
+                      onContextMenu={(e) => { e.preventDefault(); onDiscard?.(s.id); flash(`${s.glyph} abgelegt`); }}
+                      title={`${s.glyph} ${deLabel(s)} — Klick: Slot ${active + 1} · Shift/Halten: einsammeln · Rechtsklick: ablegen`}
+                      className="rounded-md flex flex-col items-center justify-center transition-all"
+                      style={{ minHeight: 44, padding: "3px 1px", color: "#fff",
+                        background: `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${s.color}`,
+                        border: (hovered === s.id || focused) ? "2px solid #fff" : "1px solid rgba(255,255,255,0.18)",
+                        outline: focused ? "2px solid rgba(255,255,255,0.55)" : "none", outlineOffset: 1,
+                        cursor: "pointer", touchAction: "none" }}>
+                      <span style={{ fontFamily: "Georgia, serif", fontSize: 16, lineHeight: 1 }}>{s.glyph}</span>
+                      <span style={{ fontSize: 7, opacity: 0.85, marginTop: 1, maxWidth: "100%" }} className="truncate px-0.5 text-center">{deLabel(s)}</span>
+                    </button>
+                    );
+                  })}
+                  {/* leere Slots zum Auffüllen (nur in der ungefilterten Gesamtansicht) */}
+                  {!cat && !q && Array.from({ length: Math.max(0, 24 - results.length) }).map((_, i) => (
+                    <button key={`empty-${i}`} onClick={() => { setOpen(false); onBrowse?.(); }} title="leerer Slot — sammeln"
+                      className="rounded-md" style={{ minHeight: 44, background: "rgba(27,36,48,0.035)", border: "1px dashed #C4D0DB", cursor: "pointer" }} />
+                  ))}
+                  {results.length === 0 && <span className="text-sm text-slate-400 p-2" style={{ fontFamily: "Georgia, serif" }}>Nichts gefunden.</span>}
+                </div>
 
-            <div className="px-4 py-2 border-t text-[11px] text-slate-500" style={{ borderColor: "#C4D0DB", fontFamily: "ui-monospace, monospace" }}>
-              Navigieren: <b>Pfeiltasten</b> · <b>Enter</b> → Slot {active + 1} (Shift+Enter → einsammeln) · <b>Taste 1–8</b> → in genau diesen Slot. Maus: Klick → aktiver Slot · <b>gedrückt halten</b>/​<b>Shift+Klick</b> → einsammeln.
-            </div>
+                <div className="px-4 py-2 border-t text-[11px] text-slate-500" style={{ borderColor: "#C4D0DB", fontFamily: "ui-monospace, monospace" }}>
+                  <b>Pfeiltasten</b> navigieren · <b>Enter</b> → Slot {active + 1} · <b>Taste 1–8</b> → in diesen Slot · <b>Rechtsklick</b>/Kontextmenü → ablegen. Neue Bausteine per <b>+ sammeln</b>.
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

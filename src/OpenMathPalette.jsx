@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Search, ChevronDown, Languages } from "lucide-react";
+import { Search, ChevronDown, Languages, Plus, Check } from "lucide-react";
 import { PALETTE_CATEGORIES, PALETTE_META, DE } from "./data/openmath.js";
 
 const deName = (s) => DE[`${s.cd}.${s.name}`] || s.name;
@@ -31,7 +31,7 @@ export const CAT_COLOR = {
   extra_strukturen: "#2E6B7D",
 };
 
-export default function OpenMathPalette() {
+export default function OpenMathPalette({ collected, onCollect }) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(null); // Kategorie-id oder null = alle
   const [collapsed, setCollapsed] = useState({});
@@ -81,7 +81,7 @@ export default function OpenMathPalette() {
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
             {PALETTE_META.count} atomare Bausteine, kategorisiert — {PALETTE_META.openmath} aus den offiziellen OpenMath-CDs
             plus {PALETTE_META.extra} <b>Ergänzungen</b> aus elementaren Einführungsskripten (Geometrie, Abbildungstypen &amp; Linearität, Analysis u. a.).
-            Tippe einen Baustein an, um sein Zeichen zu kopieren.
+            Antippen kopiert das Zeichen · mit <b>+</b> (Ecke) sammelst du den Baustein in dein <b>Inventar</b>.
           </p>
         </header>
 
@@ -165,11 +165,15 @@ export default function OpenMathPalette() {
                 </button>
                 {!isCollapsed && (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(74px, 1fr))", gap: 6 }}>
-                    {c.hits.map((s) => (
-                      <SymbolTile key={`${s.cd}.${s.name}`} sym={{ ...s, id: `${s.cd}.${s.name}` }}
+                    {c.hits.map((s) => {
+                      const sid = `${s.cd}.${s.name}`;
+                      return (
+                      <SymbolTile key={sid} sym={{ ...s, id: sid }}
                         label={lang === "de" ? deName(s) : s.name} color={color}
-                        copied={copied === `${s.cd}.${s.name}`} selected={selected?.id === `${s.cd}.${s.name}`} onClick={copy} />
-                    ))}
+                        copied={copied === sid} selected={selected?.id === sid} onClick={copy}
+                        owned={collected?.has(sid)} onCollect={onCollect} />
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -203,24 +207,35 @@ function FilterChip({ label, color, active, onClick }) {
   );
 }
 
-function SymbolTile({ sym, label, color, copied, selected, onClick }) {
+function SymbolTile({ sym, label, color, copied, selected, onClick, owned, onCollect }) {
   return (
-    <button
-      onClick={() => onClick(sym, color)}
-      title={`${sym.glyph}  ${sym.name} (${sym.cd}) — ${sym.desc}`}
-      className="rounded-lg transition-all flex flex-col items-center justify-center"
-      style={{
-        background: `linear-gradient(160deg, rgba(255,255,255,0.20), rgba(255,255,255,0)), ${color}`,
-        color: "#fff",
-        padding: "6px 3px",
-        minHeight: 58,
-        border: selected ? "2px solid #1B2430" : "1px solid rgba(255,255,255,0.18)",
-        boxShadow: copied ? `0 0 0 3px ${color}88` : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
-        cursor: "pointer",
-      }}
-    >
-      <span style={{ fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1.05 }} className="font-semibold text-center">{sym.glyph}</span>
-      <span style={{ fontSize: 8.5, opacity: 0.85, maxWidth: "100%" }} className="mt-1 truncate px-0.5 text-center">{label || sym.name}</span>
-    </button>
+    <div className="relative">
+      <button
+        onClick={() => onClick(sym, color)}
+        title={`${sym.glyph}  ${sym.name} (${sym.cd}) — ${sym.desc}`}
+        className="w-full rounded-lg transition-all flex flex-col items-center justify-center"
+        style={{
+          background: `linear-gradient(160deg, rgba(255,255,255,0.20), rgba(255,255,255,0)), ${color}`,
+          color: "#fff",
+          padding: "6px 3px",
+          minHeight: 58,
+          border: selected ? "2px solid #1B2430" : owned ? "2px solid rgba(255,255,255,0.9)" : "1px solid rgba(255,255,255,0.18)",
+          boxShadow: copied ? `0 0 0 3px ${color}88` : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1.05 }} className="font-semibold text-center">{sym.glyph}</span>
+        <span style={{ fontSize: 8.5, opacity: 0.85, maxWidth: "100%" }} className="mt-1 truncate px-0.5 text-center">{label || sym.name}</span>
+      </button>
+      {/* Sammeln-Knopf (Ecke): fügt den Baustein dem Inventar hinzu / entfernt ihn */}
+      {onCollect && (
+        <button onClick={(e) => { e.stopPropagation(); onCollect(sym.id); }}
+          title={owned ? "im Inventar — entfernen" : "einsammeln (ins Inventar)"}
+          className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center transition-colors"
+          style={{ width: 20, height: 20, background: owned ? "#1F7A63" : "#fff", color: owned ? "#fff" : color, border: `1px solid ${owned ? "#1F7A63" : "#B7C3CF"}`, cursor: "pointer" }}>
+          {owned ? <Check size={12} /> : <Plus size={12} />}
+        </button>
+      )}
+    </div>
   );
 }

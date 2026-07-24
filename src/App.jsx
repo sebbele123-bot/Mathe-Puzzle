@@ -6,6 +6,7 @@ import OpenMathPalette from "./OpenMathPalette.jsx";
 import Bibliothek from "./Bibliothek.jsx";
 import Werkbank from "./Werkbank.jsx";
 import Inventory from "./Inventory.jsx";
+import { loadCollection, saveCollection } from "./data/symbols.js";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
 
@@ -13,7 +14,13 @@ export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "definition" | "beweis" | "bausteine"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null }); // aus der Bibliothek angeforderte Mission je Ansicht
   const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
+  const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [fs, setFs] = useState(false);
+
+  useEffect(() => { saveCollection(collection); }, [collection]);
+  const collect = useCallback((id) => setCollection((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id])), []);
+  const discard = useCallback((id) => setCollection((c) => c.filter((x) => x !== id)), []);
+  const collectedSet = React.useMemo(() => new Set(collection), [collection]);
   const [fsHint, setFsHint] = useState("");
   const rootRef = useRef(null);
 
@@ -122,13 +129,13 @@ export default function App() {
       ) : mode === "definition" ? (
         <StrukturBaukasten initialId={openReq.definition} />
       ) : mode === "bausteine" ? (
-        <OpenMathPalette />
+        <OpenMathPalette collected={collectedSet} onCollect={collect} />
       ) : (
         <BeweisCrafter initialId={openReq.beweis} />
       )}
 
-      {/* Minecraft-artiges Inventar: Hotbar (1–8) + volles Inventar (E) */}
-      <Inventory onActive={setActiveSymbol} />
+      {/* Minecraft-artiges Inventar: Hotbar (1–8) + gesammeltes Lager (E) */}
+      <Inventory onActive={setActiveSymbol} collection={collection} onDiscard={discard} onBrowse={() => setMode("bausteine")} />
     </div>
   );
 }
