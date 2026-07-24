@@ -39,7 +39,10 @@ export default function Inventory() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState("");
+  const [hovered, setHovered] = useState(null); // Item-id, über dem der Zeiger schwebt (Desktop)
   const toastTimer = useRef(null);
+  const pressTimer = useRef(null);
+  const longRef = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(hotbar)); } catch { /* ignore */ }
@@ -58,24 +61,48 @@ export default function Inventory() {
     flash(`${b.glyph} kopiert`);
   };
   const selectSlot = (i) => { setActive(i); };
-  const assign = (blockId) => {
-    setHotbar((h) => h.map((x, i) => (i === active ? blockId : x)));
-    flash(`${BY_ID[blockId].glyph} → Slot ${active + 1}`);
+  const assignTo = (i, blockId) => {
+    setHotbar((h) => h.map((x, k) => (k === i ? blockId : x)));
+    flash(`${BY_ID[blockId].glyph} → Slot ${i + 1}`);
+  };
+  const assign = (blockId) => assignTo(active, blockId);
+  // schnelles Einsammeln: in den ersten freien Slot; sonst aktiven Slot + weiterrücken
+  const quickMove = (blockId) => {
+    let idx = hotbar.indexOf(null);
+    if (idx === -1) { idx = active; setActive((active + 1) % SLOTS); }
+    setHotbar((h) => h.map((x, k) => (k === idx ? blockId : x)));
+    flash(`${BY_ID[blockId].glyph} eingesammelt → Slot ${idx + 1}`);
   };
   const clearSlot = (i) => setHotbar((h) => h.map((x, k) => (k === i ? null : x)));
+
+  // Langdruck (Mobil) = einsammeln; unterdrückt den folgenden Klick
+  const startPress = (id) => {
+    longRef.current = false;
+    clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => { longRef.current = true; quickMove(id); }, 420);
+  };
+  const endPress = () => clearTimeout(pressTimer.current);
+  const itemClick = (e, id) => {
+    if (longRef.current) { longRef.current = false; return; } // Langdruck hat schon eingesammelt
+    if (e.shiftKey) quickMove(id); else assign(id);
+  };
 
   // Tastatur: 1–8 wählt Slot, E öffnet/schließt Inventar, Esc schließt
   useEffect(() => {
     const onKey = (e) => {
       const t = e.target;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.key >= "1" && e.key <= String(SLOTS)) { setActive(Number(e.key) - 1); e.preventDefault(); }
-      else if (e.key === "e" || e.key === "E") { setOpen((o) => !o); e.preventDefault(); }
+      if (e.key >= "1" && e.key <= String(SLOTS)) {
+        const i = Number(e.key) - 1;
+        if (open && hovered) assignTo(i, hovered); // über Item schweben + Ziffer → in diesen Slot
+        else setActive(i);
+        e.preventDefault();
+      } else if (e.key === "e" || e.key === "E") { setOpen((o) => !o); e.preventDefault(); }
       else if (e.key === "Escape" && open) { setOpen(false); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, hovered, hotbar, active]); // eslint-disable-line
 
   const q = query.trim().toLowerCase();
   const results = useMemo(() => {
@@ -138,7 +165,7 @@ export default function Inventory() {
             {/* Kopf */}
             <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "#C4D0DB" }}>
               <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-base font-semibold">Inventar</span>
-              <span className="text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {PALETTE_META.count} Bausteine · Klick legt in Slot <b>{active + 1}</b></span>
+              <span className="text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {PALETTE_META.count} Bausteine · Klick → Slot <b>{active + 1}</b> · Halten/Shift → einsammeln</span>
               <div className="ml-auto flex items-center gap-2 rounded-lg px-2.5 py-1.5 border" style={{ background: "#fff", borderColor: "#B7C3CF" }}>
                 <Search size={14} className="text-slate-400" />
                 <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="suchen …"
@@ -165,11 +192,19 @@ export default function Inventory() {
             {/* Baustein-Raster */}
             <div className="overflow-y-auto p-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: 5 }}>
               {results.map((s) => (
-                <button key={s.id} onClick={() => assign(s.id)} title={`${s.glyph} ${deLabel(s)} → Slot ${active + 1}`}
+                <button key={s.id}
+                  onClick={(e) => itemClick(e, s.id)}
+                  onPointerDown={() => startPress(s.id)}
+                  onPointerUp={endPress}
+                  onPointerEnter={() => setHovered(s.id)}
+                  onPointerLeave={() => { endPress(); setHovered((h) => (h === s.id ? null : h)); }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  title={`${s.glyph} ${deLabel(s)} — Klick: Slot ${active + 1} · Shift/Halten: einsammeln`}
                   className="rounded-lg flex flex-col items-center justify-center transition-all"
                   style={{ minHeight: 52, padding: "5px 2px", color: "#fff",
                     background: `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${s.color}`,
-                    border: "1px solid rgba(255,255,255,0.18)", cursor: "pointer" }}>
+                    border: hovered === s.id ? "2px solid #fff" : "1px solid rgba(255,255,255,0.18)",
+                    cursor: "pointer", touchAction: "none" }}>
                   <span style={{ fontFamily: "Georgia, serif", fontSize: 18, lineHeight: 1 }}>{s.glyph}</span>
                   <span style={{ fontSize: 7.5, opacity: 0.85, marginTop: 2, maxWidth: "100%" }} className="truncate px-0.5 text-center">{deLabel(s)}</span>
                 </button>
@@ -178,7 +213,7 @@ export default function Inventory() {
             </div>
 
             <div className="px-4 py-2 border-t text-[11px] text-slate-500" style={{ borderColor: "#C4D0DB", fontFamily: "ui-monospace, monospace" }}>
-              Tasten 1–8: Slot wählen · E: Inventar · Rechtsklick auf Slot: leeren · Klick auf aktiven Slot: Zeichen kopieren
+              Einsammeln: <b>gedrückt halten</b> (Mobil) · <b>Shift+Klick</b> · über ein Item <b>schweben + Taste 1–8</b> (Desktop) → in genau diesen Slot. Normaler Klick → aktiver Slot.
             </div>
           </div>
         </div>
