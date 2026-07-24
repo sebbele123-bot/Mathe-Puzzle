@@ -1,7 +1,7 @@
 /* ====================================================================
  *  Beweis-Baukasten — Engine
- *  Prüft, ob (Regel + gewählte Prämissen-Fakten) eine gültige Inferenz
- *  der aktuellen Mission ist, und liefert erklärendes Feedback.
+ *  Prüft, ob ein Werkbank-Cluster (genau eine Regel + einige Aussagen)
+ *  eine gültige Inferenz der aktuellen Mission ist.
  * ==================================================================== */
 
 // Multimengen-Gleichheit (Duplikate zählen)
@@ -9,71 +9,36 @@ const sameMultiset = (a, b) =>
   a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
 
 /**
- * Einen Zug auswerten.
- * @param mission   aktuelle Mission
- * @param have      Set<factId> — bereits bewiesene/gegebene Fakten
- * @param ruleId    gewählte Schlussregel
- * @param premises  Array<factId> — die als Prämissen ausgewählten Fakten
- * @returns { ok, produces?, status, message }
- *   status: "success" | "sackgasse" | "known" | "order"
- *         | "rule-mismatch" | "no-rule" | "empty"
+ * Ein Werkbank-Cluster auswerten.
+ * @param mission  aktuelle Mission
+ * @param have     Set<factId> — bereits bekannte Aussagen (gegeben + gefolgert)
+ * @param tiles    [{ kind: "fakt"|"regel", id }]
+ * @returns { ok, produces?, rule?, premises?, reason }
+ *   reason: "ok" | "need-one-rule" | "order" | "no-match"
  */
-export function evaluate(mission, have, ruleId, premises) {
-  if (!ruleId) return { ok: false, status: "empty", message: "Wähle zuerst eine Schlussregel." };
-  if (premises.length === 0)
-    return { ok: false, status: "empty", message: "Wähle die Fakten aus, auf die die Regel wirken soll." };
+export function craftFromCluster(mission, have, tiles) {
+  const rules = tiles.filter((t) => t.kind === "regel");
+  const facts = tiles.filter((t) => t.kind === "fakt").map((t) => t.id);
 
-  // Ordnungszwang: nur bereits vorhandene Fakten dürfen Prämisse sein
-  const missing = premises.filter((p) => !have.has(p));
-  if (missing.length > 0)
-    return {
-      ok: false,
-      status: "order",
-      message: "Diese Fakten sind noch nicht bewiesen — leite sie erst her.",
-    };
+  if (rules.length !== 1 || facts.length === 0)
+    return { ok: false, reason: "need-one-rule" };
 
-  // exakter Treffer: Regel UND Prämissen-Multimenge stimmen mit einem Schritt überein
-  const exact = mission.steps.find(
-    (s) => s.rule === ruleId && sameMultiset(s.premises, premises)
+  const ruleId = rules[0].id;
+
+  // Ordnungszwang: nur bereits bekannte Aussagen dürfen Prämisse sein.
+  // (Über die Vorräte kann man nur Bekanntes ziehen; diese Prüfung ist die
+  //  zusätzliche Absicherung.)
+  if (!facts.every((f) => have.has(f))) return { ok: false, reason: "order" };
+
+  const step = mission.steps.find(
+    (s) => s.rule === ruleId && sameMultiset(s.premises, facts)
   );
-  if (exact) {
-    const isDeadEnd = mission._deadEnds?.has(exact.produces);
-    if (have.has(exact.produces))
-      return { ok: false, status: "known", produces: exact.produces, message: "Diesen Fakt hast du schon." };
-    return {
-      ok: true,
-      produces: exact.produces,
-      status: isDeadEnd ? "sackgasse" : "success",
-      message: isDeadEnd
-        ? "Gültiger Schritt — aber er führt in eine Sackgasse, nicht zum Ziel."
-        : "Schritt bewiesen.",
-    };
-  }
+  if (!step) return { ok: false, reason: "no-match" };
 
-  // Regel existiert, aber passt nicht zu genau diesen Prämissen
-  const ruleUsedSomewhere = mission.steps.some((s) => s.rule === ruleId);
-  if (ruleUsedSomewhere)
-    return {
-      ok: false,
-      status: "rule-mismatch",
-      message: "Diese Regel greift, aber nicht auf genau diese Fakten. Andere Auswahl?",
-    };
-
-  return {
-    ok: false,
-    status: "no-rule",
-    message: "Diese Regel führt hier zu keinem gültigen Schluss.",
-  };
+  return { ok: true, produces: step.produces, rule: ruleId, premises: facts };
 }
 
-/** Menge der Sackgassen-Fakten einer Mission (aus den FACTS-Rollen). */
-export function deadEndSet(mission, FACTS) {
-  const s = new Set();
-  for (const id of mission.pool.facts) if (FACTS[id]?.role === "sackgasse") s.add(id);
-  return s;
-}
-
-/** Startfakten für eine Tiefenstufe. */
+/** Startaussagen für eine Tiefenstufe. */
 export function givenFor(mission, depthIndex) {
   const d = mission.depths[Math.min(depthIndex, mission.depths.length - 1)];
   return d.given;
