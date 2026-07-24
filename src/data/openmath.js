@@ -1,0 +1,250 @@
+/* ====================================================================
+ *  OpenMath-Bausteine — kategorisiertes Inventar
+ * --------------------------------------------------------------------
+ *  Symbole aus den offiziellen OpenMath Content Dictionaries (CDs),
+ *  gezogen aus github.com/OpenMath/CDs (cd/Official/*.ocd) und sinnvoll
+ *  in Baustein-Kategorien gruppiert — als mögliche atomare Bausteine
+ *  für den Baukasten (Verknüpfungen, Relationen, Abbildungen, …).
+ *
+ *  Jede Zeile: { name (OpenMath-Symbol), glyph (Anzeige), cd, desc }.
+ *  Enthaltene CDs: arith1, integer1, minmax1, relation1, relation3,
+ *  set1, list1, interval1, setname1, fns1, fns2, calculus1, transc1,
+ *  linalg1, linalg2, complex1, logic1, quant1, nums1, alg1.
+ *  Weggelassen: rein technische/Meta-CDs (meta*, sts, error, altenc,
+ *  mathml*, scscp*, s_data1, s_dist1, bigfloat1, rounding1, piece1,
+ *  limit1, veccalc1, multiset1) — bei Bedarf ergänzbar.
+ *
+ *  Hinweis: Struktur-Eigenschaften wie „assoziativ“/„kommutativ“ sind
+ *  in OpenMath keine eigenen Symbole, sondern formale Eigenschaften
+ *  (FMPs) an den Symbolen. Die nächsten atomaren „Eigenschafts“-
+ *  Bausteine sind Neutralelemente (alg1) und Relations-Eigenschaften
+ *  (relation3).
+ * ==================================================================== */
+
+export const OPENMATH_CATEGORIES = [
+  {
+    id: "zahlbereiche",
+    title: "Grundmengen (Zahlbereiche)",
+    desc: "Standard-Trägermengen — die Rohmaterialien.",
+    symbols: [
+      { name: "N", glyph: "ℕ", cd: "setname1", desc: "natürliche Zahlen (mit 0)" },
+      { name: "Z", glyph: "ℤ", cd: "setname1", desc: "ganze Zahlen" },
+      { name: "Q", glyph: "ℚ", cd: "setname1", desc: "rationale Zahlen" },
+      { name: "R", glyph: "ℝ", cd: "setname1", desc: "reelle Zahlen" },
+      { name: "C", glyph: "ℂ", cd: "setname1", desc: "komplexe Zahlen" },
+      { name: "P", glyph: "ℙ", cd: "setname1", desc: "Primzahlen" },
+    ],
+  },
+  {
+    id: "verknuepfungen",
+    title: "Verknüpfungen (Operationen)",
+    desc: "Innere Verknüpfungen und Grundrechenarten.",
+    symbols: [
+      { name: "plus", glyph: "+", cd: "arith1", desc: "Addition (n-är, kommutativ)" },
+      { name: "minus", glyph: "−", cd: "arith1", desc: "Subtraktion (binär)" },
+      { name: "unary_minus", glyph: "−a", cd: "arith1", desc: "additives Inverses" },
+      { name: "times", glyph: "×", cd: "arith1", desc: "Multiplikation (n-är)" },
+      { name: "divide", glyph: "÷", cd: "arith1", desc: "Division (binär)" },
+      { name: "power", glyph: "aᵇ", cd: "arith1", desc: "Potenz" },
+      { name: "root", glyph: "√", cd: "arith1", desc: "n-te Wurzel" },
+      { name: "abs", glyph: "|a|", cd: "arith1", desc: "Betrag" },
+      { name: "gcd", glyph: "ggT", cd: "arith1", desc: "größter gemeinsamer Teiler" },
+      { name: "lcm", glyph: "kgV", cd: "arith1", desc: "kleinstes gemeinsames Vielfaches" },
+      { name: "sum", glyph: "Σ", cd: "arith1", desc: "Summe über einen Bereich" },
+      { name: "product", glyph: "Π", cd: "arith1", desc: "Produkt über einen Bereich" },
+      { name: "min", glyph: "min", cd: "minmax1", desc: "Minimum einer Menge" },
+      { name: "max", glyph: "max", cd: "minmax1", desc: "Maximum einer Menge" },
+      { name: "factorial", glyph: "n!", cd: "integer1", desc: "Fakultät" },
+      { name: "quotient", glyph: "div", cd: "integer1", desc: "ganzzahliger Quotient" },
+      { name: "remainder", glyph: "mod", cd: "integer1", desc: "Rest bei Division" },
+    ],
+  },
+  {
+    id: "relationen",
+    title: "Relationen",
+    desc: "Vergleiche und Zugehörigkeiten (liefern Wahrheitswerte).",
+    symbols: [
+      { name: "eq", glyph: "=", cd: "relation1", desc: "gleich" },
+      { name: "neq", glyph: "≠", cd: "relation1", desc: "ungleich" },
+      { name: "lt", glyph: "<", cd: "relation1", desc: "kleiner als" },
+      { name: "leq", glyph: "≤", cd: "relation1", desc: "kleiner gleich" },
+      { name: "gt", glyph: ">", cd: "relation1", desc: "größer als" },
+      { name: "geq", glyph: "≥", cd: "relation1", desc: "größer gleich" },
+      { name: "approx", glyph: "≈", cd: "relation1", desc: "ungefähr gleich" },
+      { name: "factorof", glyph: "∣", cd: "integer1", desc: "teilt (Teilbarkeit)" },
+      { name: "in", glyph: "∈", cd: "set1", desc: "Element von" },
+      { name: "notin", glyph: "∉", cd: "set1", desc: "kein Element von" },
+      { name: "subset", glyph: "⊆", cd: "set1", desc: "Teilmenge" },
+      { name: "prsubset", glyph: "⊊", cd: "set1", desc: "echte Teilmenge" },
+      { name: "notsubset", glyph: "⊄", cd: "set1", desc: "keine Teilmenge" },
+      { name: "notprsubset", glyph: "⊄", cd: "set1", desc: "keine echte Teilmenge" },
+    ],
+  },
+  {
+    id: "mengen",
+    title: "Mengen & Mengenoperationen",
+    desc: "Mengen bilden und verknüpfen; Intervalle und Listen.",
+    symbols: [
+      { name: "set", glyph: "{ }", cd: "set1", desc: "explizite Menge" },
+      { name: "emptyset", glyph: "∅", cd: "set1", desc: "leere Menge" },
+      { name: "union", glyph: "∪", cd: "set1", desc: "Vereinigung (n-är)" },
+      { name: "intersect", glyph: "∩", cd: "set1", desc: "Durchschnitt (n-är)" },
+      { name: "setdiff", glyph: "∖", cd: "set1", desc: "Mengendifferenz" },
+      { name: "cartesian_product", glyph: "×", cd: "set1", desc: "kartesisches Produkt" },
+      { name: "size", glyph: "|M|", cd: "set1", desc: "Mächtigkeit" },
+      { name: "suchthat", glyph: "{x|φ}", cd: "set1", desc: "Menge per Prädikat" },
+      { name: "map", glyph: "↦M", cd: "set1", desc: "Funktion auf Menge anwenden" },
+      { name: "list", glyph: "[ ]", cd: "list1", desc: "geordnete Liste" },
+      { name: "interval", glyph: "[a,b]", cd: "interval1", desc: "Intervall" },
+      { name: "interval_cc", glyph: "[a,b]", cd: "interval1", desc: "abgeschlossenes Intervall" },
+      { name: "interval_oo", glyph: "(a,b)", cd: "interval1", desc: "offenes Intervall" },
+      { name: "interval_oc", glyph: "(a,b]", cd: "interval1", desc: "halboffen (links offen)" },
+      { name: "interval_co", glyph: "[a,b)", cd: "interval1", desc: "halboffen (rechts offen)" },
+      { name: "integer_interval", glyph: "[a..b]", cd: "interval1", desc: "ganzzahliges Intervall" },
+    ],
+  },
+  {
+    id: "abbildungen",
+    title: "Abbildungen & Funktionen",
+    desc: "Funktionen bauen, anwenden, verketten, invertieren.",
+    symbols: [
+      { name: "lambda", glyph: "λ", cd: "fns1", desc: "anonyme Funktion (Bindung)" },
+      { name: "identity", glyph: "id", cd: "fns1", desc: "Identitätsabbildung" },
+      { name: "domain", glyph: "dom", cd: "fns1", desc: "Definitionsbereich" },
+      { name: "range", glyph: "ran", cd: "fns1", desc: "Zielbereich" },
+      { name: "image", glyph: "im", cd: "fns1", desc: "Bildmenge" },
+      { name: "restriction", glyph: "f|ₐ", cd: "fns1", desc: "Einschränkung auf Teilmenge" },
+      { name: "inverse", glyph: "f⁻¹", cd: "fns1", desc: "Umkehrfunktion" },
+      { name: "left_inverse", glyph: "f⁻¹ₗ", cd: "fns1", desc: "Linksinverses" },
+      { name: "right_inverse", glyph: "f⁻¹ᵣ", cd: "fns1", desc: "Rechtsinverses" },
+      { name: "left_compose", glyph: "∘", cd: "fns1", desc: "Verkettung (links)" },
+      { name: "right_compose", glyph: "∘", cd: "fns2", desc: "Verkettung (rechts zuerst)" },
+      { name: "kernel", glyph: "ker", cd: "fns2", desc: "Kern der Abbildung" },
+      { name: "apply_to_list", glyph: "f[…]", cd: "fns2", desc: "n-äre Funktion auf Liste" },
+      { name: "predicate_on_list", glyph: "P[…]", cd: "fns2", desc: "Prädikatkette auf Liste" },
+    ],
+  },
+  {
+    id: "elementarfunktionen",
+    title: "Elementarfunktionen & Analysis",
+    desc: "Transzendente Funktionen, Differenzieren und Integrieren.",
+    symbols: [
+      { name: "exp", glyph: "exp", cd: "transc1", desc: "Exponentialfunktion" },
+      { name: "ln", glyph: "ln", cd: "transc1", desc: "natürlicher Logarithmus" },
+      { name: "log", glyph: "log", cd: "transc1", desc: "Logarithmus zur Basis" },
+      { name: "sin", glyph: "sin", cd: "transc1", desc: "Sinus" },
+      { name: "cos", glyph: "cos", cd: "transc1", desc: "Cosinus" },
+      { name: "tan", glyph: "tan", cd: "transc1", desc: "Tangens" },
+      { name: "arcsin", glyph: "arcsin", cd: "transc1", desc: "Arkussinus" },
+      { name: "arccos", glyph: "arccos", cd: "transc1", desc: "Arkuscosinus" },
+      { name: "arctan", glyph: "arctan", cd: "transc1", desc: "Arkustangens" },
+      { name: "sinh", glyph: "sinh", cd: "transc1", desc: "Sinus hyperbolicus" },
+      { name: "cosh", glyph: "cosh", cd: "transc1", desc: "Cosinus hyperbolicus" },
+      { name: "tanh", glyph: "tanh", cd: "transc1", desc: "Tangens hyperbolicus" },
+      { name: "diff", glyph: "d/dx", cd: "calculus1", desc: "Ableitung (unär)" },
+      { name: "nthdiff", glyph: "dⁿ/dxⁿ", cd: "calculus1", desc: "n-te Ableitung" },
+      { name: "partialdiff", glyph: "∂", cd: "calculus1", desc: "partielle Ableitung" },
+      { name: "int", glyph: "∫", cd: "calculus1", desc: "unbestimmtes Integral" },
+      { name: "defint", glyph: "∫ₐᵇ", cd: "calculus1", desc: "bestimmtes Integral" },
+    ],
+  },
+  {
+    id: "linalg",
+    title: "Lineare Algebra",
+    desc: "Vektoren, Matrizen und ihre Operationen.",
+    symbols: [
+      { name: "vector", glyph: "𝐯", cd: "linalg2", desc: "Vektor" },
+      { name: "matrix", glyph: "M", cd: "linalg2", desc: "Matrix" },
+      { name: "matrixrow", glyph: "Mᵢ", cd: "linalg2", desc: "Matrixzeile" },
+      { name: "scalarproduct", glyph: "⟨·,·⟩", cd: "linalg1", desc: "Skalarprodukt (Punktprodukt)" },
+      { name: "vectorproduct", glyph: "×", cd: "linalg1", desc: "Kreuzprodukt (3D)" },
+      { name: "outerproduct", glyph: "⊗", cd: "linalg1", desc: "äußeres Produkt" },
+      { name: "transpose", glyph: "Mᵀ", cd: "linalg1", desc: "Transponierte" },
+      { name: "determinant", glyph: "det", cd: "linalg1", desc: "Determinante" },
+      { name: "vector_selector", glyph: "vᵢ", cd: "linalg1", desc: "Vektor-Komponente" },
+      { name: "matrix_selector", glyph: "Mᵢⱼ", cd: "linalg1", desc: "Matrix-Eintrag" },
+    ],
+  },
+  {
+    id: "logik",
+    title: "Logik & Quantoren",
+    desc: "Junktoren, Wahrheitswerte, Quantoren.",
+    symbols: [
+      { name: "and", glyph: "∧", cd: "logic1", desc: "Konjunktion (n-är)" },
+      { name: "or", glyph: "∨", cd: "logic1", desc: "Disjunktion (n-är)" },
+      { name: "not", glyph: "¬", cd: "logic1", desc: "Negation" },
+      { name: "implies", glyph: "⇒", cd: "logic1", desc: "Implikation" },
+      { name: "equivalent", glyph: "⇔", cd: "logic1", desc: "Äquivalenz" },
+      { name: "xor", glyph: "⊕", cd: "logic1", desc: "exklusives Oder" },
+      { name: "nand", glyph: "↑", cd: "logic1", desc: "nicht-und" },
+      { name: "nor", glyph: "↓", cd: "logic1", desc: "nicht-oder" },
+      { name: "xnor", glyph: "↔", cd: "logic1", desc: "Äquivalenz (xnor)" },
+      { name: "true", glyph: "⊤", cd: "logic1", desc: "wahr" },
+      { name: "false", glyph: "⊥", cd: "logic1", desc: "falsch" },
+      { name: "forall", glyph: "∀", cd: "quant1", desc: "Allquantor" },
+      { name: "exists", glyph: "∃", cd: "quant1", desc: "Existenzquantor" },
+    ],
+  },
+  {
+    id: "eigenschaften",
+    title: "Relations-Eigenschaften & Abschlüsse",
+    desc: "Eigenschaften von Relationen — die atomaren „Axiom“-Bausteine.",
+    symbols: [
+      { name: "is_reflexive", glyph: "refl", cd: "relation3", desc: "reflexiv?" },
+      { name: "is_symmetric", glyph: "symm", cd: "relation3", desc: "symmetrisch?" },
+      { name: "is_transitive", glyph: "trans", cd: "relation3", desc: "transitiv?" },
+      { name: "is_equivalence", glyph: "äquiv", cd: "relation3", desc: "Äquivalenzrelation?" },
+      { name: "is_relation", glyph: "⊆A×A", cd: "relation3", desc: "ist eine Relation?" },
+      { name: "reflexive_closure", glyph: "R⁺ᵣ", cd: "relation3", desc: "reflexive Hülle" },
+      { name: "symmetric_closure", glyph: "R⁺ₛ", cd: "relation3", desc: "symmetrische Hülle" },
+      { name: "transitive_closure", glyph: "R⁺", cd: "relation3", desc: "transitive Hülle" },
+      { name: "equivalence_closure", glyph: "R≈", cd: "relation3", desc: "Äquivalenzhülle" },
+      { name: "class", glyph: "[a]", cd: "relation3", desc: "Äquivalenzklasse von a" },
+      { name: "classes", glyph: "M/∼", cd: "relation3", desc: "Menge der Klassen" },
+    ],
+  },
+  {
+    id: "konstanten",
+    title: "Konstanten & Zahl-Konstruktoren",
+    desc: "Ausgezeichnete Zahlen und Neutralelemente.",
+    symbols: [
+      { name: "zero", glyph: "0", cd: "alg1", desc: "additives Neutralelement" },
+      { name: "one", glyph: "1", cd: "alg1", desc: "multiplikatives Neutralelement" },
+      { name: "pi", glyph: "π", cd: "nums1", desc: "Kreiszahl" },
+      { name: "e", glyph: "e", cd: "nums1", desc: "Eulersche Zahl" },
+      { name: "i", glyph: "i", cd: "nums1", desc: "imaginäre Einheit" },
+      { name: "infinity", glyph: "∞", cd: "nums1", desc: "Unendlich" },
+      { name: "gamma", glyph: "γ", cd: "nums1", desc: "Euler-Mascheroni-Konstante" },
+      { name: "NaN", glyph: "NaN", cd: "nums1", desc: "keine Zahl" },
+      { name: "rational", glyph: "p/q", cd: "nums1", desc: "rationale Zahl (Konstruktor)" },
+      { name: "based_integer", glyph: "nᵦ", cd: "nums1", desc: "ganze Zahl zur Basis b" },
+    ],
+  },
+  {
+    id: "komplex",
+    title: "Komplexe Zahlen",
+    desc: "Konstruktoren und Bestandteile komplexer Zahlen.",
+    symbols: [
+      { name: "complex_cartesian", glyph: "a+bi", cd: "complex1", desc: "kartesische Form" },
+      { name: "complex_polar", glyph: "r·e^{iφ}", cd: "complex1", desc: "Polarform" },
+      { name: "real", glyph: "Re", cd: "complex1", desc: "Realteil" },
+      { name: "imaginary", glyph: "Im", cd: "complex1", desc: "Imaginärteil" },
+      { name: "argument", glyph: "arg", cd: "complex1", desc: "Argument (Winkel)" },
+      { name: "conjugate", glyph: "z̄", cd: "complex1", desc: "komplexe Konjugation" },
+    ],
+  },
+];
+
+// flache Liste aller Bausteine (z. B. für Suche)
+export const OPENMATH_SYMBOLS = OPENMATH_CATEGORIES.flatMap((c) =>
+  c.symbols.map((s) => ({ ...s, category: c.id, id: `${s.cd}.${s.name}` }))
+);
+
+export const OPENMATH_META = {
+  source: "OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)",
+  fetched: "2026-07",
+  cds: ["arith1", "integer1", "minmax1", "relation1", "relation3", "set1", "list1",
+        "interval1", "setname1", "fns1", "fns2", "calculus1", "transc1", "linalg1",
+        "linalg2", "complex1", "logic1", "quant1", "nums1", "alg1"],
+  count: OPENMATH_SYMBOLS.length,
+};
