@@ -24,25 +24,36 @@ export default function App() {
     };
   }, []);
 
+  // läuft die App in einem (fremden) Rahmen? Dann ist echtes Vollbild oft gesperrt.
+  const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+
   const toggleFs = useCallback(async () => {
     const el = rootRef.current || document.documentElement;
     const inFs = document.fullscreenElement || document.webkitFullscreenElement;
     try {
       if (!inFs) {
-        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        // erst das App-Element, dann als Rückfall das ganze Dokument versuchen
+        const req =
+          el.requestFullscreen?.bind(el) ||
+          el.webkitRequestFullscreen?.bind(el) ||
+          document.documentElement.requestFullscreen?.bind(document.documentElement) ||
+          document.documentElement.webkitRequestFullscreen?.bind(document.documentElement);
         if (!req) throw new Error("unsupported");
-        await req.call(el);
+        await req();
       } else {
         const exit = document.exitFullscreen || document.webkitExitFullscreen;
         await exit?.call(document);
       }
       setFsHint("");
     } catch {
-      // z. B. iOS-Safari oder ein Rahmen ohne allow="fullscreen"
-      setFsHint("Vollbild hier nicht möglich — die Seite in einem eigenen Tab öffnen.");
-      setTimeout(() => setFsHint(""), 4000);
+      // Rahmen ohne allow="fullscreen" (z. B. eingebettete Vorschau) oder iOS-Safari.
+      setFsHint(
+        inFrame
+          ? "Vollbild ist in der eingebetteten Vorschau gesperrt. Öffne die Seite über „In neuem Tab öffnen“ (⇱ oben rechts) — dort funktioniert der Vollbild-Knopf."
+          : "Vollbild wird von diesem Browser nicht unterstützt."
+      );
     }
-  }, []);
+  }, [inFrame]);
 
   return (
     <div ref={rootRef} style={{ minHeight: "100%", background: "#EAEEF2", paddingBottom: 76 }}>
@@ -84,8 +95,9 @@ export default function App() {
           </button>
         </div>
         {fsHint && (
-          <div className="max-w-5xl mx-auto px-4 pb-2 text-[11px]" style={{ color: C.warn, fontFamily: "ui-monospace, monospace" }}>
-            {fsHint}
+          <div className="max-w-5xl mx-auto px-4 pb-2 flex items-start gap-2 text-[11px]" style={{ color: C.warn, fontFamily: "ui-monospace, monospace" }}>
+            <span className="flex-1">{fsHint}</span>
+            <button onClick={() => setFsHint("")} aria-label="Hinweis schließen" className="shrink-0 underline">ok</button>
           </div>
         )}
       </div>
