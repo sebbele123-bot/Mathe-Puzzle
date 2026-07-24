@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mathe-Schmiede — Rechnen &amp; Bauen</title>
+  <meta name="description" content="Ein Lernspiel: Löse Rechenaufgaben, sammle Rohstoffe und schmiede coole Gegenstände." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Kopfzeile -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">⚒️</span>
+        <h1>Mathe-Schmiede</h1>
+      </div>
+      <div class="stats">
+        <div class="stat" title="Level">
+          <span class="stat-icon">⭐</span>
+          <span id="level-value">1</span>
+        </div>
+        <div class="stat" title="Punkte">
+          <span class="stat-icon">🏆</span>
+          <span id="score-value">0</span>
+        </div>
+        <div class="stat" title="Serie richtiger Antworten">
+          <span class="stat-icon">🔥</span>
+          <span id="streak-value">0</span>
+        </div>
+      </div>
+      <button id="reset-btn" class="btn btn-ghost" title="Spielstand zurücksetzen">Neu starten</button>
+    </header>
+
+    <main class="layout">
+      <!-- Linke Spalte: Rechnen -->
+      <section class="panel panel-quiz" aria-label="Rechenaufgabe">
+        <div class="panel-head">
+          <h2>Löse die Aufgabe</h2>
+          <div class="difficulty">
+            <label for="difficulty-select">Schwierigkeit</label>
+            <select id="difficulty-select">
+              <option value="1">Klasse 1–2 (leicht)</option>
+              <option value="2" selected>Klasse 3–4 (mittel)</option>
+              <option value="3">Klasse 5–6 (schwer)</option>
+              <option value="4">Profi (sehr schwer)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="problem-card">
+          <div id="problem" class="problem" aria-live="polite">3 + 4</div>
+          <form id="answer-form" autocomplete="off">
+            <input
+              id="answer-input"
+              class="answer-input"
+              type="text"
+              inputmode="numeric"
+              placeholder="?"
+              aria-label="Deine Antwort"
+            />
+            <button type="submit" class="btn btn-primary">Prüfen</button>
+          </form>
+          <div id="feedback" class="feedback" aria-live="assertive"></div>
+        </div>
+
+        <div class="timer-row">
+          <div class="timer-bar"><div id="timer-fill" class="timer-fill"></div></div>
+          <span class="timer-hint">Schneller = mehr Bonus!</span>
+        </div>
+
+        <div class="reward-log" id="reward-log" aria-live="polite"></div>
+      </section>
+
+      <!-- Mittlere Spalte: Rohstoffe -->
+      <section class="panel panel-inventory" aria-label="Rohstoffe">
+        <div class="panel-head"><h2>Deine Rohstoffe</h2></div>
+        <ul class="resource-list" id="resource-list"></ul>
+      </section>
+
+      <!-- Rechte Spalte: Werkbank -->
+      <section class="panel panel-craft" aria-label="Werkbank">
+        <div class="panel-head"><h2>Werkbank</h2></div>
+        <p class="craft-hint">Sammle Rohstoffe und schmiede Gegenstände. Jeder Bau bringt Punkte und Level!</p>
+        <ul class="recipe-list" id="recipe-list"></ul>
+
+        <div class="panel-head"><h2>Gebaut</h2></div>
+        <ul class="trophy-list" id="trophy-list"></ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Mit Köpfchen gebaut · Fortschritt wird automatisch gespeichert</span>
+    </footer>
+  </div>
+
+  <!-- Aufsteigende Belohnungs-Anzeige -->
+  <div id="toast-layer" class="toast-layer" aria-hidden="true"></div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
