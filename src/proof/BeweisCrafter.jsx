@@ -3,6 +3,17 @@ import { Check, RotateCcw, ChevronRight, Sparkles, Hammer, BookOpen } from "luci
 import { FACTS, RULES, MISSIONS } from "./data.js";
 import { craftFromCluster } from "./engine.js";
 
+// Missionen nach Übungsnummer sortieren (Basis ohne Kürzel zuerst)
+const missionCode = (t) => {
+  const m = t.match(/^Ü(\d+)\.(\d+)/);
+  return m ? [Number(m[1]), Number(m[2])] : [-1, -1];
+};
+const MISSIONS_SORTED = [...MISSIONS].sort((a, b) => {
+  const [ca, ea] = missionCode(a.title);
+  const [cb, eb] = missionCode(b.title);
+  return ca - cb || ea - eb;
+});
+
 /* --- Farbwelt (konsistent mit dem Struktur-Baukasten) --------------- */
 const C = {
   paper: "#EAEEF2",
@@ -281,7 +292,7 @@ export default function BeweisCrafter() {
         <section className="mb-4">
           <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.14em" }} className="text-[11px] uppercase text-slate-500">Beweis wählen</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-            {MISSIONS.map((m) => {
+            {MISSIONS_SORTED.map((m) => {
               const active = m.id === missionId;
               const parts = m.title.split(" — ");
               const hasCode = parts.length > 1;
