@@ -258,6 +258,7 @@ export default function BeweisCrafter() {
     const f = FACTS[id];
     if (id === stage.goal) return "Ziel";
     if (f.role === "begriff") return "Begriff";
+    if (f.tag) return f.tag; // atomarer Baustein: "Menge" / "Verknüpfung"
     return givenSet.has(id) ? "gegeben" : "gefolgert";
   };
 
@@ -575,7 +576,7 @@ function TileFace({ kind, block, isGoal, label, lifted, flash }) {
   const isBegriff = !isRule && block.role === "begriff";
   const base = isRule ? C.regel : isGoal ? C.ziel : isBegriff ? C.begriff : C.fakt;
   const hi = isRule ? C.regelHi : isGoal ? C.zielHi : isBegriff ? C.begriffHi : C.faktHi;
-  const tag = isRule ? "Regel" : label || (isGoal ? "Ziel" : isBegriff ? "Begriff" : "Aussage");
+  const tag = isRule ? (block.tag || "Regel") : label || block.tag || (isGoal ? "Ziel" : isBegriff ? "Begriff" : "Aussage");
   return (
     <div style={{
       background: `linear-gradient(160deg, ${hi}, ${base})`, color: "#fff", borderRadius: 12, padding: "9px 13px", minWidth: TILE_W - 8,

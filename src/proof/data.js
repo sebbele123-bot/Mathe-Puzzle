@@ -79,6 +79,14 @@ export const FACTS = {
   def_tr_bad1: { id: "def_tr_bad1", name: "z ↦ w·z", sub: "Vorschrift" }, // Distraktor: Streckung
   def_tr_bad2: { id: "def_tr_bad2", name: "z ↦ z̄ + w", sub: "Vorschrift" }, // Distraktor: Gleitspiegelung
   def_translation: { id: "def_translation", name: "Translation", sub: "z ↦ z + w", role: "begriff" },
+
+  // Atomare Grundbausteine: Mengen (ℝ, ℚ) und Verknüpfungen (×, +)
+  // Begriffs-Check ℚ² := ℚ × ℚ (Ü2.1)
+  q2_setQ: { id: "q2_setQ", name: "ℚ", sub: "rationale Zahlen", tag: "Menge" },
+  q2_cross: { id: "q2_cross", name: "×", sub: "kartesisches Produkt", tag: "Verknüpfung" },
+  q2_setR: { id: "q2_setR", name: "ℝ", sub: "reelle Zahlen", tag: "Menge" }, // Distraktor: falsche Menge
+  q2_plus: { id: "q2_plus", name: "+", sub: "Addition", tag: "Verknüpfung" }, // Distraktor: falsche Verknüpfung
+  q2_goal: { id: "q2_goal", name: "ℚ²", sub: "ℚ × ℚ", role: "begriff" },
 };
 
 // Schlussregeln — Text nennt nur die allgemeine Form der Regel,
@@ -127,8 +135,8 @@ export const RULES = {
   r83_orth: { id: "r83_orth", name: "Orthogonalprojektion", sub: "(x,y,z) ↦ (x,y)" },
   r83_norm: { id: "r83_norm", name: "Normieren", sub: "auf Länge 1" },
 
-  // Begriffs-Gate
-  r_define: { id: "r_define", name: ":=", sub: "Begriff := Bestandteile" },
+  // Begriffs-Gate — Tag "Definition" klein über dem Zeichen :=
+  r_define: { id: "r_define", name: ":=", sub: "Begriff := Bestandteile", tag: "Definition" },
 };
 
 // steps: gültige Inferenzen  { rule, premises:[factId...], produces }
@@ -186,6 +194,20 @@ export const MISSIONS = [
     title: "Ü2.1 — O(ℚ²) ist keine Drehspiegelgruppe",
     ref: "Übung 2.1",
     kind: "beweis",
+    // Begriffs-Gate aus atomaren Mengen und einer Verknüpfung
+    vocab: [
+      {
+        term: "ℚ²",
+        goal: "q2_goal",
+        prompt: "Bau „ℚ² :=“ aus Mengen und einer Verknüpfung. (Wie oft brauchst du ℚ?)",
+        note: "ℝ ist die falsche Menge, + die falsche Verknüpfung — ℚ² := ℚ × ℚ ist das kartesische Produkt zweier Kopien von ℚ.",
+        given: ["q2_setQ", "q2_cross", "q2_setR", "q2_plus"],
+        pool: { facts: ["q2_setQ", "q2_cross", "q2_setR", "q2_plus", "q2_goal"], rules: ["r_define"] },
+        steps: [
+          { rule: "r_define", premises: ["q2_setQ", "q2_setQ", "q2_cross"], produces: "q2_goal", idea: "ℚ² definiert: ℚ × ℚ" },
+        ],
+      },
+    ],
     claim:
       "Die orthogonale Gruppe von ℚ² mit Standardskalarprodukt ist keine Drehspiegelgruppe — kein Element führt den Strahl ℚ≥0(1,0) in ℚ≥0(1,1) über, da √2 ∉ ℚ. (Widerspruchsbeweis)",
     goal: "c_goal",
