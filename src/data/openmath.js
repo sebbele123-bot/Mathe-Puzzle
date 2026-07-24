@@ -235,7 +235,127 @@ export const OPENMATH_CATEGORIES = [
   },
 ];
 
-// flache Liste aller Bausteine (z. B. für Suche)
+/* --------------------------------------------------------------------
+ *  Ergänzungen — Bausteine aus elementaren Einführungsskripten, die in
+ *  den OpenMath-Core-CDs fehlen. Standard-Curriculum (Analysis/Lineare
+ *  Algebra/Grundlagen, z. B. Soergel), NICHT aus OpenMath. `cd` nennt
+ *  hier das Themengebiet statt einer OpenMath-CD.
+ * ------------------------------------------------------------------ */
+export const EXTRA_CATEGORIES = [
+  {
+    id: "extra_abbildungen",
+    title: "Abbildungen · Typen & Pfeile",
+    desc: "Pfeile und Eigenschaften von Abbildungen — inkl. Linearität.",
+    symbols: [
+      { name: "Abbildung", glyph: "→", cd: "Abb", desc: "Abbildung f: A → B" },
+      { name: "maps_to", glyph: "↦", cd: "Abb", desc: "Zuordnung x ↦ f(x)" },
+      { name: "hookrightarrow", glyph: "↪", cd: "Abb", desc: "injektive Abb. / Inklusion" },
+      { name: "twoheadrightarrow", glyph: "↠", cd: "Abb", desc: "surjektive Abbildung" },
+      { name: "bijarrow", glyph: "⤖", cd: "Abb", desc: "bijektive Abbildung" },
+      { name: "injektiv", glyph: "inj", cd: "Abb", desc: "verschiedene Urbilder" },
+      { name: "surjektiv", glyph: "surj", cd: "Abb", desc: "jedes Element getroffen" },
+      { name: "bijektiv", glyph: "bij", cd: "Abb", desc: "injektiv und surjektiv" },
+      { name: "linear", glyph: "lin", cd: "Abb", desc: "f(x+y)=fx+fy, f(λx)=λfx" },
+      { name: "bilinear", glyph: "bilin", cd: "Abb", desc: "in beiden Argumenten linear" },
+      { name: "homomorphismus", glyph: "Hom", cd: "Abb", desc: "strukturerhaltende Abbildung" },
+      { name: "isomorphismus", glyph: "≅", cd: "Abb", desc: "bijektiver Homomorphismus" },
+      { name: "preimage", glyph: "f⁻¹(B)", cd: "Abb", desc: "Urbild einer Menge" },
+    ],
+  },
+  {
+    id: "extra_geometrie",
+    title: "Geometrie",
+    desc: "Elementargeometrische Symbole — in OpenMath-Core nicht enthalten.",
+    symbols: [
+      { name: "winkel", glyph: "∠", cd: "Geom", desc: "Winkel" },
+      { name: "perpendicular", glyph: "⊥", cd: "Geom", desc: "senkrecht / orthogonal" },
+      { name: "parallel", glyph: "∥", cd: "Geom", desc: "parallel" },
+      { name: "kongruent", glyph: "≅", cd: "Geom", desc: "kongruent" },
+      { name: "aehnlich", glyph: "∼", cd: "Geom", desc: "ähnlich" },
+      { name: "dreieck", glyph: "△", cd: "Geom", desc: "Dreieck" },
+      { name: "grad", glyph: "°", cd: "Geom", desc: "Grad (Winkelmaß)" },
+      { name: "strecke", glyph: "|AB|", cd: "Geom", desc: "Streckenlänge / Abstand" },
+      { name: "kreis", glyph: "⊙", cd: "Geom", desc: "Kreis" },
+      { name: "bogen", glyph: "⌢", cd: "Geom", desc: "Kreisbogen" },
+      { name: "gerichteter_winkel", glyph: "∡", cd: "Geom", desc: "gerichteter Winkel" },
+    ],
+  },
+  {
+    id: "extra_mengen",
+    title: "Mengen · Ergänzungen",
+    desc: "Häufige Mengenkonstrukte über die OpenMath-CDs hinaus.",
+    symbols: [
+      { name: "powerset", glyph: "𝒫", cd: "Mengen", desc: "Potenzmenge" },
+      { name: "complement", glyph: "∁", cd: "Mengen", desc: "Komplement (Aᶜ)" },
+      { name: "symdiff", glyph: "A△B", cd: "Mengen", desc: "symmetrische Differenz" },
+      { name: "ordered_pair", glyph: "(a,b)", cd: "Mengen", desc: "geordnetes Paar / Tupel" },
+      { name: "disjoint_union", glyph: "⊔", cd: "Mengen", desc: "disjunkte Vereinigung" },
+      { name: "big_union", glyph: "⋃", cd: "Mengen", desc: "indizierte Vereinigung" },
+      { name: "big_intersect", glyph: "⋂", cd: "Mengen", desc: "indizierter Durchschnitt" },
+    ],
+  },
+  {
+    id: "extra_logik",
+    title: "Logik · Ergänzungen",
+    desc: "Beweis- und Definitionssymbole.",
+    symbols: [
+      { name: "exists_unique", glyph: "∃!", cd: "Logik", desc: "es gibt genau ein" },
+      { name: "nexists", glyph: "∄", cd: "Logik", desc: "es gibt kein" },
+      { name: "defeq", glyph: ":=", cd: "Logik", desc: "definierende Gleichheit" },
+      { name: "identical", glyph: "≡", cd: "Logik", desc: "identisch / definitorisch gleich" },
+      { name: "vdash", glyph: "⊢", cd: "Logik", desc: "beweisbar (Ableitbarkeit)" },
+      { name: "models", glyph: "⊨", cd: "Logik", desc: "erfüllt / modelliert" },
+      { name: "therefore", glyph: "∴", cd: "Logik", desc: "also, daraus folgt" },
+      { name: "because", glyph: "∵", cd: "Logik", desc: "weil" },
+      { name: "qed", glyph: "∎", cd: "Logik", desc: "q.e.d. (Beweisende)" },
+    ],
+  },
+  {
+    id: "extra_relationen",
+    title: "Relationen · Ergänzungen",
+    desc: "Weitere Vergleichs- und Äquivalenzsymbole.",
+    symbols: [
+      { name: "congruent_mod", glyph: "≡ₙ", cd: "Rel", desc: "kongruent modulo n" },
+      { name: "isomorphic", glyph: "≅", cd: "Rel", desc: "isomorph" },
+      { name: "similar_rel", glyph: "∼", cd: "Rel", desc: "ähnlich / äquivalent" },
+      { name: "proportional", glyph: "∝", cd: "Rel", desc: "proportional" },
+      { name: "much_less", glyph: "≪", cd: "Rel", desc: "sehr viel kleiner" },
+      { name: "much_greater", glyph: "≫", cd: "Rel", desc: "sehr viel größer" },
+    ],
+  },
+  {
+    id: "extra_analysis",
+    title: "Analysis & Ordnung · Ergänzungen",
+    desc: "Grenzwerte, Schranken, Rundung, weitere Operationen.",
+    symbols: [
+      { name: "sup", glyph: "sup", cd: "Analysis", desc: "Supremum (kleinste obere Schranke)" },
+      { name: "inf", glyph: "inf", cd: "Analysis", desc: "Infimum (größte untere Schranke)" },
+      { name: "lim", glyph: "lim", cd: "Analysis", desc: "Grenzwert" },
+      { name: "nabla", glyph: "∇", cd: "Analysis", desc: "Nabla / Gradient" },
+      { name: "plusminus", glyph: "±", cd: "Analysis", desc: "plusminus" },
+      { name: "floor", glyph: "⌊x⌋", cd: "Analysis", desc: "Abrunden (Gaußklammer)" },
+      { name: "ceil", glyph: "⌈x⌉", cd: "Analysis", desc: "Aufrunden" },
+      { name: "binomial", glyph: "(ⁿₖ)", cd: "Analysis", desc: "Binomialkoeffizient" },
+    ],
+  },
+  {
+    id: "extra_linalg",
+    title: "Lineare Algebra · Ergänzungen",
+    desc: "Begriffe rund um Vektorräume und lineare Abbildungen.",
+    symbols: [
+      { name: "dimension", glyph: "dim", cd: "LinAlg", desc: "Dimension" },
+      { name: "span", glyph: "span", cd: "LinAlg", desc: "lineare Hülle / Erzeugnis" },
+      { name: "rank", glyph: "rg", cd: "LinAlg", desc: "Rang" },
+      { name: "trace", glyph: "tr", cd: "LinAlg", desc: "Spur" },
+      { name: "direct_sum", glyph: "⊕", cd: "LinAlg", desc: "direkte Summe" },
+      { name: "norm", glyph: "‖·‖", cd: "LinAlg", desc: "Norm" },
+      { name: "identity_matrix", glyph: "𝟙", cd: "LinAlg", desc: "Einheitsmatrix" },
+      { name: "lin_independent", glyph: "lin.u.", cd: "LinAlg", desc: "linear unabhängig" },
+    ],
+  },
+];
+
+// flache Liste aller OpenMath-Bausteine (z. B. für Suche)
 export const OPENMATH_SYMBOLS = OPENMATH_CATEGORIES.flatMap((c) =>
   c.symbols.map((s) => ({ ...s, category: c.id, id: `${s.cd}.${s.name}` }))
 );
@@ -247,4 +367,18 @@ export const OPENMATH_META = {
         "interval1", "setname1", "fns1", "fns2", "calculus1", "transc1", "linalg1",
         "linalg2", "complex1", "logic1", "quant1", "nums1", "alg1"],
   count: OPENMATH_SYMBOLS.length,
+};
+
+// Kombinierte Palette (OpenMath + Ergänzungen), je Kategorie mit `source`.
+export const PALETTE_CATEGORIES = [
+  ...OPENMATH_CATEGORIES.map((c) => ({ ...c, source: "OpenMath" })),
+  ...EXTRA_CATEGORIES.map((c) => ({ ...c, source: "Ergänzung" })),
+];
+
+const EXTRA_COUNT = EXTRA_CATEGORIES.reduce((n, c) => n + c.symbols.length, 0);
+export const PALETTE_META = {
+  openmath: OPENMATH_META.count,
+  extra: EXTRA_COUNT,
+  count: OPENMATH_META.count + EXTRA_COUNT,
+  categories: PALETTE_CATEGORIES.length,
 };

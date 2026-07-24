@@ -1,30 +1,18 @@
-# OpenMath-Bausteine — kategorisiertes Inventar
+# Bausteine-Inventar (OpenMath + Ergänzungen)
 
-Symbole aus den offiziellen **OpenMath Content Dictionaries** (OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)), gruppiert als atomare Bausteine für den Baukasten. Stand: 2026-07. **134 Bausteine** aus 20 CDs.
+**196 Bausteine**: 134 aus den offiziellen OpenMath Content Dictionaries (OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)) plus 62 Ergänzungen aus elementaren Einführungsskripten (Standard-Curriculum, nicht OpenMath-Core). Stand: 2026-07.
 
-Quelle im Code: `src/data/openmath.js` (diese Datei wird daraus generiert).
+Quelle im Code: `src/data/openmath.js`.
 
-> Hinweis: Struktur-Eigenschaften wie *assoziativ*/*kommutativ* sind in OpenMath keine eigenen Symbole, sondern formale Eigenschaften (FMPs) an den Symbolen. Die nächsten atomaren „Eigenschafts“-Bausteine sind Neutralelemente (alg1) und Relations-Eigenschaften (relation3).
+> Ergänzungen decken Lücken, die OpenMath-Core nicht abbildet: Geometrie (∠ ⊥ ∥ ≅ ∼ △ °), Abbildungstypen & Linearität (→ ↦ ↪ ↠ injektiv/surjektiv/bijektiv/linear/bilinear/Homomorphismus), Mengen (Potenzmenge, Komplement, geord. Paar), Logik (∃! ∄ ⊢ ⊨ ∴ ∵ ∎ :=), Analysis/Ordnung (sup inf lim ∇ ± ⌊⌋ ⌈⌉ Binomial), Lineare Algebra (dim span rg tr ⊕ ‖·‖).
 
-## Inhalt
-
-- [Grundmengen (Zahlbereiche)](#zahlbereiche) (6)
-- [Verknüpfungen (Operationen)](#verknuepfungen) (17)
-- [Relationen](#relationen) (14)
-- [Mengen & Mengenoperationen](#mengen) (16)
-- [Abbildungen & Funktionen](#abbildungen) (14)
-- [Elementarfunktionen & Analysis](#elementarfunktionen) (17)
-- [Lineare Algebra](#linalg) (10)
-- [Logik & Quantoren](#logik) (13)
-- [Relations-Eigenschaften & Abschlüsse](#eigenschaften) (11)
-- [Konstanten & Zahl-Konstruktoren](#konstanten) (10)
-- [Komplexe Zahlen](#komplex) (6)
+# OpenMath-Core
 
 ## <a id="zahlbereiche"></a>Grundmengen (Zahlbereiche)
 
 Standard-Trägermengen — die Rohmaterialien.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | ℕ | `N` | setname1 | natürliche Zahlen (mit 0) |
 | ℤ | `Z` | setname1 | ganze Zahlen |
@@ -37,7 +25,7 @@ Standard-Trägermengen — die Rohmaterialien.
 
 Innere Verknüpfungen und Grundrechenarten.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | + | `plus` | arith1 | Addition (n-är, kommutativ) |
 | − | `minus` | arith1 | Subtraktion (binär) |
@@ -61,7 +49,7 @@ Innere Verknüpfungen und Grundrechenarten.
 
 Vergleiche und Zugehörigkeiten (liefern Wahrheitswerte).
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | = | `eq` | relation1 | gleich |
 | ≠ | `neq` | relation1 | ungleich |
@@ -82,7 +70,7 @@ Vergleiche und Zugehörigkeiten (liefern Wahrheitswerte).
 
 Mengen bilden und verknüpfen; Intervalle und Listen.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | { } | `set` | set1 | explizite Menge |
 | ∅ | `emptyset` | set1 | leere Menge |
@@ -105,7 +93,7 @@ Mengen bilden und verknüpfen; Intervalle und Listen.
 
 Funktionen bauen, anwenden, verketten, invertieren.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | λ | `lambda` | fns1 | anonyme Funktion (Bindung) |
 | id | `identity` | fns1 | Identitätsabbildung |
@@ -126,7 +114,7 @@ Funktionen bauen, anwenden, verketten, invertieren.
 
 Transzendente Funktionen, Differenzieren und Integrieren.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | exp | `exp` | transc1 | Exponentialfunktion |
 | ln | `ln` | transc1 | natürlicher Logarithmus |
@@ -150,7 +138,7 @@ Transzendente Funktionen, Differenzieren und Integrieren.
 
 Vektoren, Matrizen und ihre Operationen.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | 𝐯 | `vector` | linalg2 | Vektor |
 | M | `matrix` | linalg2 | Matrix |
@@ -167,7 +155,7 @@ Vektoren, Matrizen und ihre Operationen.
 
 Junktoren, Wahrheitswerte, Quantoren.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | ∧ | `and` | logic1 | Konjunktion (n-är) |
 | ∨ | `or` | logic1 | Disjunktion (n-är) |
@@ -187,7 +175,7 @@ Junktoren, Wahrheitswerte, Quantoren.
 
 Eigenschaften von Relationen — die atomaren „Axiom“-Bausteine.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | refl | `is_reflexive` | relation3 | reflexiv? |
 | symm | `is_symmetric` | relation3 | symmetrisch? |
@@ -205,7 +193,7 @@ Eigenschaften von Relationen — die atomaren „Axiom“-Bausteine.
 
 Ausgezeichnete Zahlen und Neutralelemente.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | 0 | `zero` | alg1 | additives Neutralelement |
 | 1 | `one` | alg1 | multiplikatives Neutralelement |
@@ -222,7 +210,7 @@ Ausgezeichnete Zahlen und Neutralelemente.
 
 Konstruktoren und Bestandteile komplexer Zahlen.
 
-| Symbol | OpenMath-Name | CD | Bedeutung |
+| Symbol | Name | Quelle | Bedeutung |
 |---|---|---|---|
 | a+bi | `complex_cartesian` | complex1 | kartesische Form |
 | r·e^{iφ} | `complex_polar` | complex1 | Polarform |
@@ -230,4 +218,117 @@ Konstruktoren und Bestandteile komplexer Zahlen.
 | Im | `imaginary` | complex1 | Imaginärteil |
 | arg | `argument` | complex1 | Argument (Winkel) |
 | z̄ | `conjugate` | complex1 | komplexe Konjugation |
+
+# Ergänzungen (Standard-Einführungen)
+
+## <a id="extra_abbildungen"></a>Abbildungen · Typen & Pfeile
+
+Pfeile und Eigenschaften von Abbildungen — inkl. Linearität.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| → | `Abbildung` | Abb | Abbildung f: A → B |
+| ↦ | `maps_to` | Abb | Zuordnung x ↦ f(x) |
+| ↪ | `hookrightarrow` | Abb | injektive Abb. / Inklusion |
+| ↠ | `twoheadrightarrow` | Abb | surjektive Abbildung |
+| ⤖ | `bijarrow` | Abb | bijektive Abbildung |
+| inj | `injektiv` | Abb | verschiedene Urbilder |
+| surj | `surjektiv` | Abb | jedes Element getroffen |
+| bij | `bijektiv` | Abb | injektiv und surjektiv |
+| lin | `linear` | Abb | f(x+y)=fx+fy, f(λx)=λfx |
+| bilin | `bilinear` | Abb | in beiden Argumenten linear |
+| Hom | `homomorphismus` | Abb | strukturerhaltende Abbildung |
+| ≅ | `isomorphismus` | Abb | bijektiver Homomorphismus |
+| f⁻¹(B) | `preimage` | Abb | Urbild einer Menge |
+
+## <a id="extra_geometrie"></a>Geometrie
+
+Elementargeometrische Symbole — in OpenMath-Core nicht enthalten.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| ∠ | `winkel` | Geom | Winkel |
+| ⊥ | `perpendicular` | Geom | senkrecht / orthogonal |
+| ∥ | `parallel` | Geom | parallel |
+| ≅ | `kongruent` | Geom | kongruent |
+| ∼ | `aehnlich` | Geom | ähnlich |
+| △ | `dreieck` | Geom | Dreieck |
+| ° | `grad` | Geom | Grad (Winkelmaß) |
+| |AB| | `strecke` | Geom | Streckenlänge / Abstand |
+| ⊙ | `kreis` | Geom | Kreis |
+| ⌢ | `bogen` | Geom | Kreisbogen |
+| ∡ | `gerichteter_winkel` | Geom | gerichteter Winkel |
+
+## <a id="extra_mengen"></a>Mengen · Ergänzungen
+
+Häufige Mengenkonstrukte über die OpenMath-CDs hinaus.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| 𝒫 | `powerset` | Mengen | Potenzmenge |
+| ∁ | `complement` | Mengen | Komplement (Aᶜ) |
+| A△B | `symdiff` | Mengen | symmetrische Differenz |
+| (a,b) | `ordered_pair` | Mengen | geordnetes Paar / Tupel |
+| ⊔ | `disjoint_union` | Mengen | disjunkte Vereinigung |
+| ⋃ | `big_union` | Mengen | indizierte Vereinigung |
+| ⋂ | `big_intersect` | Mengen | indizierter Durchschnitt |
+
+## <a id="extra_logik"></a>Logik · Ergänzungen
+
+Beweis- und Definitionssymbole.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| ∃! | `exists_unique` | Logik | es gibt genau ein |
+| ∄ | `nexists` | Logik | es gibt kein |
+| := | `defeq` | Logik | definierende Gleichheit |
+| ≡ | `identical` | Logik | identisch / definitorisch gleich |
+| ⊢ | `vdash` | Logik | beweisbar (Ableitbarkeit) |
+| ⊨ | `models` | Logik | erfüllt / modelliert |
+| ∴ | `therefore` | Logik | also, daraus folgt |
+| ∵ | `because` | Logik | weil |
+| ∎ | `qed` | Logik | q.e.d. (Beweisende) |
+
+## <a id="extra_relationen"></a>Relationen · Ergänzungen
+
+Weitere Vergleichs- und Äquivalenzsymbole.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| ≡ₙ | `congruent_mod` | Rel | kongruent modulo n |
+| ≅ | `isomorphic` | Rel | isomorph |
+| ∼ | `similar_rel` | Rel | ähnlich / äquivalent |
+| ∝ | `proportional` | Rel | proportional |
+| ≪ | `much_less` | Rel | sehr viel kleiner |
+| ≫ | `much_greater` | Rel | sehr viel größer |
+
+## <a id="extra_analysis"></a>Analysis & Ordnung · Ergänzungen
+
+Grenzwerte, Schranken, Rundung, weitere Operationen.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| sup | `sup` | Analysis | Supremum (kleinste obere Schranke) |
+| inf | `inf` | Analysis | Infimum (größte untere Schranke) |
+| lim | `lim` | Analysis | Grenzwert |
+| ∇ | `nabla` | Analysis | Nabla / Gradient |
+| ± | `plusminus` | Analysis | plusminus |
+| ⌊x⌋ | `floor` | Analysis | Abrunden (Gaußklammer) |
+| ⌈x⌉ | `ceil` | Analysis | Aufrunden |
+| (ⁿₖ) | `binomial` | Analysis | Binomialkoeffizient |
+
+## <a id="extra_linalg"></a>Lineare Algebra · Ergänzungen
+
+Begriffe rund um Vektorräume und lineare Abbildungen.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| dim | `dimension` | LinAlg | Dimension |
+| span | `span` | LinAlg | lineare Hülle / Erzeugnis |
+| rg | `rank` | LinAlg | Rang |
+| tr | `trace` | LinAlg | Spur |
+| ⊕ | `direct_sum` | LinAlg | direkte Summe |
+| ‖·‖ | `norm` | LinAlg | Norm |
+| 𝟙 | `identity_matrix` | LinAlg | Einheitsmatrix |
+| lin.u. | `lin_independent` | LinAlg | linear unabhängig |
 

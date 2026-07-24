@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { Search, Check, Copy, ChevronDown } from "lucide-react";
-import { OPENMATH_CATEGORIES, OPENMATH_META } from "./data/openmath.js";
+import { PALETTE_CATEGORIES, PALETTE_META } from "./data/openmath.js";
 
 /* --- Farbwelt (konsistent mit dem Baukasten) ----------------------- */
 const C = { paper: "#EAEEF2", dot: "#C4D0DB", ink: "#1B2430" };
 
-// je Kategorie eine eigene, gedämpfte Farbe
+// je Kategorie eine eigene, gedämpfte Farbe (Ergänzungen teilen die Themenfarbe)
 const CAT_COLOR = {
   zahlbereiche: "#31597F",
   verknuepfungen: "#6B4E9E",
@@ -18,6 +18,13 @@ const CAT_COLOR = {
   eigenschaften: "#8A6BC0",
   konstanten: "#9A6A2E",
   komplex: "#3E7E63",
+  extra_abbildungen: "#2F6E8F",
+  extra_geometrie: "#4E7A3E",
+  extra_mengen: "#B26A1E",
+  extra_logik: "#4C4BA6",
+  extra_relationen: "#1F7A63",
+  extra_analysis: "#7A5AA6",
+  extra_linalg: "#2E7D8A",
 };
 
 export default function OpenMathPalette() {
@@ -32,7 +39,7 @@ export default function OpenMathPalette() {
 
   const cats = useMemo(
     () =>
-      OPENMATH_CATEGORIES.map((c) => ({ ...c, hits: c.symbols.filter(matches) })).filter(
+      PALETTE_CATEGORIES.map((c) => ({ ...c, hits: c.symbols.filter(matches) })).filter(
         (c) => (!active || c.id === active) && c.hits.length > 0
       ),
     [q, active] // eslint-disable-line
@@ -64,8 +71,9 @@ export default function OpenMathPalette() {
             Bausteine-Bibliothek
           </h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            {OPENMATH_META.count} atomare Bausteine aus den offiziellen OpenMath-CDs, sinnvoll kategorisiert —
-            Verknüpfungen, Relationen, Abbildungen, Mengen, Logik u. a. Tippe einen Baustein an, um sein Zeichen zu kopieren.
+            {PALETTE_META.count} atomare Bausteine, kategorisiert — {PALETTE_META.openmath} aus den offiziellen OpenMath-CDs
+            plus {PALETTE_META.extra} <b>Ergänzungen</b> aus elementaren Einführungsskripten (Geometrie, Abbildungstypen &amp; Linearität, Analysis u. a.).
+            Tippe einen Baustein an, um sein Zeichen zu kopieren.
           </p>
         </header>
 
@@ -85,8 +93,8 @@ export default function OpenMathPalette() {
             )}
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <FilterChip label={`Alle · ${OPENMATH_META.count}`} color={C.ink} active={!active} onClick={() => setActive(null)} />
-            {OPENMATH_CATEGORIES.map((c) => (
+            <FilterChip label={`Alle · ${PALETTE_META.count}`} color={C.ink} active={!active} onClick={() => setActive(null)} />
+            {PALETTE_CATEGORIES.map((c) => (
               <FilterChip key={c.id} label={`${c.title} · ${c.symbols.length}`} color={CAT_COLOR[c.id]} active={active === c.id} onClick={() => setActive(active === c.id ? null : c.id)} />
             ))}
           </div>
@@ -94,7 +102,7 @@ export default function OpenMathPalette() {
 
         {/* Ergebnis-Zeile */}
         <div className="text-[11px] text-slate-500 mb-3" style={{ fontFamily: "ui-monospace, monospace" }}>
-          {q ? `${total} Treffer` : `${OPENMATH_META.count} Bausteine · ${OPENMATH_CATEGORIES.length} Kategorien`}
+          {q ? `${total} Treffer` : `${PALETTE_META.count} Bausteine · ${PALETTE_CATEGORIES.length} Kategorien`}
           {copied && <span className="ml-3" style={{ color: "#1F7A63" }}>✓ Zeichen kopiert</span>}
         </div>
 
@@ -113,6 +121,9 @@ export default function OpenMathPalette() {
                   <span style={{ background: color, width: 11, height: 11, borderRadius: 3 }} />
                   <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.10em" }} className="text-[12px] uppercase text-slate-600 font-medium">{c.title}</span>
                   <span className="text-[11px] text-slate-400">{c.hits.length}</span>
+                  {c.source === "Ergänzung" && (
+                    <span className="text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5" style={{ fontFamily: "ui-monospace, monospace", background: "rgba(0,0,0,0.05)", color, border: `1px solid ${color}66` }}>Ergänzung</span>
+                  )}
                   <span className="text-[11px] text-slate-400 ml-2 hidden sm:inline" style={{ fontFamily: "Georgia, serif" }}>{c.desc}</span>
                 </button>
                 {!isCollapsed && (
@@ -128,7 +139,7 @@ export default function OpenMathPalette() {
         </div>
 
         <footer className="mt-8 text-[11px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>
-          Quelle: {OPENMATH_META.source}. Kategorisierung: {OPENMATH_META.cds.length} CDs.
+          Quelle: OpenMath Content Dictionaries (github.com/OpenMath/CDs) · Ergänzungen aus elementaren Einführungsskripten (Standard-Curriculum). {PALETTE_META.count} Bausteine.
         </footer>
       </div>
     </div>
