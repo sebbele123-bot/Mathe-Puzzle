@@ -8,7 +8,7 @@ const deName = (s) => DE[`${s.cd}.${s.name}`] || s.name;
 const C = { paper: "#EAEEF2", dot: "#C4D0DB", ink: "#1B2430" };
 
 // je Kategorie eine eigene, gedämpfte Farbe (Ergänzungen teilen die Themenfarbe)
-const CAT_COLOR = {
+export const CAT_COLOR = {
   zahlbereiche: "#31597F",
   verknuepfungen: "#6B4E9E",
   relationen: "#1F7A63",

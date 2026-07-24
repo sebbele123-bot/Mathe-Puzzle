@@ -3,6 +3,7 @@ import { Boxes, GitBranch, LayoutGrid, Maximize, Minimize } from "lucide-react";
 import StrukturBaukasten from "./StrukturBaukasten.jsx";
 import BeweisCrafter from "./proof/BeweisCrafter.jsx";
 import OpenMathPalette from "./OpenMathPalette.jsx";
+import Inventory from "./Inventory.jsx";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
 
@@ -44,7 +45,7 @@ export default function App() {
   }, []);
 
   return (
-    <div ref={rootRef} style={{ minHeight: "100%", background: "#EAEEF2" }}>
+    <div ref={rootRef} style={{ minHeight: "100%", background: "#EAEEF2", paddingBottom: 76 }}>
       {/* Modus-Umschalter */}
       <div
         style={{
@@ -90,6 +91,9 @@ export default function App() {
       </div>
 
       {mode === "definition" ? <StrukturBaukasten /> : mode === "bausteine" ? <OpenMathPalette /> : <BeweisCrafter />}
+
+      {/* Minecraft-artiges Inventar: Hotbar (1–8) + volles Inventar (E) */}
+      <Inventory />
     </div>
   );
 }
