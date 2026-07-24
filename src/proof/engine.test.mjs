@@ -30,9 +30,11 @@ const SOLUTIONS = {
   ],
   p_rot51: [
     ["r51_center", ["r51_d"]],
+    ["r51_expand", ["r51_dc"]],
     ["r51_after", ["r51_dlin"]],
     ["r_fixansatz", ["r51_comp"]],
-    ["r_solve", ["r51_fixeq", "r51_1mi"]],
+    ["r51_collect", ["r51_fixeq"]],
+    ["r_solve", ["r51_factored", "r51_1mi"]],
   ],
   p_inv61: [
     ["r61_center", ["k61_setup", "k61_ionc"]],

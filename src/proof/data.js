@@ -43,10 +43,12 @@ export const FACTS = {
 
   // ---- M4 · Ü5.1 · Verkettung von Drehungen (Fixpunkt) ----
   r51_d: { id: "r51_d", name: "d: p+z ↦ p+iz", sub: "90°-Drehung um p" },
+  r51_dc: { id: "r51_dc", name: "d(x) = p + i(x−p)", sub: "" },
   r51_dlin: { id: "r51_dlin", name: "d(z) = iz + p(1−i)", sub: "" },
   r51_comp: { id: "r51_comp", name: "(w+)∘d: z ↦ iz + p(1−i) + w", sub: "" },
   r51_1mi: { id: "r51_1mi", name: "1 − i ≠ 0", sub: "" },
   r51_fixeq: { id: "r51_fixeq", name: "p′ = i·p′ + p(1−i) + w", sub: "Fixpunktgleichung" },
+  r51_factored: { id: "r51_factored", name: "p′(1−i) = p(1−i) + w", sub: "" },
   r51_goal: { id: "r51_goal", name: "p′ = p + w/(1−i)", sub: "Fixpunkt der neuen Drehung", role: "ziel" },
 
   // ---- M5 · Ü6.1 · Kreisspiegelung an K(i; 2) ----
@@ -89,8 +91,10 @@ export const RULES = {
   r_detNaiv: { id: "r_detNaiv", name: "Determinante", sub: "det einer orthogonalen Abbildung" },
 
   // M4 · Ü5.1  (r_fixansatz und r_solve werden wiederverwendet)
-  r51_center: { id: "r51_center", name: "Drehung linear schreiben", sub: "Drehung um Zentrum p" },
+  r51_center: { id: "r51_center", name: "Zentrum einsetzen", sub: "Drehung um den Punkt p" },
+  r51_expand: { id: "r51_expand", name: "ausmultiplizieren", sub: "Klammern auflösen" },
   r51_after: { id: "r51_after", name: "Translation danach", sub: "g∘d mit g = (w+)" },
+  r51_collect: { id: "r51_collect", name: "Terme sammeln", sub: "gleiche Terme zusammenfassen" },
   r51_before: { id: "r51_before", name: "Translation davor", sub: "d∘g mit g = (w+)" },
   r51_conj: { id: "r51_conj", name: "Konjugation", sub: "z ↦ z̄" },
 
@@ -192,16 +196,19 @@ export const MISSIONS = [
       "Die Verkettung (w+)∘d der 90°-Drehung d mit Fixpunkt p und der Translation um w ist wieder eine 90°-Drehung; ihr Fixpunkt ist p′ = p + w/(1−i).",
     goal: "r51_goal",
     pool: {
-      facts: ["r51_d", "r51_dlin", "r51_comp", "r51_1mi", "r51_fixeq", "r51_goal"],
-      rules: ["r51_center", "r51_after", "r51_before", "r_fixansatz", "r_solve", "r51_conj"],
+      facts: ["r51_d", "r51_dc", "r51_dlin", "r51_comp", "r51_1mi", "r51_fixeq", "r51_factored", "r51_goal"],
+      rules: ["r51_center", "r51_expand", "r51_after", "r_fixansatz", "r51_collect", "r_solve", "r51_before", "r51_conj"],
     },
     steps: [
-      { rule: "r51_center", premises: ["r51_d"], produces: "r51_dlin" },
+      { rule: "r51_center", premises: ["r51_d"], produces: "r51_dc" }, //   d(x) = p + i(x−p)
+      { rule: "r51_expand", premises: ["r51_dc"], produces: "r51_dlin" }, // iz + p(1−i)
       { rule: "r51_after", premises: ["r51_dlin"], produces: "r51_comp" },
       { rule: "r_fixansatz", premises: ["r51_comp"], produces: "r51_fixeq" },
-      { rule: "r_solve", premises: ["r51_fixeq", "r51_1mi"], produces: "r51_goal" },
+      { rule: "r51_collect", premises: ["r51_fixeq"], produces: "r51_factored" }, // p′(1−i) = …
+      { rule: "r_solve", premises: ["r51_factored", "r51_1mi"], produces: "r51_goal" }, // durch (1−i) teilen
     ],
     depths: [
+      { label: "Ab Fixpunktgleichung", given: ["r51_fixeq", "r51_1mi"] },
       { label: "Ab Linearform", given: ["r51_dlin", "r51_1mi"] },
       { label: "Von vorn", given: ["r51_d", "r51_1mi"] },
     ],
