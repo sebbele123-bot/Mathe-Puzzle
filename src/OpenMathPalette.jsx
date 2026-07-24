@@ -112,7 +112,8 @@ export default function OpenMathPalette() {
               <span><b style={{ color: lang === "de" ? "#6B4E9E" : "#9aa6b2" }}>DE</b> / <b style={{ color: lang === "en" ? "#6B4E9E" : "#9aa6b2" }}>EN</b></span>
             </button>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          {/* eine seitlich scrollbare Zeile statt einer Chip-Wand (spart Platz) */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             <FilterChip label={`Alle · ${PALETTE_META.count}`} color={C.ink} active={!active} onClick={() => setActive(null)} />
             {PALETTE_CATEGORIES.map((c) => (
               <FilterChip key={c.id} label={`${c.title} · ${c.symbols.length}`} color={CAT_COLOR[c.id]} active={active === c.id} onClick={() => setActive(active === c.id ? null : c.id)} />
@@ -189,7 +190,7 @@ function FilterChip({ label, color, active, onClick }) {
     <button
       onClick={onClick}
       aria-pressed={active}
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] transition-colors border"
+      className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] transition-colors border"
       style={{
         fontFamily: "ui-monospace, monospace",
         background: active ? color : "rgba(255,255,255,0.5)",
