@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Search, Check, Copy, ChevronDown } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { PALETTE_CATEGORIES, PALETTE_META } from "./data/openmath.js";
 
 /* --- Farbwelt (konsistent mit dem Baukasten) ----------------------- */
@@ -34,6 +34,7 @@ export default function OpenMathPalette() {
   const [active, setActive] = useState(null); // Kategorie-id oder null = alle
   const [collapsed, setCollapsed] = useState({});
   const [copied, setCopied] = useState(null); // zuletzt kopierter Baustein
+  const [selected, setSelected] = useState(null); // zuletzt angetippt (für Detailzeile)
 
   const q = query.trim().toLowerCase();
   const matches = (s) =>
@@ -54,8 +55,9 @@ export default function OpenMathPalette() {
     backgroundSize: "22px 22px",
   };
 
-  const copy = async (s) => {
+  const copy = async (s, color) => {
     try { await navigator.clipboard?.writeText(s.glyph); } catch { /* ignore */ }
+    setSelected({ ...s, color });
     setCopied(s.id);
     setTimeout(() => setCopied((v) => (v === s.id ? null : v)), 1100);
   };
@@ -102,10 +104,25 @@ export default function OpenMathPalette() {
           </div>
         </section>
 
-        {/* Ergebnis-Zeile */}
-        <div className="text-[11px] text-slate-500 mb-3" style={{ fontFamily: "ui-monospace, monospace" }}>
-          {q ? `${total} Treffer` : `${PALETTE_META.count} Bausteine · ${PALETTE_CATEGORIES.length} Kategorien`}
-          {copied && <span className="ml-3" style={{ color: "#1F7A63" }}>✓ Zeichen kopiert</span>}
+        {/* Detailzeile: zeigt den zuletzt angetippten Baustein (Quelle + Bedeutung) */}
+        <div className="mb-3 rounded-lg px-3 py-2 flex items-center gap-3 min-h-[46px]" style={{ background: "rgba(255,255,255,0.55)", border: "1px solid #B7C3CF" }}>
+          {selected ? (
+            <>
+              <span style={{ background: selected.color, color: "#fff", fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1, borderRadius: 8, minWidth: 40, textAlign: "center" }} className="px-2 py-1.5 shrink-0">{selected.glyph}</span>
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-sm text-slate-800 font-medium">{selected.name}</span>
+                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[9px] uppercase tracking-wider text-slate-400">{selected.cd}</span>
+                  {copied === selected.id && <span className="text-[11px]" style={{ color: "#1F7A63" }}>✓ kopiert</span>}
+                </div>
+                <div className="text-xs text-slate-600 truncate" style={{ fontFamily: "Georgia, serif" }}>{selected.desc}</div>
+              </div>
+            </>
+          ) : (
+            <span className="text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>
+              {q ? `${total} Treffer` : `${PALETTE_META.count} Bausteine · ${PALETTE_CATEGORIES.length} Kategorien`} · Tippe ein Zeichen für Bedeutung &amp; zum Kopieren.
+            </span>
+          )}
         </div>
 
         {/* Kategorien */}
@@ -129,9 +146,10 @@ export default function OpenMathPalette() {
                   <span className="text-[11px] text-slate-400 ml-2 hidden sm:inline" style={{ fontFamily: "Georgia, serif" }}>{c.desc}</span>
                 </button>
                 {!isCollapsed && (
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(74px, 1fr))", gap: 6 }}>
                     {c.hits.map((s) => (
-                      <SymbolTile key={`${s.cd}.${s.name}`} sym={{ ...s, id: `${s.cd}.${s.name}` }} color={color} copied={copied === `${s.cd}.${s.name}`} onClick={copy} />
+                      <SymbolTile key={`${s.cd}.${s.name}`} sym={{ ...s, id: `${s.cd}.${s.name}` }} color={color}
+                        copied={copied === `${s.cd}.${s.name}`} selected={selected?.id === `${s.cd}.${s.name}`} onClick={copy} />
                     ))}
                   </div>
                 )}
@@ -166,31 +184,24 @@ function FilterChip({ label, color, active, onClick }) {
   );
 }
 
-function SymbolTile({ sym, color, copied, onClick }) {
+function SymbolTile({ sym, color, copied, selected, onClick }) {
   return (
     <button
-      onClick={() => onClick(sym)}
-      title={`${sym.name} (${sym.cd}) — Zeichen kopieren`}
-      className="text-left rounded-xl transition-all group relative"
+      onClick={() => onClick(sym, color)}
+      title={`${sym.glyph}  ${sym.name} (${sym.cd}) — ${sym.desc}`}
+      className="rounded-lg transition-all flex flex-col items-center justify-center"
       style={{
         background: `linear-gradient(160deg, rgba(255,255,255,0.20), rgba(255,255,255,0)), ${color}`,
         color: "#fff",
-        padding: "8px 12px",
-        width: 148,
-        border: "1px solid rgba(255,255,255,0.18)",
-        boxShadow: copied ? `0 0 0 3px ${color}55, 0 2px 0 rgba(0,0,0,0.18)` : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
+        padding: "6px 3px",
+        minHeight: 58,
+        border: selected ? "2px solid #1B2430" : "1px solid rgba(255,255,255,0.18)",
+        boxShadow: copied ? `0 0 0 3px ${color}88` : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
         cursor: "pointer",
       }}
     >
-      <div className="flex items-baseline justify-between gap-1">
-        <span style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1 }} className="font-semibold">{sym.glyph}</span>
-        <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 8.5, opacity: 0.75 }} className="uppercase">{sym.cd}</span>
-      </div>
-      <div style={{ fontFamily: "ui-monospace, monospace", fontSize: 10.5, opacity: 0.95, marginTop: 4 }}>{sym.name}</div>
-      <div style={{ fontSize: 10.5, opacity: 0.9, marginTop: 1 }}>{sym.desc}</div>
-      <span className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-70 transition-opacity">
-        {copied ? <Check size={12} /> : <Copy size={11} />}
-      </span>
+      <span style={{ fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1.05 }} className="font-semibold text-center">{sym.glyph}</span>
+      <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 8, opacity: 0.82, maxWidth: "100%" }} className="mt-1 truncate px-0.5">{sym.name}</span>
     </button>
   );
 }
