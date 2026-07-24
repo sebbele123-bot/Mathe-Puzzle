@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Search, ChevronDown } from "lucide-react";
-import { PALETTE_CATEGORIES, PALETTE_META } from "./data/openmath.js";
+import { Search, ChevronDown, Languages } from "lucide-react";
+import { PALETTE_CATEGORIES, PALETTE_META, DE } from "./data/openmath.js";
+
+const deName = (s) => DE[`${s.cd}.${s.name}`] || s.name;
 
 /* --- Farbwelt (konsistent mit dem Baukasten) ----------------------- */
 const C = { paper: "#EAEEF2", dot: "#C4D0DB", ink: "#1B2430" };
@@ -35,10 +37,12 @@ export default function OpenMathPalette() {
   const [collapsed, setCollapsed] = useState({});
   const [copied, setCopied] = useState(null); // zuletzt kopierter Baustein
   const [selected, setSelected] = useState(null); // zuletzt angetippt (für Detailzeile)
+  const [lang, setLang] = useState("de"); // "de" (Standard) | "en" (OpenMath-Name)
 
   const q = query.trim().toLowerCase();
   const matches = (s) =>
-    !q || s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q);
+    !q || s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) ||
+    s.desc.toLowerCase().includes(q) || deName(s).toLowerCase().includes(q);
 
   const cats = useMemo(
     () =>
@@ -83,18 +87,30 @@ export default function OpenMathPalette() {
 
         {/* Suche + Kategorie-Filter */}
         <section className="mb-5">
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2 mb-3 border" style={{ background: "rgba(255,255,255,0.6)", borderColor: "#B7C3CF", maxWidth: 420 }}>
-            <Search size={15} className="text-slate-400 shrink-0" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="suchen … (Name, Zeichen, Bedeutung)"
-              className="w-full bg-transparent outline-none text-sm"
-              style={{ fontFamily: "ui-monospace, monospace" }}
-            />
-            {query && (
-              <button onClick={() => setQuery("")} className="text-slate-400 hover:text-slate-700 text-xs" aria-label="löschen">✕</button>
-            )}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 border" style={{ background: "rgba(255,255,255,0.6)", borderColor: "#B7C3CF", flex: "1 1 240px", maxWidth: 420 }}>
+              <Search size={15} className="text-slate-400 shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="suchen … (Name, Zeichen, Bedeutung)"
+                className="w-full bg-transparent outline-none text-sm"
+                style={{ fontFamily: "ui-monospace, monospace" }}
+              />
+              {query && (
+                <button onClick={() => setQuery("")} className="text-slate-400 hover:text-slate-700 text-xs" aria-label="löschen">✕</button>
+              )}
+            </div>
+            {/* Sprach-Umschalter: Deutsch (Standard) ↔ englischer OpenMath-Name */}
+            <button
+              onClick={() => setLang((l) => (l === "de" ? "en" : "de"))}
+              title="Bezeichnung umschalten: Deutsch ↔ OpenMath (Englisch)"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs border transition-colors"
+              style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.6)", borderColor: "#B7C3CF", color: C.ink }}
+            >
+              <Languages size={14} />
+              <span><b style={{ color: lang === "de" ? "#6B4E9E" : "#9aa6b2" }}>DE</b> / <b style={{ color: lang === "en" ? "#6B4E9E" : "#9aa6b2" }}>EN</b></span>
+            </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <FilterChip label={`Alle · ${PALETTE_META.count}`} color={C.ink} active={!active} onClick={() => setActive(null)} />
@@ -111,7 +127,8 @@ export default function OpenMathPalette() {
               <span style={{ background: selected.color, color: "#fff", fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1, borderRadius: 8, minWidth: 40, textAlign: "center" }} className="px-2 py-1.5 shrink-0">{selected.glyph}</span>
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-sm text-slate-800 font-medium">{selected.name}</span>
+                  <span style={{ fontFamily: "Georgia, serif" }} className="text-sm text-slate-800 font-semibold">{deName(selected)}</span>
+                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[11px] text-slate-500">{selected.name}</span>
                   <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[9px] uppercase tracking-wider text-slate-400">{selected.cd}</span>
                   {copied === selected.id && <span className="text-[11px]" style={{ color: "#1F7A63" }}>✓ kopiert</span>}
                 </div>
@@ -148,7 +165,8 @@ export default function OpenMathPalette() {
                 {!isCollapsed && (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(74px, 1fr))", gap: 6 }}>
                     {c.hits.map((s) => (
-                      <SymbolTile key={`${s.cd}.${s.name}`} sym={{ ...s, id: `${s.cd}.${s.name}` }} color={color}
+                      <SymbolTile key={`${s.cd}.${s.name}`} sym={{ ...s, id: `${s.cd}.${s.name}` }}
+                        label={lang === "de" ? deName(s) : s.name} color={color}
                         copied={copied === `${s.cd}.${s.name}`} selected={selected?.id === `${s.cd}.${s.name}`} onClick={copy} />
                     ))}
                   </div>
@@ -184,7 +202,7 @@ function FilterChip({ label, color, active, onClick }) {
   );
 }
 
-function SymbolTile({ sym, color, copied, selected, onClick }) {
+function SymbolTile({ sym, label, color, copied, selected, onClick }) {
   return (
     <button
       onClick={() => onClick(sym, color)}
@@ -201,7 +219,7 @@ function SymbolTile({ sym, color, copied, selected, onClick }) {
       }}
     >
       <span style={{ fontFamily: "Georgia, serif", fontSize: 20, lineHeight: 1.05 }} className="font-semibold text-center">{sym.glyph}</span>
-      <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 8, opacity: 0.82, maxWidth: "100%" }} className="mt-1 truncate px-0.5">{sym.name}</span>
+      <span style={{ fontSize: 8.5, opacity: 0.85, maxWidth: "100%" }} className="mt-1 truncate px-0.5 text-center">{label || sym.name}</span>
     </button>
   );
 }
