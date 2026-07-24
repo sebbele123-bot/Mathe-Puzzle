@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { Boxes, GitBranch } from "lucide-react";
+import { Boxes, GitBranch, LayoutGrid } from "lucide-react";
 import StrukturBaukasten from "./StrukturBaukasten.jsx";
 import BeweisCrafter from "./proof/BeweisCrafter.jsx";
+import OpenMathPalette from "./OpenMathPalette.jsx";
 
-const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F" };
+const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E" };
 
 export default function App() {
-  const [mode, setMode] = useState("beweis"); // "definition" | "beweis"
+  const [mode, setMode] = useState("beweis"); // "definition" | "beweis" | "bausteine"
 
   return (
     <div style={{ minHeight: "100%" }}>
@@ -28,11 +29,12 @@ export default function App() {
           <div className="flex gap-1.5">
             <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
             <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
+            <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
           </div>
         </div>
       </div>
 
-      {mode === "definition" ? <StrukturBaukasten /> : <BeweisCrafter />}
+      {mode === "definition" ? <StrukturBaukasten /> : mode === "bausteine" ? <OpenMathPalette /> : <BeweisCrafter />}
     </div>
   );
 }
