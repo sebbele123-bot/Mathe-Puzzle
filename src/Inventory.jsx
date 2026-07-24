@@ -15,12 +15,19 @@ const C = { ink: "#1B2430", paper: "#EAEEF2" };
 const SLOTS = 8;
 const LS_KEY = "mp_hotbar_v2"; // v2: startet leer (kein Auto-Auffüllen)
 
-// flache Bausteinliste mit id + Farbe
+// flache Bausteinliste mit id + Farbe + Kategorie
 const ALL = PALETTE_CATEGORIES.flatMap((c) =>
-  c.symbols.map((s) => ({ ...s, id: `${s.cd}.${s.name}`, color: CAT_COLOR[c.id] || "#31597F" }))
+  c.symbols.map((s) => ({ ...s, id: `${s.cd}.${s.name}`, cat: c.id, color: CAT_COLOR[c.id] || "#31597F" }))
 );
 const BY_ID = Object.fromEntries(ALL.map((s) => [s.id, s]));
 const deLabel = (s) => DE[s.id] || s.name;
+// kurze Kategorie-Etiketten für die Filter-Chips
+const CATS = PALETTE_CATEGORIES.map((c) => ({
+  id: c.id,
+  title: c.title.replace(/\s*\(.*?\)\s*/g, "").trim(),
+  color: CAT_COLOR[c.id] || "#31597F",
+  n: c.symbols.length,
+}));
 
 // Inventar startet leer — der Spieler sammelt seine Bausteine selbst ein.
 const DEFAULT_HOTBAR = Array(SLOTS).fill(null);
@@ -36,6 +43,7 @@ export default function Inventory() {
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [cat, setCat] = useState(null); // aktive Kategorie-Filterung (null = alle)
   const [toast, setToast] = useState("");
   const [hovered, setHovered] = useState(null); // Item-id, über dem der Zeiger schwebt (Desktop)
   const [focusIdx, setFocusIdx] = useState(0); // Tastatur-Fokus im Raster (Pfeiltasten)
@@ -90,10 +98,11 @@ export default function Inventory() {
 
   const q = query.trim().toLowerCase();
   const results = useMemo(() => {
-    if (!q) return ALL;
-    return ALL.filter((s) => s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) ||
+    let list = cat ? ALL.filter((s) => s.cat === cat) : ALL;
+    if (q) list = list.filter((s) => s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) ||
       s.desc.toLowerCase().includes(q) || deLabel(s).toLowerCase().includes(q));
-  }, [q]);
+    return list;
+  }, [q, cat]);
 
   // aktuelle Spaltenzahl des Rasters (für Pfeil-hoch/runter)
   const cols = () => {
@@ -138,17 +147,18 @@ export default function Inventory() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, hovered, hotbar, active, results, focusIdx]); // eslint-disable-line
 
-  // Fokus zurücksetzen, wenn sich Suche ändert oder das Inventar öffnet
-  useEffect(() => { setFocusIdx(0); }, [q, open]);
+  // Fokus zurücksetzen, wenn sich Suche/Kategorie ändert oder das Inventar öffnet
+  useEffect(() => { setFocusIdx(0); }, [q, cat, open]);
   // fokussiertes Item ins Sichtfeld scrollen
   useEffect(() => { focusRef.current?.scrollIntoView({ block: "nearest" }); }, [focusIdx]);
 
   return (
     <>
-      {/* Hotbar (fix am unteren Rand) */}
+      {/* Hotbar (fix am unteren Rand) — passt sich der Bildschirmbreite an */}
       <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 45, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
-        <div className="flex items-end gap-2 px-3 py-2" style={{ pointerEvents: "auto" }}>
-          <div className="flex gap-1.5 rounded-xl p-1.5" style={{ background: "rgba(27,36,48,0.86)", backdropFilter: "blur(6px)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
+        <div className="flex items-end gap-1.5 px-2 py-2" style={{ pointerEvents: "auto", width: "min(100vw, 520px)" }}>
+          {/* 8 gleich breite Slots, die zusammen schrumpfen statt abgeschnitten zu werden */}
+          <div className="rounded-xl p-1" style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 4, background: "rgba(27,36,48,0.86)", backdropFilter: "blur(6px)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
             {hotbar.map((id, i) => {
               const b = id ? BY_ID[id] : null;
               const isActive = i === active;
@@ -159,21 +169,21 @@ export default function Inventory() {
                   title={b ? `${b.glyph} ${deLabel(b)} — Slot ${i + 1} (Taste ${i + 1}); klicken kopiert` : `Slot ${i + 1} — leer`}
                   className="relative rounded-lg flex items-center justify-center transition-all"
                   style={{
-                    width: 46, height: 46,
+                    width: "100%", aspectRatio: "1 / 1", minWidth: 0,
                     background: b ? `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${b.color}` : "rgba(255,255,255,0.06)",
                     border: isActive ? "2px solid #fff" : "2px solid rgba(255,255,255,0.12)",
                     color: "#fff", cursor: "pointer",
                   }}>
-                  <span style={{ position: "absolute", top: 1, left: 3, fontSize: 8, opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
-                  {b ? <span style={{ fontFamily: "Georgia, serif", fontSize: 18, lineHeight: 1 }}>{b.glyph}</span>
-                     : <span style={{ opacity: 0.3, fontSize: 16 }}>·</span>}
+                  <span style={{ position: "absolute", top: 0, left: 2, fontSize: 7, opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
+                  {b ? <span style={{ fontFamily: "Georgia, serif", fontSize: "clamp(13px, 4vw, 18px)", lineHeight: 1 }}>{b.glyph}</span>
+                     : <span style={{ opacity: 0.3, fontSize: 14 }}>·</span>}
                 </button>
               );
             })}
           </div>
           <button onClick={() => setOpen((o) => !o)} title="Inventar öffnen (Taste E)"
-            className="rounded-lg flex flex-col items-center justify-center px-2.5"
-            style={{ height: 58, background: "rgba(27,36,48,0.86)", color: "#fff", backdropFilter: "blur(6px)", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
+            className="rounded-lg flex flex-col items-center justify-center shrink-0"
+            style={{ width: 46, height: 52, background: "rgba(27,36,48,0.86)", color: "#fff", backdropFilter: "blur(6px)", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
             <Grid3x3 size={16} />
             <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 8, marginTop: 2 }}>E</span>
           </button>
@@ -193,36 +203,59 @@ export default function Inventory() {
           onClick={() => setOpen(false)}>
           <div onClick={(e) => e.stopPropagation()}
             className="w-full rounded-t-2xl"
-            style={{ maxWidth: 900, maxHeight: "82vh", background: C.paper, boxShadow: "0 -8px 40px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column" }}>
-            {/* Kopf */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "#C4D0DB" }}>
-              <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-base font-semibold">Inventar</span>
-              <span className="text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {PALETTE_META.count} Bausteine · Klick → Slot <b>{active + 1}</b> · Halten/Shift → einsammeln</span>
-              <div className="ml-auto flex items-center gap-2 rounded-lg px-2.5 py-1.5 border" style={{ background: "#fff", borderColor: "#B7C3CF" }}>
-                <Search size={14} className="text-slate-400" />
-                <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="suchen …"
-                  className="bg-transparent outline-none text-sm" style={{ fontFamily: "ui-monospace, monospace", width: 130 }} />
+            style={{ maxWidth: 900, height: "90vh", maxHeight: "90vh", background: C.paper, boxShadow: "0 -8px 40px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column" }}>
+            {/* Kopf: Titel + Schließen, darunter volle Suchzeile */}
+            <div className="px-3 pt-2.5 pb-2 border-b" style={{ borderColor: "#C4D0DB" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-base font-semibold">Inventar</span>
+                <span className="hidden sm:inline text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {results.length}/{PALETTE_META.count} · Klick → Slot <b>{active + 1}</b></span>
+                <button onClick={() => setOpen(false)} aria-label="schließen" className="ml-auto rounded-lg p-1.5 hover:bg-slate-200 transition-colors"><X size={16} /></button>
               </div>
-              <button onClick={() => setOpen(false)} aria-label="schließen" className="rounded-lg p-1.5 hover:bg-slate-200 transition-colors"><X size={16} /></button>
+              <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border" style={{ background: "#fff", borderColor: "#B7C3CF" }}>
+                <Search size={14} className="text-slate-400 shrink-0" />
+                <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="suchen …"
+                  className="bg-transparent outline-none text-sm flex-1 min-w-0" style={{ fontFamily: "ui-monospace, monospace" }} />
+                {query && <button onClick={() => setQuery("")} aria-label="Suche leeren" className="shrink-0 text-slate-400"><X size={13} /></button>}
+              </div>
             </div>
 
-            {/* aktive Slots-Vorschau */}
-            <div className="flex gap-1.5 px-4 py-2 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB" }}>
+            {/* Kategorie-Chips (horizontal scrollbar) — spart Scrollen im Raster */}
+            <div className="flex gap-1.5 px-3 py-2 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB", scrollbarWidth: "none" }}>
+              <button onClick={() => setCat(null)}
+                className="shrink-0 rounded-full px-2.5 py-1 text-[11px] transition-colors border"
+                style={{ fontFamily: "ui-monospace, monospace",
+                  background: cat === null ? C.ink : "#fff", color: cat === null ? "#fff" : C.ink,
+                  borderColor: cat === null ? C.ink : "#C4D0DB" }}>alle</button>
+              {CATS.map((c) => (
+                <button key={c.id} onClick={() => setCat((x) => (x === c.id ? null : c.id))}
+                  title={`${c.title} (${c.n})`}
+                  className="shrink-0 rounded-full pl-1.5 pr-2.5 py-1 text-[11px] transition-colors border flex items-center gap-1.5"
+                  style={{ fontFamily: "ui-monospace, monospace",
+                    background: cat === c.id ? c.color : "#fff", color: cat === c.id ? "#fff" : C.ink,
+                    borderColor: cat === c.id ? c.color : "#C4D0DB" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 99, background: c.color, display: "inline-block", opacity: cat === c.id ? 0 : 1 }} />
+                  {c.title}
+                </button>
+              ))}
+            </div>
+
+            {/* aktive Slots-Vorschau (kompakt) */}
+            <div className="flex gap-1 px-3 py-1.5 border-b overflow-x-auto" style={{ borderColor: "#C4D0DB", scrollbarWidth: "none" }}>
               {hotbar.map((id, i) => {
                 const b = id ? BY_ID[id] : null;
                 return (
                   <button key={i} onClick={() => setActive(i)} title={`Slot ${i + 1} wählen`}
                     className="relative rounded-md flex items-center justify-center shrink-0"
-                    style={{ width: 38, height: 38, background: b ? b.color : "#dfe5ea", border: i === active ? "2px solid #1B2430" : "2px solid transparent", color: "#fff", cursor: "pointer" }}>
-                    <span style={{ position: "absolute", top: 0, left: 2, fontSize: 7, opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
-                    {b && <span style={{ fontFamily: "Georgia, serif", fontSize: 15 }}>{b.glyph}</span>}
+                    style={{ width: 32, height: 32, background: b ? b.color : "#dfe5ea", border: i === active ? "2px solid #1B2430" : "2px solid transparent", color: "#fff", cursor: "pointer" }}>
+                    <span style={{ position: "absolute", top: -1, left: 2, fontSize: 7, opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>{i + 1}</span>
+                    {b && <span style={{ fontFamily: "Georgia, serif", fontSize: 14 }}>{b.glyph}</span>}
                   </button>
                 );
               })}
             </div>
 
-            {/* Baustein-Raster */}
-            <div ref={gridRef} className="overflow-y-auto p-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: 5 }}>
+            {/* Baustein-Raster — kleinere Kacheln, mehr pro Bildschirm */}
+            <div ref={gridRef} className="overflow-y-auto p-2 flex-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(50px, 1fr))", gap: 4 }}>
               {results.map((s, i) => {
                 const focused = i === focusIdx;
                 return (
@@ -235,14 +268,14 @@ export default function Inventory() {
                   onPointerLeave={() => { endPress(); setHovered((h) => (h === s.id ? null : h)); }}
                   onContextMenu={(e) => e.preventDefault()}
                   title={`${s.glyph} ${deLabel(s)} — Klick: Slot ${active + 1} · Shift/Halten: einsammeln`}
-                  className="rounded-lg flex flex-col items-center justify-center transition-all"
-                  style={{ minHeight: 52, padding: "5px 2px", color: "#fff",
+                  className="rounded-md flex flex-col items-center justify-center transition-all"
+                  style={{ minHeight: 44, padding: "3px 1px", color: "#fff",
                     background: `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${s.color}`,
                     border: (hovered === s.id || focused) ? "2px solid #fff" : "1px solid rgba(255,255,255,0.18)",
                     outline: focused ? "2px solid rgba(255,255,255,0.55)" : "none", outlineOffset: 1,
                     cursor: "pointer", touchAction: "none" }}>
-                  <span style={{ fontFamily: "Georgia, serif", fontSize: 18, lineHeight: 1 }}>{s.glyph}</span>
-                  <span style={{ fontSize: 7.5, opacity: 0.85, marginTop: 2, maxWidth: "100%" }} className="truncate px-0.5 text-center">{deLabel(s)}</span>
+                  <span style={{ fontFamily: "Georgia, serif", fontSize: 16, lineHeight: 1 }}>{s.glyph}</span>
+                  <span style={{ fontSize: 7, opacity: 0.85, marginTop: 1, maxWidth: "100%" }} className="truncate px-0.5 text-center">{deLabel(s)}</span>
                 </button>
                 );
               })}

@@ -8,7 +8,7 @@ import Inventory from "./Inventory.jsx";
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
 
 export default function App() {
-  const [mode, setMode] = useState("beweis"); // "definition" | "beweis" | "bausteine"
+  const [mode, setMode] = useState("bausteine"); // "definition" | "beweis" | "bausteine"
   const [fs, setFs] = useState(false);
   const [fsHint, setFsHint] = useState("");
   const rootRef = useRef(null);
@@ -68,21 +68,21 @@ export default function App() {
           borderBottom: "1px solid #C4D0DB",
         }}
       >
-        <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
-          <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-sm font-semibold mr-1">
+        <div className="max-w-5xl mx-auto px-3 py-2 flex items-center gap-2">
+          <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="hidden md:inline text-sm font-semibold mr-1 whitespace-nowrap">
             Mathe-Puzzle
           </span>
-          <div className="flex gap-1.5">
-            <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
-            <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
+          <div className="flex gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
             <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
+            <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
+            <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
           </div>
-          {/* Vollbild-Umschalter */}
+          {/* Vollbild-Umschalter — bleibt immer sichtbar */}
           <button
             onClick={toggleFs}
             aria-label={fs ? "Vollbild verlassen" : "Vollbild"}
             title={fs ? "Vollbild verlassen" : "Vollbildmodus"}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors border shrink-0"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors border shrink-0"
             style={{
               fontFamily: "ui-monospace, monospace",
               background: fs ? C.ink : "rgba(255,255,255,0.6)",
@@ -115,7 +115,9 @@ function ModeButton({ active, onClick, icon: Icon, label, color }) {
     <button
       onClick={onClick}
       aria-pressed={active}
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors border"
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors border shrink-0"
       style={{
         fontFamily: "ui-monospace, monospace",
         background: active ? color : "rgba(255,255,255,0.6)",
@@ -123,7 +125,9 @@ function ModeButton({ active, onClick, icon: Icon, label, color }) {
         borderColor: active ? color : "#B7C3CF",
       }}
     >
-      <Icon size={13} /> {label}
+      <Icon size={13} />
+      {/* auf kleinen Schirmen nur das aktive Label zeigen — spart Platz für den Vollbild-Knopf */}
+      <span className={`${active ? "inline" : "hidden"} sm:inline`}>{label}</span>
     </button>
   );
 }
