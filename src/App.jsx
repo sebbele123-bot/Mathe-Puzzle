@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Boxes, GitBranch, LayoutGrid, Library, Maximize, Minimize } from "lucide-react";
+import { Boxes, GitBranch, LayoutGrid, Library, Hammer, Maximize, Minimize } from "lucide-react";
 import StrukturBaukasten from "./StrukturBaukasten.jsx";
 import BeweisCrafter from "./proof/BeweisCrafter.jsx";
 import OpenMathPalette from "./OpenMathPalette.jsx";
 import Bibliothek from "./Bibliothek.jsx";
+import Werkbank from "./Werkbank.jsx";
 import Inventory from "./Inventory.jsx";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
@@ -11,6 +12,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "definition" | "beweis" | "bausteine"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
   const [fs, setFs] = useState(false);
   const [fsHint, setFsHint] = useState("");
   const rootRef = useRef(null);
@@ -83,6 +85,7 @@ export default function App() {
           </span>
           <div className="flex gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
             <ModeButton active={mode === "bibliothek"} onClick={() => setMode("bibliothek")} icon={Library} label="Bibliothek" color={C.ink} />
+            <ModeButton active={mode === "werkbank"} onClick={() => setMode("werkbank")} icon={Hammer} label="Werkbank" color={C.warn} />
             <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
             <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
             <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
@@ -114,6 +117,8 @@ export default function App() {
 
       {mode === "bibliothek" ? (
         <Bibliothek onOpen={openFromLibrary} />
+      ) : mode === "werkbank" ? (
+        <Werkbank activeSymbolId={activeSymbol} />
       ) : mode === "definition" ? (
         <StrukturBaukasten initialId={openReq.definition} />
       ) : mode === "bausteine" ? (
@@ -123,7 +128,7 @@ export default function App() {
       )}
 
       {/* Minecraft-artiges Inventar: Hotbar (1–8) + volles Inventar (E) */}
-      <Inventory />
+      <Inventory onActive={setActiveSymbol} />
     </div>
   );
 }

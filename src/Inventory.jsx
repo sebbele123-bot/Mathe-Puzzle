@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Grid3x3 } from "lucide-react";
-import { PALETTE_CATEGORIES, PALETTE_META, DE } from "./data/openmath.js";
+import { PALETTE_CATEGORIES, PALETTE_META } from "./data/openmath.js";
 import { CAT_COLOR } from "./OpenMathPalette.jsx";
+import { SYM_ALL, SYM_BY_ID, symLabel } from "./data/symbols.js";
 
 /* ====================================================================
  *  Minecraft-artiges Inventar
@@ -15,12 +16,10 @@ const C = { ink: "#1B2430", paper: "#EAEEF2" };
 const SLOTS = 8;
 const LS_KEY = "mp_hotbar_v2"; // v2: startet leer (kein Auto-Auffüllen)
 
-// flache Bausteinliste mit id + Farbe + Kategorie
-const ALL = PALETTE_CATEGORIES.flatMap((c) =>
-  c.symbols.map((s) => ({ ...s, id: `${s.cd}.${s.name}`, cat: c.id, color: CAT_COLOR[c.id] || "#31597F" }))
-);
-const BY_ID = Object.fromEntries(ALL.map((s) => [s.id, s]));
-const deLabel = (s) => DE[s.id] || s.name;
+// gemeinsame Symbolliste (mit Inventar-Werkbank geteilt)
+const ALL = SYM_ALL;
+const BY_ID = SYM_BY_ID;
+const deLabel = symLabel;
 // kurze Kategorie-Etiketten für die Filter-Chips
 const CATS = PALETTE_CATEGORIES.map((c) => ({
   id: c.id,
@@ -32,7 +31,7 @@ const CATS = PALETTE_CATEGORIES.map((c) => ({
 // Inventar startet leer — der Spieler sammelt seine Bausteine selbst ein.
 const DEFAULT_HOTBAR = Array(SLOTS).fill(null);
 
-export default function Inventory() {
+export default function Inventory({ onActive }) {
   const [hotbar, setHotbar] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
@@ -56,6 +55,9 @@ export default function Inventory() {
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(hotbar)); } catch { /* ignore */ }
   }, [hotbar]);
+
+  // aktives Symbol nach außen melden (z. B. an die Werkbank zum Stempeln)
+  useEffect(() => { onActive?.(hotbar[active] ?? null); }, [hotbar, active, onActive]);
 
   const flash = (msg) => {
     setToast(msg);
