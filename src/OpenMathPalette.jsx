@@ -25,6 +25,8 @@ const CAT_COLOR = {
   extra_relationen: "#1F7A63",
   extra_analysis: "#7A5AA6",
   extra_linalg: "#2E7D8A",
+  extra_axiome: "#8A6BC0",
+  extra_strukturen: "#2E6B7D",
 };
 
 export default function OpenMathPalette() {

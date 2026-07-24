@@ -1,6 +1,6 @@
 # Bausteine-Inventar (OpenMath + Ergänzungen)
 
-**208 Bausteine**: 134 aus den offiziellen OpenMath Content Dictionaries (OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)) plus 74 Ergänzungen aus elementaren Quellen (Standard-Curriculum + Unicode-Mathematikblock, nicht OpenMath-Core). Stand: 2026-07.
+**233 Bausteine**: 133 aus den offiziellen OpenMath Content Dictionaries plus 100 Ergänzungen aus elementaren Quellen (Einführungsskripte, Unicode-Mathematikblock, Standard-Axiome & -Strukturen; nicht OpenMath-Core). Stand: 2026-07.
 
 Quelle im Code: `src/data/openmath.js`.
 
@@ -62,7 +62,7 @@ Vergleiche und Zugehörigkeiten (liefern Wahrheitswerte).
 | ⊆ | `subset` | set1 | Teilmenge |
 | ⊊ | `prsubset` | set1 | echte Teilmenge |
 | ⊄ | `notsubset` | set1 | keine Teilmenge |
-| ⊄ | `notprsubset` | set1 | keine echte Teilmenge |
+| ⊄ₚ | `notprsubset` | set1 | keine echte Teilmenge |
 
 ## <a id="mengen"></a>Mengen & Mengenoperationen
 
@@ -80,7 +80,6 @@ Mengen bilden und verknüpfen; Intervalle und Listen.
 | {x|φ} | `suchthat` | set1 | Menge per Prädikat |
 | ↦M | `map` | set1 | Funktion auf Menge anwenden |
 | [ ] | `list` | list1 | geordnete Liste |
-| [a,b] | `interval` | interval1 | Intervall |
 | [a,b] | `interval_cc` | interval1 | abgeschlossenes Intervall |
 | (a,b) | `interval_oo` | interval1 | offenes Intervall |
 | (a,b] | `interval_oc` | interval1 | halboffen (links offen) |
@@ -103,7 +102,7 @@ Funktionen bauen, anwenden, verketten, invertieren.
 | f⁻¹ₗ | `left_inverse` | fns1 | Linksinverses |
 | f⁻¹ᵣ | `right_inverse` | fns1 | Rechtsinverses |
 | ∘ | `left_compose` | fns1 | Verkettung (links) |
-| ∘ | `right_compose` | fns2 | Verkettung (rechts zuerst) |
+| ∘ᵣ | `right_compose` | fns2 | Verkettung (rechts zuerst) |
 | ker | `kernel` | fns2 | Kern der Abbildung |
 | f[…] | `apply_to_list` | fns2 | n-äre Funktion auf Liste |
 | P[…] | `predicate_on_list` | fns2 | Prädikatkette auf Liste |
@@ -160,10 +159,10 @@ Junktoren, Wahrheitswerte, Quantoren.
 | ¬ | `not` | logic1 | Negation |
 | ⇒ | `implies` | logic1 | Implikation |
 | ⇔ | `equivalent` | logic1 | Äquivalenz |
-| ⊕ | `xor` | logic1 | exklusives Oder |
+| ⊻ | `xor` | logic1 | exklusives Oder |
 | ↑ | `nand` | logic1 | nicht-und |
 | ↓ | `nor` | logic1 | nicht-oder |
-| ↔ | `xnor` | logic1 | Äquivalenz (xnor) |
+| ≣ | `xnor` | logic1 | Äquivalenz (xnor) |
 | ⊤ | `true` | logic1 | wahr |
 | ⊥ | `false` | logic1 | falsch |
 | ∀ | `forall` | quant1 | Allquantor |
@@ -217,7 +216,7 @@ Konstruktoren und Bestandteile komplexer Zahlen.
 | arg | `argument` | complex1 | Argument (Winkel) |
 | z̄ | `conjugate` | complex1 | komplexe Konjugation |
 
-# Ergänzungen (Einführungsskripte + Unicode)
+# Ergänzungen
 
 ## <a id="extra_abbildungen"></a>Abbildungen · Typen & Pfeile
 
@@ -258,6 +257,10 @@ Elementargeometrische Symbole — in OpenMath-Core nicht enthalten.
 | ∡ | `gerichteter_winkel` | Geom | gerichteter Winkel |
 | ∟ | `right_angle` | Geom | rechter Winkel |
 | ∦ | `not_parallel` | Geom | nicht parallel |
+| σ | `spiegelung` | Geom | Spiegelung (an Gerade/Punkt) |
+| ρ | `drehung` | Geom | Drehung um einen Punkt |
+| τ | `translation` | Geom | Translation (Verschiebung) |
+| Isom | `isometrie` | Geom | abstandserhaltende Abbildung |
 
 ## <a id="extra_mengen"></a>Mengen · Ergänzungen
 
@@ -341,4 +344,40 @@ Begriffe rund um Vektorräume und lineare Abbildungen.
 | ‖·‖ | `norm` | LinAlg | Norm |
 | 𝟙 | `identity_matrix` | LinAlg | Einheitsmatrix |
 | lin.u. | `lin_independent` | LinAlg | linear unabhängig |
+
+## <a id="extra_axiome"></a>Struktur-Eigenschaften & Axiome
+
+Die atomaren „Regeln“, aus denen algebraische Strukturen bestehen.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| (a∘b)∘c | `assoziativ` | Axiom | (a∘b)∘c = a∘(b∘c) |
+| a∘b=b∘a | `kommutativ` | Axiom | Reihenfolge egal |
+| a(b+c) | `distributiv` | Axiom | a·(b+c) = a·b + a·c |
+| e | `neutrales_element` | Axiom | e∘a = a∘e = a |
+| a⁻¹ | `inverses_element` | Axiom | a∘a⁻¹ = e |
+| ∘:M×M→M | `abgeschlossen` | Axiom | Verknüpfung bleibt in M |
+| a∘a=a | `idempotent` | Axiom | a∘a = a |
+| ≡ ⇒ = | `wohldefiniert` | Axiom | unabhängig vom Repräsentanten |
+| ≤∧≥⇒= | `antisymmetrisch` | Axiom | a≤b ∧ b≤a ⇒ a=b |
+| a≤b⇒fa≤fb | `monoton` | Axiom | ordnungserhaltend |
+
+## <a id="extra_strukturen"></a>Strukturen
+
+Zusammengesetzte Zielstrukturen — worauf der Baukasten hinausläuft.
+
+| Symbol | Name | Quelle | Bedeutung |
+|---|---|---|---|
+| (H,∘) | `halbgruppe` | Struktur | Menge + assoziative Verknüpfung |
+| (M,∘,e) | `monoid` | Struktur | Halbgruppe mit Neutralelement |
+| (G,∘) | `gruppe` | Struktur | Monoid mit Inversen |
+| (A,+) | `abelsche_gruppe` | Struktur | kommutative Gruppe |
+| (R,+,·) | `ring` | Struktur | abelsche Gruppe + Multiplikation |
+| (K,+,·) | `koerper` | Struktur | Ring mit Division (≠0) |
+| V | `vektorraum` | Struktur | abelsche Gruppe + Skalarmultiplikation |
+| U ≤ V | `untervektorraum` | Struktur | abgeschlossener Teilraum |
+| (V,⟨·,·⟩) | `skalarproduktraum` | Struktur | Vektorraum + Skalarprodukt |
+| (A,V) | `affiner_raum` | Struktur | Punkte + Richtungsraum |
+| (E,K) | `kongruenzebene` | Struktur | Ebene + Kongruenzgruppe |
+| P(V) | `projektive_ebene` | Struktur | eindim. Teilräume als Punkte |
 
