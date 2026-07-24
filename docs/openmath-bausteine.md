@@ -1,10 +1,8 @@
 # Bausteine-Inventar (OpenMath + Ergänzungen)
 
-**196 Bausteine**: 134 aus den offiziellen OpenMath Content Dictionaries (OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)) plus 62 Ergänzungen aus elementaren Einführungsskripten (Standard-Curriculum, nicht OpenMath-Core). Stand: 2026-07.
+**208 Bausteine**: 134 aus den offiziellen OpenMath Content Dictionaries (OpenMath Content Dictionaries — github.com/OpenMath/CDs (cd/Official)) plus 74 Ergänzungen aus elementaren Quellen (Standard-Curriculum + Unicode-Mathematikblock, nicht OpenMath-Core). Stand: 2026-07.
 
 Quelle im Code: `src/data/openmath.js`.
-
-> Ergänzungen decken Lücken, die OpenMath-Core nicht abbildet: Geometrie (∠ ⊥ ∥ ≅ ∼ △ °), Abbildungstypen & Linearität (→ ↦ ↪ ↠ injektiv/surjektiv/bijektiv/linear/bilinear/Homomorphismus), Mengen (Potenzmenge, Komplement, geord. Paar), Logik (∃! ∄ ⊢ ⊨ ∴ ∵ ∎ :=), Analysis/Ordnung (sup inf lim ∇ ± ⌊⌋ ⌈⌉ Binomial), Lineare Algebra (dim span rg tr ⊕ ‖·‖).
 
 # OpenMath-Core
 
@@ -219,7 +217,7 @@ Konstruktoren und Bestandteile komplexer Zahlen.
 | arg | `argument` | complex1 | Argument (Winkel) |
 | z̄ | `conjugate` | complex1 | komplexe Konjugation |
 
-# Ergänzungen (Standard-Einführungen)
+# Ergänzungen (Einführungsskripte + Unicode)
 
 ## <a id="extra_abbildungen"></a>Abbildungen · Typen & Pfeile
 
@@ -258,6 +256,8 @@ Elementargeometrische Symbole — in OpenMath-Core nicht enthalten.
 | ⊙ | `kreis` | Geom | Kreis |
 | ⌢ | `bogen` | Geom | Kreisbogen |
 | ∡ | `gerichteter_winkel` | Geom | gerichteter Winkel |
+| ∟ | `right_angle` | Geom | rechter Winkel |
+| ∦ | `not_parallel` | Geom | nicht parallel |
 
 ## <a id="extra_mengen"></a>Mengen · Ergänzungen
 
@@ -272,6 +272,10 @@ Häufige Mengenkonstrukte über die OpenMath-CDs hinaus.
 | ⊔ | `disjoint_union` | Mengen | disjunkte Vereinigung |
 | ⋃ | `big_union` | Mengen | indizierte Vereinigung |
 | ⋂ | `big_intersect` | Mengen | indizierter Durchschnitt |
+| ⊂ | `subset_c` | Mengen | Teilmenge (oft = ⊆) |
+| ⊃ | `superset` | Mengen | Obermenge |
+| ⊇ | `superset_eq` | Mengen | Obermenge oder gleich |
+| ∋ | `contains` | Mengen | enthält als Element |
 
 ## <a id="extra_logik"></a>Logik · Ergänzungen
 
@@ -288,6 +292,9 @@ Beweis- und Definitionssymbole.
 | ∴ | `therefore` | Logik | also, daraus folgt |
 | ∵ | `because` | Logik | weil |
 | ∎ | `qed` | Logik | q.e.d. (Beweisende) |
+| ≔ | `colon_equals` | Logik | Definitionszeichen (ein Zeichen) |
+| ↔ | `iff` | Logik | genau dann, wenn |
+| ≢ | `not_identical` | Logik | nicht identisch / nicht kongruent |
 
 ## <a id="extra_relationen"></a>Relationen · Ergänzungen
 
@@ -301,6 +308,7 @@ Weitere Vergleichs- und Äquivalenzsymbole.
 | ∝ | `proportional` | Rel | proportional |
 | ≪ | `much_less` | Rel | sehr viel kleiner |
 | ≫ | `much_greater` | Rel | sehr viel größer |
+| ∤ | `not_divides` | Rel | teilt nicht |
 
 ## <a id="extra_analysis"></a>Analysis & Ordnung · Ergänzungen
 
@@ -316,6 +324,8 @@ Grenzwerte, Schranken, Rundung, weitere Operationen.
 | ⌊x⌋ | `floor` | Analysis | Abrunden (Gaußklammer) |
 | ⌈x⌉ | `ceil` | Analysis | Aufrunden |
 | (ⁿₖ) | `binomial` | Analysis | Binomialkoeffizient |
+| ∓ | `minus_plus` | Analysis | minus-plus |
+| ⋅ | `dot_op` | Analysis | Malpunkt (Multiplikation) |
 
 ## <a id="extra_linalg"></a>Lineare Algebra · Ergänzungen
 

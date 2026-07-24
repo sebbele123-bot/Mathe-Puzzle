@@ -278,6 +278,8 @@ export const EXTRA_CATEGORIES = [
       { name: "kreis", glyph: "⊙", cd: "Geom", desc: "Kreis" },
       { name: "bogen", glyph: "⌢", cd: "Geom", desc: "Kreisbogen" },
       { name: "gerichteter_winkel", glyph: "∡", cd: "Geom", desc: "gerichteter Winkel" },
+      { name: "right_angle", glyph: "∟", cd: "Geom", desc: "rechter Winkel" },
+      { name: "not_parallel", glyph: "∦", cd: "Geom", desc: "nicht parallel" },
     ],
   },
   {
@@ -292,6 +294,10 @@ export const EXTRA_CATEGORIES = [
       { name: "disjoint_union", glyph: "⊔", cd: "Mengen", desc: "disjunkte Vereinigung" },
       { name: "big_union", glyph: "⋃", cd: "Mengen", desc: "indizierte Vereinigung" },
       { name: "big_intersect", glyph: "⋂", cd: "Mengen", desc: "indizierter Durchschnitt" },
+      { name: "subset_c", glyph: "⊂", cd: "Mengen", desc: "Teilmenge (oft = ⊆)" },
+      { name: "superset", glyph: "⊃", cd: "Mengen", desc: "Obermenge" },
+      { name: "superset_eq", glyph: "⊇", cd: "Mengen", desc: "Obermenge oder gleich" },
+      { name: "contains", glyph: "∋", cd: "Mengen", desc: "enthält als Element" },
     ],
   },
   {
@@ -308,6 +314,9 @@ export const EXTRA_CATEGORIES = [
       { name: "therefore", glyph: "∴", cd: "Logik", desc: "also, daraus folgt" },
       { name: "because", glyph: "∵", cd: "Logik", desc: "weil" },
       { name: "qed", glyph: "∎", cd: "Logik", desc: "q.e.d. (Beweisende)" },
+      { name: "colon_equals", glyph: "≔", cd: "Logik", desc: "Definitionszeichen (ein Zeichen)" },
+      { name: "iff", glyph: "↔", cd: "Logik", desc: "genau dann, wenn" },
+      { name: "not_identical", glyph: "≢", cd: "Logik", desc: "nicht identisch / nicht kongruent" },
     ],
   },
   {
@@ -321,6 +330,7 @@ export const EXTRA_CATEGORIES = [
       { name: "proportional", glyph: "∝", cd: "Rel", desc: "proportional" },
       { name: "much_less", glyph: "≪", cd: "Rel", desc: "sehr viel kleiner" },
       { name: "much_greater", glyph: "≫", cd: "Rel", desc: "sehr viel größer" },
+      { name: "not_divides", glyph: "∤", cd: "Rel", desc: "teilt nicht" },
     ],
   },
   {
@@ -336,6 +346,8 @@ export const EXTRA_CATEGORIES = [
       { name: "floor", glyph: "⌊x⌋", cd: "Analysis", desc: "Abrunden (Gaußklammer)" },
       { name: "ceil", glyph: "⌈x⌉", cd: "Analysis", desc: "Aufrunden" },
       { name: "binomial", glyph: "(ⁿₖ)", cd: "Analysis", desc: "Binomialkoeffizient" },
+      { name: "minus_plus", glyph: "∓", cd: "Analysis", desc: "minus-plus" },
+      { name: "dot_op", glyph: "⋅", cd: "Analysis", desc: "Malpunkt (Multiplikation)" },
     ],
   },
   {
