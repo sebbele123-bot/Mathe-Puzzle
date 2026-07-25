@@ -93,9 +93,6 @@ export default function Bibliothek({ onOpen }) {
             Bibliothek · alles Material
           </div>
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Bibliothek</h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            Definitionen, Beweise und Aufgaben über alle Fächer. Filtern, öffnen — oder mit <b>+</b> in die <b>Rotation</b> legen und gezielt üben.
-          </p>
         </header>
 
         {/* Suche */}

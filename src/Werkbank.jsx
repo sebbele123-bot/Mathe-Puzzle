@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Hammer, RotateCcw, Copy, Check } from "lucide-react";
+import { RotateCcw, Copy, Check } from "lucide-react";
 import { SYM_BY_ID, symLabel } from "./data/symbols.js";
 
 /* ====================================================================
@@ -85,10 +85,6 @@ export default function Werkbank({ activeSymbolId }) {
             Symbol-Crafting · {COLS}×{ROWS}
           </div>
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Werkbank</h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            Symbole aus der Hotbar unten in die Felder legen — <b>tippen</b> setzt das aktive Symbol,
-            nochmal tippen leert das Feld. Zeilenweise gelesen ergeben die Felder einen Ausdruck.
-          </p>
         </header>
 
         {/* aktives Symbol + Ausdruck */}
@@ -101,7 +97,7 @@ export default function Werkbank({ activeSymbolId }) {
                 <span className="text-xs text-slate-600">{symLabel(active)}</span>
               </>
             ) : (
-              <span className="text-xs text-slate-400">Hotbar-Slot wählen (Taste 1–8) oder Symbol einsammeln (E)</span>
+              <span className="text-xs text-slate-400">—</span>
             )}
           </span>
           <button onClick={clearAll} className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors" style={{ fontFamily: "ui-monospace, monospace" }}>
@@ -146,11 +142,6 @@ export default function Werkbank({ activeSymbolId }) {
             {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? "kopiert" : "kopieren"}
           </button>
         </div>
-
-        <p className="text-[11px] text-slate-400 mt-3" style={{ fontFamily: "ui-monospace, monospace" }}>
-          <Hammer size={11} className="inline mr-1" />
-          Pfeiltasten bewegen die Auswahl · Enter/Leer setzt/​leert · Backspace löscht · Symbole sammelst du im <b>Inventar (E)</b> in die Hotbar.
-        </p>
       </div>
     </div>
   );

@@ -211,7 +211,7 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
             <div className="px-3 pt-2.5 pb-2 border-b" style={{ borderColor: "#C4D0DB" }}>
               <div className="flex items-center gap-2 mb-2">
                 <span style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-base font-semibold">Inventar</span>
-                <span className="hidden sm:inline text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {owned.length} gesammelt · Klick → Slot <b>{active + 1}</b></span>
+                <span className="hidden sm:inline text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>· {owned.length} gesammelt · Slot <b>{active + 1}</b></span>
                 <button onClick={() => { setOpen(false); onBrowse?.(); }} title="in den Bausteinen sammeln"
                   className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs border transition-colors"
                   style={{ fontFamily: "ui-monospace, monospace", background: "#fff", borderColor: "#B7C3CF", color: C.ink }}>
@@ -271,7 +271,6 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
                   className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm" style={{ background: C.ink, color: "#fff", fontFamily: "ui-monospace, monospace" }}>
                   <Plus size={14} /> Bausteine sammeln
                 </button>
-                <div className="text-[11px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>In den <b>Bausteinen</b> ein Symbol mit <b>+</b> einsammeln — es landet hier.</div>
               </div>
             ) : (
               <>
@@ -306,10 +305,6 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
                       className="rounded-md" style={{ minHeight: 44, background: "rgba(27,36,48,0.035)", border: "1px dashed #C4D0DB", cursor: "pointer" }} />
                   ))}
                   {results.length === 0 && <span className="text-sm text-slate-400 p-2" style={{ fontFamily: "Georgia, serif" }}>Nichts gefunden.</span>}
-                </div>
-
-                <div className="px-4 py-2 border-t text-[11px] text-slate-500" style={{ borderColor: "#C4D0DB", fontFamily: "ui-monospace, monospace" }}>
-                  <b>Pfeiltasten</b> navigieren · <b>Enter</b> → Slot {active + 1} · <b>Taste 1–8</b> → in diesen Slot · <b>Rechtsklick</b>/Kontextmenü → ablegen. Neue Bausteine per <b>+ sammeln</b>.
                 </div>
               </>
             )}

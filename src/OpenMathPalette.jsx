@@ -78,11 +78,6 @@ export default function OpenMathPalette({ collected, onCollect }) {
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">
             Bausteine-Bibliothek
           </h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            {PALETTE_META.count} atomare Bausteine, kategorisiert — {PALETTE_META.openmath} aus den offiziellen OpenMath-CDs
-            plus {PALETTE_META.extra} <b>Ergänzungen</b> aus elementaren Einführungsskripten (Geometrie, Abbildungstypen &amp; Linearität, Analysis u. a.).
-            Antippen kopiert das Zeichen · mit <b>+</b> (Ecke) sammelst du den Baustein in dein <b>Inventar</b>.
-          </p>
         </header>
 
         {/* Suche + Kategorie-Filter */}
@@ -138,7 +133,7 @@ export default function OpenMathPalette({ collected, onCollect }) {
             </>
           ) : (
             <span className="text-[11px] text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>
-              {q ? `${total} Treffer` : `${PALETTE_META.count} Bausteine · ${PALETTE_CATEGORIES.length} Kategorien`} · Tippe ein Zeichen für Bedeutung &amp; zum Kopieren.
+              {q ? `${total} Treffer` : `${PALETTE_META.count} Bausteine · ${PALETTE_CATEGORIES.length} Kategorien`}
             </span>
           )}
         </div>

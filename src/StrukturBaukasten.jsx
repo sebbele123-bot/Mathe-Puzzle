@@ -631,10 +631,6 @@ export default function StrukturBaukasten({ initialId }) {
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">
             Struktur-Baukasten
           </h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-xl">
-            Zieh Bausteine auf die Werkbank und schieb sie dort frei umher. Wenn du zusammengehörige Teile nah aneinander legst, bilden sie eine Verknüpfung — zieh dann den Hammer darauf,
-            rasten sie ein und bilden eine neue Struktur. Manche Strukturen sind selbst wieder Bausteine.
-          </p>
         </header>
 
         {/* Missionen */}
@@ -713,7 +709,7 @@ export default function StrukturBaukasten({ initialId }) {
             </div>
             {bench.length === 0 && (
               <p className="text-sm text-slate-400 text-center px-6 py-3" style={{ fontFamily: "Georgia, serif" }}>
-                leer — Bausteine aus den Vorräten hier ablegen (antippen), dann Hammer
+                leer
               </p>
             )}
           </div>
@@ -734,9 +730,7 @@ export default function StrukturBaukasten({ initialId }) {
             >
               <Hammer size={16} /> Hammer
             </button>
-            <p className="text-xs" style={{ color: hint ? C.anford : "#8595a4" }}>
-              {hint || "Die richtigen Bausteine ablegen, dann Hammer — passt es, entsteht die Struktur."}
-            </p>
+            {hint && <p className="text-xs" style={{ color: C.anford }}>{hint}</p>}
           </div>
         </section>
 
@@ -876,7 +870,7 @@ function PuzzlePanel({ mission, discovered, onAdd }) {
       {baseIds.length > 0 && (
         <div className="mt-3">
           <div style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">
-            Startpunkt — antippen zum Hinzufügen
+            Startpunkt
           </div>
           <div className="flex flex-wrap gap-1.5">
             {baseIds.map((id) => {
@@ -898,7 +892,7 @@ function PuzzlePanel({ mission, discovered, onAdd }) {
 
       <div className="mt-3">
         <div style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">
-          Diese Bausteine brauchst du noch — antippen zum Hinzufügen
+          Benötigte Bausteine
         </div>
         <div className="flex flex-wrap gap-1.5">
           {ingredients.map((id) => {
@@ -915,9 +909,6 @@ function PuzzlePanel({ mission, discovered, onAdd }) {
             );
           })}
         </div>
-        <p className="text-xs text-slate-500 mt-2">
-          Tipp einen Baustein an, um ihn auf die Werkbank zu legen. Manche brauchst du vielleicht mehrfach.
-        </p>
       </div>
     </div>
   );

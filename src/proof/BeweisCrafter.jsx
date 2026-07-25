@@ -200,10 +200,6 @@ export default function BeweisCrafter({ initialId }) {
             Elementargeometrie · Beweise
           </div>
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Beweis-Baukasten</h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            Bausteine aus den Vorräten in die Werkbank-Felder legen (antippen), dann <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
-            Missionen mit <b>Begriffs-Check</b> starten mit einer Definition: erst den Begriff mit <b>:=</b> festlegen, dann beweisen.
-          </p>
         </header>
 
         {/* Missionswahl — gleichmäßige Karten mit Kürzel-Badge */}
@@ -364,9 +360,7 @@ export default function BeweisCrafter({ initialId }) {
               })}
             </div>
             {bench.length === 0 && (
-              <p className="text-sm text-slate-400 text-center px-6 py-3" style={{ fontFamily: "Georgia, serif" }}>
-                {isProof ? "leer — Aussagen und eine Regel aus den Vorräten hier ablegen, dann Hammer" : "leer — die richtigen Bestandteile und „:=“ hier ablegen, dann Hammer"}
-              </p>
+              <p className="text-sm text-slate-400 text-center px-6 py-3" style={{ fontFamily: "Georgia, serif" }}>leer</p>
             )}
           </div>
 
@@ -384,11 +378,7 @@ export default function BeweisCrafter({ initialId }) {
               <p className="text-xs inline-flex items-center gap-1.5" style={{ color: C.ziel }}>
                 <Check size={13} /> <span>Gerade gezeigt: <b>{lastIdea}</b></span>
               </p>
-            ) : (
-              <p className="text-xs" style={{ color: "#8595a4" }}>
-                {isProof ? "Regel + passende Aussagen ablegen, dann Hammer." : "Die richtigen Bestandteile + „:=“ ablegen, dann Hammer."}
-              </p>
-            )}
+            ) : null}
           </div>
         </section>
 
@@ -423,12 +413,12 @@ export default function BeweisCrafter({ initialId }) {
 
         {/* VORRÄTE */}
         <section className="grid gap-4 md:grid-cols-2 mb-4">
-          <Shelf title={isProof ? "Bekannte Aussagen" : "Bestandteile"} dot={C.fakt} hintText="ziehen oder tippen → landet auf der Werkbank">
+          <Shelf title={isProof ? "Bekannte Aussagen" : "Bestandteile"} dot={C.fakt}>
             {have.map((id) => (
               <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === stage.goal} label={factLabel(id)} onTap={() => addByTap("fakt", id)} />
             ))}
           </Shelf>
-          <Shelf title="Schlussregeln" dot={C.regel} hintText={isProof ? "genau eine Regel gehört in jede Verknüpfung" : "„:=“ verbindet die Bestandteile"}>
+          <Shelf title="Schlussregeln" dot={C.regel}>
             {stage.pool.rules.map((id) => (
               <PaletteTile key={id} kind="regel" block={RULES[id]} onTap={() => addByTap("regel", id)} />
             ))}
@@ -446,9 +436,7 @@ export default function BeweisCrafter({ initialId }) {
             </button>
           </div>
           {protocol.length === 0 ? (
-            <p className="text-xs text-slate-400" style={{ fontFamily: "Georgia, serif" }}>
-              noch keine Schritte — hier entsteht die Idee, Schritt für Schritt.
-            </p>
+            <p className="text-xs text-slate-400" style={{ fontFamily: "Georgia, serif" }}>—</p>
           ) : (
             <ol className="space-y-2.5">
               {protocol.map((step, i) => (
@@ -472,16 +460,13 @@ export default function BeweisCrafter({ initialId }) {
           )}
         </section>
 
-        <footer className="mt-8 text-[11px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>
-          Werkbank-Crafting · Begriffs-Check, Distraktoren, Ordnungszwang, Regelwahl und Tiefen-Regler.
-        </footer>
       </div>
 
     </div>
   );
 }
 
-function Shelf({ title, dot, hintText, children }) {
+function Shelf({ title, dot, children }) {
   const empty = React.Children.count(children) === 0;
   return (
     <div className="rounded-2xl p-3 border-2 border-dashed" style={{ borderColor: "#B7C3CF", background: "rgba(255,255,255,0.35)" }}>
@@ -491,7 +476,6 @@ function Shelf({ title, dot, hintText, children }) {
       </div>
       <div className="flex flex-wrap gap-2">{children}</div>
       {empty && <p className="text-[11px] text-slate-400 mt-1" style={{ fontFamily: "Georgia, serif" }}>—</p>}
-      <p className="text-[11px] text-slate-400 mt-2" style={{ fontFamily: "Georgia, serif" }}>{hintText}</p>
     </div>
   );
 }
