@@ -363,6 +363,39 @@ const RESULTS = {
   projRaum: { id: "projRaum", role: "ergebnis", name: "P(V)", sub: "projektiver Raum", ref: "Def 29", note: "Punkte = eindimensionale Teilräume von V; Vervollständigung E ⊔ P(E⃗), Kollineationen = geradentreue Bijektionen.", chainable: false },
 };
 
+// --- Kurzbeschreibungen: nach dem Bauen in einem Satz, was das Objekt ist ---
+const KURZ = {
+  // A — direkt
+  strahl: "Ein Strahl ist die Halbgerade ℝ≥0·v — von einem Punkt aus in Richtung eines Vektors v ≠ 0.",
+  affraum: "Ein affiner Raum ist eine Punktmenge mit einem Vektorraum als Richtungsraum, der einfach transitiv durch Translationen wirkt — Geometrie ohne ausgezeichneten Ursprung.",
+  affEbene: "Eine affine Ebene ist ein affiner Raum, dessen Richtungsraum zweidimensional ist.",
+  inzgeo: "Eine Inzidenzgeometrie: je zwei Punkte liegen auf genau einer Geraden, und jede Gerade trägt mindestens zwei Punkte.",
+  zwax: "Eine Zwischenrelation legt axiomatisch fest, wann ein Punkt zwischen zwei anderen liegt — mit Anordnungs- und Pasch-Axiom.",
+  parallelax: "Das Parallelenaxiom: zu einer Geraden g und einem Punkt p ∉ g gibt es genau eine Parallele durch p.",
+  erwEbene: "Die erweiterte Ebene Ê ist die Ebene mit einem zusätzlichen Fernpunkt ∞ — die Bühne der Möbiusgeometrie.",
+  // B — Ketten
+  ogroup: "Die orthogonale Gruppe O(Z,s) sind alle linearen Abbildungen, die das Skalarprodukt s erhalten.",
+  sogroup: "Die spezielle orthogonale Gruppe SO(Z,s) sind die orthogonalen Abbildungen mit Determinante 1 — die reinen Drehungen.",
+  dsgAbstr: "Eine Drehspiegelgruppe ist eine Untergruppe von GL(Z) einer Ebene, die je zwei Strahlen durch genau zwei ihrer Elemente ineinander überführt.",
+  affgerade: "Eine affine Gerade ist die Punktmenge p + ℝv; zwei sind parallel, wenn sie denselben Richtungsraum haben.",
+  affinitaet: "Eine Affinität ist eine Bijektion eines affinen Raums mit invertierbarem linearem Anteil: φ(p+v) = φ(p) + φ⃗(v).",
+  halbfahne: "Eine Halbraumfahne (A,H) ist ein Strahl A in einer ihn enthaltenden Halbebene H eines dreidimensionalen Raums.",
+  rotgroup: "Eine Rotationsgruppe überführt je zwei Halbraumfahnen durch genau ein Element — im euklidischen Fall ist das SO(E,s).",
+  kongEbene: "Eine Kongruenzebene ist eine affine Ebene mit einer Kongruenzgruppe, die alle Translationen enthält und deren lineare Anteile eine Drehspiegelgruppe bilden.",
+  euklEbene: "Eine euklidische Ebene ist die Kongruenzebene zu einem Skalarprodukt; ihre Kongruenzen sind genau die abstandserhaltenden Abbildungen.",
+  aehnlichkeit: "Eine Ähnlichkeit ist ein Selbst-Isomorphismus einer Kongruenzebene; ist sie keine Kongruenz, hat sie genau einen Fixpunkt.",
+  dreieck: "Ein angeordnetes Dreieck ist ein Punktetripel (A,B,C); zwei sind angeordnet kongruent, wenn eine Kongruenz A↦A′, B↦B′, C↦C′ leistet.",
+  streckeZw: "Eine Strecke [p,q] ist der Abschnitt zwischen zwei Punkten, festgelegt über die Zwischenrelation kollinearer Tripel.",
+  fasteuklGeo: "Eine fasteuklidische Geometrie vereint Inzidenzgeometrie, Zwischenrelation, Kongruenzen und Vollständigkeit (Supremumseigenschaft).",
+  kreisInv: "Eine Kreisspiegelung invertiert die Ebene am Kreis: x ↦ c + r²(x−c)/‖x−c‖², wobei Zentrum und ∞ getauscht werden.",
+  projRaum: "Der projektive Raum P(V) hat die eindimensionalen Teilräume von V als Punkte; die Vervollständigung ergänzt eine affine Ebene um ihre Ferngerade.",
+  // Kern-Grundlagen (häufig in Rotation)
+  skp: "Ein Skalarprodukt ist eine symmetrische, positiv definite Bilinearform auf einem reellen Vektorraum.",
+  vr: "Ein reeller Vektorraum ist eine abelsche Gruppe (V,+) mit einer Skalarmultiplikation über dem Körper ℝ.",
+  addgrpR: "Die additive Gruppe (ℝ,+) ist ℝ mit der assoziativen, kommutativen Addition, 0 als neutralem und additiven Inversen.",
+  fieldR: "Der Körper ℝ ist die additive Gruppe (ℝ,+) mit einer zweiten Verknüpfung · und dem Distributivgesetz.",
+};
+
 // --- Rezepte (Menge benötigter Bausteine → Ergebnis) ----------------
 const RECIPES = [
   // Algebra-Schicht (volle Tiefe): Menge + Addition (assoz., neutral, invers, kommutativ) → abelsche Gruppe
@@ -743,23 +776,18 @@ export default function StrukturBaukasten({ initialId }) {
             <div className="mt-0.5 shrink-0 rounded-full p-1" style={{ background: C.ergeb }}>
               <Check size={14} color="#fff" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-baseline gap-2 flex-wrap">
+                <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Gebaut</span>
                 <span style={{ fontFamily: "Georgia, serif", color: C.ergeb }} className="text-lg font-semibold">
                   {RESULTS[flash].name}
                 </span>
                 <span className="text-sm text-slate-600">{RESULTS[flash].sub}</span>
-                <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[11px] text-slate-400">
-                  {RESULTS[flash].ref}
-                </span>
               </div>
-              <p className="text-sm text-slate-700 mt-1">{RESULTS[flash].note}</p>
-              {RESULTS[flash].claim && (
-                <p className="text-sm mt-2" style={{ fontFamily: "Georgia, serif" }}>
-                  <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500 mr-1.5">Zu zeigen</span>
-                  {RESULTS[flash].claim}
-                </p>
-              )}
+              {/* kurz und schön: was dieses Objekt genau ist */}
+              <p className="text-[15px] text-slate-800 mt-1.5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
+                {KURZ[flash] || RESULTS[flash].note}
+              </p>
             </div>
           </div>
         )}
