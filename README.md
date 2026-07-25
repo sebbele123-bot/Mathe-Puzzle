@@ -8,6 +8,18 @@ Axiomen anfangen zu müssen.
 
 Inhaltlich orientiert an den Übungsblättern der Elementargeometrie.
 
+## Website (GitHub Pages)
+
+Die App wird per GitHub Actions gebaut und veröffentlicht
+(`.github/workflows/deploy.yml`). Sobald GitHub Pages aktiviert ist, läuft sie unter:
+
+**https://sebbele123-bot.github.io/Mathe-Puzzle/**
+
+Einmalige Aktivierung (nur der Repo-Eigentümer kann das):
+**Settings → Pages → Build and deployment → Source: „GitHub Actions"**.
+Danach deployt jeder Push (auf `main` oder den aktiven Feature-Branch) automatisch;
+der Basis-Pfad wird über `BASE_PATH` auf den Repo-Namen gesetzt.
+
 ## Zwei Modi
 
 | Modus | Was man baut | Mechanik |
