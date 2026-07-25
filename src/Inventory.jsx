@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Grid3x3, Plus } from "lucide-react";
+import { X, Grid3x3, Plus } from "lucide-react";
 import { PALETTE_CATEGORIES } from "./data/openmath.js";
 import { CAT_COLOR } from "./OpenMathPalette.jsx";
 import { SYM_ALL, SYM_BY_ID, symLabel } from "./data/symbols.js";
@@ -41,7 +41,6 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
   });
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [cat, setCat] = useState(null); // aktive Kategorie-Filterung (null = alle)
   const [toast, setToast] = useState("");
   const [hovered, setHovered] = useState(null); // Item-id, über dem der Zeiger schwebt (Desktop)
@@ -106,13 +105,7 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
     return CATS.filter((c) => present.has(c.id));
   }, [owned]);
 
-  const q = query.trim().toLowerCase();
-  const results = useMemo(() => {
-    let list = cat ? owned.filter((s) => s.cat === cat) : owned;
-    if (q) list = list.filter((s) => s.name.toLowerCase().includes(q) || s.glyph.toLowerCase().includes(q) ||
-      s.desc.toLowerCase().includes(q) || deLabel(s).toLowerCase().includes(q));
-    return list;
-  }, [q, cat, owned]);
+  const results = useMemo(() => (cat ? owned.filter((s) => s.cat === cat) : owned), [cat, owned]);
 
   // aktuelle Spaltenzahl des Rasters (für Pfeil-hoch/runter)
   const cols = () => {
@@ -158,7 +151,7 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
   }, [open, hovered, hotbar, active, results, focusIdx]); // eslint-disable-line
 
   // Fokus zurücksetzen, wenn sich Suche/Kategorie ändert oder das Inventar öffnet
-  useEffect(() => { setFocusIdx(0); }, [q, cat, open]);
+  useEffect(() => { setFocusIdx(0); }, [cat, open]);
   // fokussiertes Item ins Sichtfeld scrollen
   useEffect(() => { focusRef.current?.scrollIntoView({ block: "nearest" }); }, [focusIdx]);
 
@@ -225,12 +218,6 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
                   <Plus size={13} /> sammeln
                 </button>
                 <button onClick={() => setOpen(false)} aria-label="schließen" className="rounded-lg p-1.5 hover:bg-slate-200 transition-colors"><X size={16} /></button>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 border" style={{ background: "#fff", borderColor: "#B7C3CF" }}>
-                <Search size={14} className="text-slate-400 shrink-0" />
-                <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="suchen …"
-                  className="bg-transparent outline-none text-sm flex-1 min-w-0" style={{ fontFamily: "ui-monospace, monospace" }} />
-                {query && <button onClick={() => setQuery("")} aria-label="Suche leeren" className="shrink-0 text-slate-400"><X size={13} /></button>}
               </div>
             </div>
 
@@ -314,7 +301,7 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
                     );
                   })}
                   {/* leere Slots zum Auffüllen (nur in der ungefilterten Gesamtansicht) */}
-                  {!cat && !q && Array.from({ length: Math.max(0, 24 - results.length) }).map((_, i) => (
+                  {!cat && Array.from({ length: Math.max(0, 24 - results.length) }).map((_, i) => (
                     <button key={`empty-${i}`} onClick={() => { setOpen(false); onBrowse?.(); }} title="leerer Slot — sammeln"
                       className="rounded-md" style={{ minHeight: 44, background: "rgba(27,36,48,0.035)", border: "1px dashed #C4D0DB", cursor: "pointer" }} />
                   ))}

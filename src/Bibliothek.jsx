@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Play, Star } from "lucide-react";
+import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Play, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   CATALOG_SORTED, FAECHER, TYPEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
   ALL_TAGS, countBy, loadRotation, saveRotation,
@@ -20,6 +20,9 @@ export default function Bibliothek({ onOpen }) {
   const [query, setQuery] = useState("");
   const [rotOnly, setRotOnly] = useState(false);
   const [rotation, setRotation] = useState(() => loadRotation());
+  const [filtersOpen, setFiltersOpen] = useState(false); // Filterbereich standardmäßig zugeklappt
+  const [collapsedFach, setCollapsedFach] = useState({}); // eingeklappte Fach-Abschnitte in der Liste
+  const toggleFach = useCallback((id) => setCollapsedFach((c) => ({ ...c, [id]: !c[id] })), []);
 
   const inRot = useCallback((id) => rotation.includes(id), [rotation]);
   const toggleRot = useCallback((id) => {
@@ -64,6 +67,7 @@ export default function Bibliothek({ onOpen }) {
 
   const rotItems = useMemo(() => CATALOG_SORTED.filter((c) => rotation.includes(c.id)), [rotation]);
   const anyFilter = fach || typ || tag || rotOnly || q;
+  const activeCount = [fach, typ, tag, rotOnly].filter(Boolean).length;
 
   return (
     <div style={{ background: C.paper, color: C.ink, minHeight: "100%", fontFamily: "system-ui, sans-serif" }} className="w-full">
@@ -87,36 +91,55 @@ export default function Bibliothek({ onOpen }) {
           {query && <button onClick={() => setQuery("")} className="shrink-0 text-slate-400"><X size={13} /></button>}
         </div>
 
-        {/* Fach-Filter */}
-        <ChipRow>
-          <Chip active={!fach} onClick={() => setFach(null)} label="alle Fächer" />
-          {FAECHER.map((f) => (
-            <Chip key={f.id} active={fach === f.id} color={f.color} onClick={() => setFach((x) => (x === f.id ? null : f.id))}
-              label={f.label} count={FACH_COUNTS[f.id] || 0} />
-          ))}
-        </ChipRow>
+        {/* Filter — standardmäßig zugeklappt, spart Platz. Aktive Filter als Kurz-Chips. */}
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => setFiltersOpen((o) => !o)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs border transition-colors"
+              style={{ fontFamily: "ui-monospace, monospace", background: filtersOpen ? C.ink : "#fff", color: filtersOpen ? "#fff" : C.ink, borderColor: filtersOpen ? C.ink : C.line }}>
+              <SlidersHorizontal size={13} /> Filter{activeCount ? ` · ${activeCount}` : ""}
+              <ChevronDown size={13} style={{ transform: filtersOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+            </button>
+            {/* aktive Filter als entfernbare Chips (auch bei zugeklapptem Panel sichtbar) */}
+            {fach && <SummaryChip color={FACH_COLOR[fach]} label={FACH_LABEL[fach]} onClear={() => setFach(null)} />}
+            {typ && <SummaryChip color={TYP_COLOR[typ]} label={TYP_LABEL[typ]} onClear={() => setTyp(null)} />}
+            {tag && <SummaryChip color={C.ink} label={tag} onClear={() => setTag(null)} />}
+            {rotOnly && <SummaryChip color="#B26A1E" label="Rotation" onClear={() => setRotOnly(false)} icon={<Star size={10} />} />}
+          </div>
 
-        {/* Typ-Filter + Rotation-Umschalter */}
-        <ChipRow>
-          <Chip active={!typ} onClick={() => setTyp(null)} label="alle Typen" />
-          {TYPEN.filter((t) => TYP_COUNTS[t.id]).map((t) => (
-            <Chip key={t.id} active={typ === t.id} color={t.color} onClick={() => setTyp((x) => (x === t.id ? null : t.id))}
-              label={t.label} count={TYP_COUNTS[t.id]} />
-          ))}
-          <span className="mx-1 self-center" style={{ width: 1, height: 18, background: C.line }} />
-          <Chip active={rotOnly} color="#B26A1E" onClick={() => setRotOnly((v) => !v)}
-            icon={<Star size={11} />} label="Rotation" count={rotation.length} />
-        </ChipRow>
-
-        {/* Tag-Filter (nur wenn Tags vorhanden) */}
-        {ALL_TAGS.length > 0 && (
-          <ChipRow>
-            <span className="self-center text-[10px] uppercase tracking-wider text-slate-400 mr-1" style={{ fontFamily: "ui-monospace, monospace" }}>Themen</span>
-            {ALL_TAGS.map((t) => (
-              <Chip key={t} small active={tag === t} onClick={() => setTag((x) => (x === t ? null : t))} label={t} />
-            ))}
-          </ChipRow>
-        )}
+          {filtersOpen && (
+            <div className="rounded-xl border mt-2 p-2.5 flex flex-col gap-2.5" style={{ background: "#fff", borderColor: C.line }}>
+              <FilterGroup label="Fächer">
+                <Chip active={!fach} onClick={() => setFach(null)} label="alle" />
+                {FAECHER.map((f) => (
+                  <Chip key={f.id} active={fach === f.id} color={f.color} onClick={() => setFach((x) => (x === f.id ? null : f.id))}
+                    label={f.label} count={FACH_COUNTS[f.id] || 0} />
+                ))}
+              </FilterGroup>
+              <FilterGroup label="Typen">
+                <Chip active={!typ} onClick={() => setTyp(null)} label="alle" />
+                {TYPEN.filter((t) => TYP_COUNTS[t.id]).map((t) => (
+                  <Chip key={t.id} active={typ === t.id} color={t.color} onClick={() => setTyp((x) => (x === t.id ? null : t.id))}
+                    label={t.label} count={TYP_COUNTS[t.id]} />
+                ))}
+                <span className="mx-0.5 self-center" style={{ width: 1, height: 16, background: C.line }} />
+                <Chip active={rotOnly} color="#B26A1E" onClick={() => setRotOnly((v) => !v)}
+                  icon={<Star size={11} />} label="Rotation" count={rotation.length} />
+              </FilterGroup>
+              {ALL_TAGS.length > 0 && (
+                <FilterGroup label="Themen">
+                  {ALL_TAGS.map((t) => (
+                    <Chip key={t} small active={tag === t} onClick={() => setTag((x) => (x === t ? null : t))} label={t} />
+                  ))}
+                </FilterGroup>
+              )}
+              {anyFilter && (
+                <button onClick={() => { setFach(null); setTyp(null); setTag(null); setRotOnly(false); setQuery(""); }}
+                  className="self-start text-[11px] underline text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>alle Filter zurücksetzen</button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Rotation-Schnellstart */}
         {rotItems.length > 0 && !rotOnly && (
@@ -154,14 +177,19 @@ export default function Bibliothek({ onOpen }) {
         {groups.length === 0 && (
           <div className="text-sm text-slate-400 py-8 text-center" style={{ fontFamily: "Georgia, serif" }}>Nichts gefunden.</div>
         )}
-        {groups.map((g) => (
-          <section key={g.fach.id} className="mb-5">
-            <div className="flex items-center gap-2 mb-2">
+        {groups.map((g) => {
+          const isCollapsed = !!collapsedFach[g.fach.id];
+          const n = g.quellen.reduce((s, qg) => s + qg.items.length, 0);
+          return (
+          <section key={g.fach.id} className="mb-4">
+            <button onClick={() => toggleFach(g.fach.id)} className="flex items-center gap-2 w-full text-left mb-2 hover:opacity-70 transition-opacity">
+              <ChevronDown size={15} className="text-slate-500 shrink-0" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .2s" }} />
               <span style={{ width: 10, height: 10, borderRadius: 3, background: g.fach.color }} />
               <h2 className="text-base font-semibold" style={{ fontFamily: "Georgia, serif" }}>{g.fach.label}</h2>
-            </div>
-            {g.quellen.map((qg) => (
-              <div key={qg.quelle} className="mb-3">
+              <span className="text-[11px] text-slate-400">{n}</span>
+            </button>
+            {!isCollapsed && g.quellen.map((qg) => (
+              <div key={qg.quelle} className="mb-3 ml-1">
                 <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {qg.items.map((c) => (
@@ -171,7 +199,8 @@ export default function Bibliothek({ onOpen }) {
               </div>
             ))}
           </section>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -218,8 +247,22 @@ function ItemCard({ item, inRot, onToggleRot, onOpen }) {
   );
 }
 
-function ChipRow({ children }) {
-  return <div className="flex gap-1.5 mb-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>{children}</div>;
+function FilterGroup({ label, children }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="shrink-0 w-12 text-[10px] uppercase tracking-wider text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>{label}</span>
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0" style={{ scrollbarWidth: "none" }}>{children}</div>
+    </div>
+  );
+}
+
+function SummaryChip({ color = "#1B2430", label, onClear, icon }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full pl-2 pr-1 py-0.5 text-[11px] border" style={{ fontFamily: "ui-monospace, monospace", background: color, color: "#fff", borderColor: color }}>
+      {icon}{label}
+      <button onClick={onClear} aria-label="Filter entfernen" className="rounded-full p-0.5" style={{ background: "rgba(255,255,255,0.2)" }}><X size={10} /></button>
+    </span>
+  );
 }
 
 function Chip({ active, color = "#1B2430", onClick, label, count, icon, small }) {
