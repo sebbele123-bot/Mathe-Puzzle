@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { RotateCcw, Check, ChevronDown, Hammer, CopyPlus } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { RotateCcw, Check, ChevronDown, Hammer } from "lucide-react";
 
 /* ------------------------------------------------------------------ *
  *  Struktur-Baukasten – Elementargeometrie
@@ -425,13 +425,11 @@ export default function StrukturBaukasten({ initialId }) {
   const baseInventory = Object.keys(BLOCKS);
   const [discovered, setDiscovered] = useState([]); // result-ids
   const [bench, setBench] = useState([]); // [{uid, id, x, y}] — frei positioniert
-  const [drag, setDrag] = useState(null); // {kind, id, uid?, x, y, ox, oy, offX?, offY?}
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null); // zuletzt entdecktes Ergebnis
   const [hint, setHint] = useState("");
   const [collapsed, setCollapsed] = useState({}); // { objekt: bool, anforderung: bool }
   const [mission, setMission] = useState(null); // Missions-id oder null (freies Bauen)
-  const [tool, setTool] = useState(null); // aktives Werkzeug: null | "hammer" | "clone"
   const [puzzle, setPuzzle] = useState(false); // Übungsmodus: nur Zutaten zeigen, Lösung verbergen
   const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
   const benchRef = useRef(null);
@@ -459,204 +457,51 @@ export default function StrukturBaukasten({ initialId }) {
   const GAP = 40; // erlaubte Lücke zwischen Kachelkanten, damit sie noch als verbunden gelten
 
   // Cluster: Zusammenhangskomponenten des "Kanten nah beieinander"-Graphen
-  const clustersOf = (items) => {
-    // zwei Kacheln verbunden, wenn sich ihre (um GAP/2 erweiterten) Rechtecke überlappen
-    const near = (a, b) =>
-      Math.abs(a.x - b.x) < TILE_W + GAP && Math.abs(a.y - b.y) < TILE_H + GAP;
-    const seen = new Set();
-    const groups = [];
-    for (const it of items) {
-      if (seen.has(it.uid)) continue;
-      const stack = [it], group = [];
-      seen.add(it.uid);
-      while (stack.length) {
-        const cur = stack.pop();
-        group.push(cur);
-        for (const other of items) {
-          if (!seen.has(other.uid) && near(cur, other)) { seen.add(other.uid); stack.push(other); }
-        }
-      }
-      groups.push(group);
-    }
-    return groups;
+  // --- Raster-Werkbank: Bausteine in Zellen legen, dann Hammer -----------
+  const gridCap = useMemo(() => {
+    const maxNeed = RECIPES.length ? Math.max(...RECIPES.map((r) => r.need.length)) : 3;
+    return Math.max(6, maxNeed + 2);
+  }, []);
+  const firstEmptyCell = (items) => {
+    const used = new Set(items.map((b) => b.cell));
+    for (let i = 0; i < gridCap; i++) if (!used.has(i)) return i;
+    return -1;
   };
-
-  // ein Cluster bauen: gegen Rezepte prüfen und ggf. zum Ergebnis verschmelzen
-  const buildCluster = (group) => {
-    if (snapping || group.length === 0) return;
-    const ids = group.map((g) => g.id);
-    const exact = RECIPES.find((r) => eqSet(r.need, ids));
-    if (exact) {
-      // Schwerpunkt des Clusters als Position des Ergebnisses
-      const cx = group.reduce((s, g) => s + g.x, 0) / group.length;
-      const cy = group.reduce((s, g) => s + g.y, 0) / group.length;
-      const groupUids = new Set(group.map((g) => g.uid));
-      setHint("");
-      setSnapping(true);
-      const delay = reduce.current ? 60 : 720;
-      setTimeout(() => {
-        setDiscovered((d) => (d.includes(exact.result) ? d : [...d, exact.result]));
-        setFlash(exact.result);
-        setBench((prev) => [
-          ...prev.filter((b) => !groupUids.has(b.uid)),
-          { uid: uidRef.current++, id: exact.result, x: cx, y: cy },
-        ]);
-        setSnapping(false);
-      }, delay);
-      return;
-    }
-    const partial = RECIPES.some((r) => isSubset(ids, r.need) && ids.length < r.need.length);
-    if (partial) setHint("Fast — hier fehlt noch ein Baustein für eine Konstruktion.");
-    else setHint("Diese Teile bilden keine bekannte Konstruktion.");
-  };
-
-  // Baustein an einer Position (relativ zur Werkbank) ablegen
-  const addToBenchAt = (id, clientX, clientY) => {
-    if (snapping) return;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const x = rect ? clientX - rect.left : 40;
-    const y = rect ? clientY - rect.top : 40;
-    const uid = uidRef.current++;
-    setBench((prev) => [...prev, { uid, id, x, y }]);
-    setHint("");
-    // frisch abgelegtes Teil magnetisch andocken, falls nah an einem anderen
-    requestAnimationFrame(() => snapMagnet(uid));
-  };
-
-  // per Tap hinzufügen: an eine leicht gestaffelte, freie Stelle der Werkbank legen (ohne Auto-Snap)
   const addByTap = (id) => {
     if (snapping) return;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const w = rect ? rect.width : 400, h = rect ? rect.height : 260;
     setBench((prev) => {
-      const uid = uidRef.current++;
-      // Position rasterförmig staffeln, damit neue Teile nicht exakt übereinander landen
-      const n = prev.length;
-      const x = 100 + (n % 4) * 90;
-      const y = 70 + Math.floor(n / 4) * 90;
-      return [...prev, { uid, id, x: Math.min(x, w - 60), y: Math.min(y, h - 50) }];
+      const cell = firstEmptyCell(prev);
+      if (cell === -1) return prev; // voll
+      return [...prev, { uid: uidRef.current++, id, cell }];
     });
     setHint("");
   };
-
   const removeUid = (uid) => {
     if (snapping) return;
     setBench((prev) => prev.filter((b) => b.uid !== uid));
     setHint("");
   };
 
-  const cloneUid = (uid) => {
-    if (snapping) return;
-    setBench((prev) => {
-      const src = prev.find((b) => b.uid === uid);
-      if (!src) return prev;
-      return [...prev, { uid: uidRef.current++, id: src.id, x: src.x + 28, y: src.y + 28 }];
-    });
-    setHint("");
-  };
-
-  // aktives Werkzeug auf eine angeklickte Werkbank-Kachel anwenden
-  const applyToolTo = (item) => {
-    if (snapping || !tool) return;
-    if (tool === "clone") {
-      cloneUid(item.uid);
-      setTool(null);
+  // Hammer: alle abgelegten Bausteine als eine Konstruktion prüfen (lagenunabhängig)
+  const build = () => {
+    if (snapping || bench.length === 0) return;
+    const ids = bench.map((b) => b.id);
+    const exact = RECIPES.find((r) => eqSet(r.need, ids));
+    if (exact) {
+      setHint("");
+      setSnapping(true);
+      const delay = reduce.current ? 60 : 640;
+      setTimeout(() => {
+        setDiscovered((d) => (d.includes(exact.result) ? d : [...d, exact.result]));
+        setFlash(exact.result);
+        setBench([{ uid: uidRef.current++, id: exact.result, cell: 0 }]);
+        setSnapping(false);
+      }, delay);
       return;
     }
-    if (tool === "hammer") {
-      // Cluster finden, zu dem diese Kachel gehört, und bauen
-      const group = clustersOf(bench).find((g) => g.some((it) => it.uid === item.uid));
-      if (group) buildCluster(group);
-      setTool(null);
-      return;
-    }
+    const partial = RECIPES.some((r) => isSubset(ids, r.need) && ids.length < r.need.length);
+    setHint(partial ? "Fast — hier fehlt noch ein Baustein für eine Konstruktion." : "Diese Teile bilden keine bekannte Konstruktion.");
   };
-
-  // Magnet: eine gerade bewegte Kachel bündig an die nächste andere Kachel andocken
-  const SNAP = 46; // Fangreichweite (Lücke zwischen den Kanten)
-  const snapMagnet = (uid) => {
-    setBench((prev) => {
-      const me = prev.find((b) => b.uid === uid);
-      if (!me) return prev;
-      let best = null, bestD = Infinity;
-      for (const other of prev) {
-        if (other.uid === uid) continue;
-        const dx = me.x - other.x, dy = me.y - other.y;
-        const gapX = Math.abs(dx) - TILE_W; // Überlappung/Lücke horizontal
-        const gapY = Math.abs(dy) - TILE_H; // vertikal
-        const d = Math.hypot(dx, dy);
-        // nur andocken, wenn eine Kante in Fangreichweite ist
-        if (Math.abs(dy) < TILE_H && gapX < SNAP && d < bestD) { bestD = d; best = { other, axis: "x", dir: Math.sign(dx) || 1 }; }
-        else if (Math.abs(dx) < TILE_W && gapY < SNAP && d < bestD) { bestD = d; best = { other, axis: "y", dir: Math.sign(dy) || 1 }; }
-      }
-      if (!best) return prev;
-      const o = best.other;
-      const target =
-        best.axis === "x"
-          ? { x: o.x + best.dir * TILE_W, y: o.y } // bündig links/rechts, Höhe angleichen
-          : { x: o.x, y: o.y + best.dir * TILE_H }; // bündig oben/unten, Spalte angleichen
-      return prev.map((b) => (b.uid === uid ? { ...b, x: target.x, y: target.y } : b));
-    });
-  };
-
-  // --- Pointer-Drag (Maus + Touch einheitlich) ----------------------
-  // Vorrat-Baustein aufnehmen
-  const startDrag = (e, id) => {
-    if (snapping) return;
-    const t = e.touches ? e.touches[0] : e;
-    setDrag({ kind: "palette", id, x: t.clientX, y: t.clientY, ox: t.clientX, oy: t.clientY });
-    setFlash(null);
-  };
-  // vorhandene Werkbank-Kachel aufnehmen (zum Verschieben)
-  const startBenchDrag = (e, item) => {
-    if (snapping) return;
-    e.stopPropagation();
-    const t = e.touches ? e.touches[0] : e;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const offX = rect ? t.clientX - rect.left - item.x : 0;
-    const offY = rect ? t.clientY - rect.top - item.y : 0;
-    setDrag({ kind: "bench", id: item.id, uid: item.uid, x: t.clientX, y: t.clientY, ox: t.clientX, oy: t.clientY, offX, offY });
-    setFlash(null);
-  };
-
-  useEffect(() => {
-    if (!drag) return;
-    const move = (e) => {
-      const t = e.touches ? e.touches[0] : e;
-      setDrag((d) => (d ? { ...d, x: t.clientX, y: t.clientY } : d));
-      // Werkbank-Kachel live mitziehen
-      if (drag.kind === "bench") {
-        const rect = benchRef.current?.getBoundingClientRect();
-        if (rect) {
-          const nx = t.clientX - rect.left - drag.offX;
-          const ny = t.clientY - rect.top - drag.offY;
-          setBench((prev) => prev.map((b) => (b.uid === drag.uid ? { ...b, x: nx, y: ny } : b)));
-        }
-      }
-      if (e.cancelable) e.preventDefault();
-    };
-    const up = (e) => {
-      const t = e.changedTouches ? e.changedTouches[0] : e;
-      const moved = Math.hypot(t.clientX - drag.ox, t.clientY - drag.oy);
-      const rect = benchRef.current?.getBoundingClientRect();
-      const overBench = rect && t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom;
-      if (drag.kind === "bench") {
-        // Verschieben endet: magnetisch an eine nahe Kachel andocken
-        snapMagnet(drag.uid);
-      } else {
-        // Vorrat-Baustein: Ablegen auf der Werkbank platziert ihn dort
-        if (overBench) addToBenchAt(drag.id, t.clientX, t.clientY);
-        else if (moved < 8) addToBenchAt(drag.id, rect ? rect.left + 60 : 60, rect ? rect.top + 60 : 60);
-      }
-      setDrag(null);
-    };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", up);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-  }, [drag, bench, snapping]); // eslint-disable-line
 
   const paperBg = {
     backgroundColor: C.paper,
@@ -742,109 +587,32 @@ export default function StrukturBaukasten({ initialId }) {
             </button>
           </div>
 
-          <div
-            ref={benchRef}
-            className="relative rounded-2xl border-2 border-dashed transition-colors overflow-hidden"
-            style={{
-              borderColor: tool ? (tool === "hammer" ? C.ergeb : C.objekt) : drag ? C.ergebHi : "#B7C3CF",
-              background: tool ? "rgba(47,165,136,0.08)" : drag ? "rgba(47,165,136,0.06)" : "rgba(255,255,255,0.35)",
-              minHeight: 260,
-              touchAction: "none",
-            }}
-          >
-            {bench.length === 0 && !snapping && (
-              <span className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 pointer-events-none" style={{ fontFamily: "Georgia, serif" }}>
-                leer — Bausteine hierher ziehen, dann nah zusammenschieben
-              </span>
-            )}
-
-            {/* Cluster-Hüllen: markieren, was als Verknüpfung zusammengehört */}
-            {clustersOf(bench).filter((g) => g.length > 1).map((g, gi) => {
-              const xs = g.map((it) => it.x), ys = g.map((it) => it.y);
-              const left = Math.min(...xs) - TILE_W / 2 - 8;
-              const top = Math.min(...ys) - TILE_H / 2 - 8;
-              const right = Math.max(...xs) + TILE_W / 2 + 8;
-              const bottom = Math.max(...ys) + TILE_H / 2 + 8;
-              return (
-                <div
-                  key={`cluster-${gi}`}
-                  className="absolute rounded-2xl pointer-events-none transition-all"
-                  style={{
-                    left, top, width: right - left, height: bottom - top,
-                    border: `2px solid ${C.ergebHi}`,
-                    background: "rgba(47,165,136,0.07)",
-                    zIndex: 0,
-                  }}
-                />
-              );
-            })}
-
-            {/* Puzzle-Konnektoren: Kreis an der Nahtstelle bündig angedockter Kacheln */}
-            {bench.flatMap((a, i) =>
-              bench.slice(i + 1).map((b) => {
-                const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
-                const dockedX = Math.abs(dx - TILE_W) < 14 && dy < TILE_H * 0.6; // links/rechts bündig
-                const dockedY = Math.abs(dy - TILE_H) < 14 && dx < TILE_W * 0.6; // oben/unten bündig
-                if (!dockedX && !dockedY) return null;
-                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-                return (
-                  <div
-                    key={`link-${a.uid}-${b.uid}`}
-                    aria-hidden
-                    className="absolute pointer-events-none"
-                    style={{
-                      left: mx, top: my, transform: "translate(-50%,-50%)",
-                      width: 18, height: 18, borderRadius: "50%",
-                      background: C.paper, border: "2px solid #9fb0c0",
-                      zIndex: 6,
-                      transition: snapping ? "transform .4s ease" : "none",
-                    }}
-                  />
-                );
-              })
-            )}
-
-            {/* frei positionierte Bausteine — verschiebbar, oder Ziel fürs aktive Werkzeug */}
-            {bench.map((item) => (
-              <div
-                key={item.uid}
-                data-benchuid={item.uid}
-                onPointerDown={(e) => { if (!tool) startBenchDrag(e, item); }}
-                onClick={() => { if (tool) applyToolTo(item); }}
-                className="absolute select-none"
-                style={{
-                  left: item.x, top: item.y,
-                  transform: "translate(-50%, -50%)",
-                  touchAction: "none",
-                  cursor: tool ? "pointer" : "grab",
-                  zIndex: drag && drag.uid === item.uid ? 30 : 5,
-                  opacity: drag && drag.kind === "bench" && drag.uid === item.uid ? 0.5 : 1,
-                  filter: snapping ? `drop-shadow(0 0 10px ${ROLE[resolve(item.id).role].hi})` : "none",
-                  // sanftes Einschnappen beim Loslassen; nicht, während dieselbe Kachel aktiv gezogen wird
-                  transition: drag && drag.kind === "bench" && drag.uid === item.uid ? "none" : "left .16s ease, top .16s ease",
-                }}
-              >
-                <div style={{ position: "relative", outline: tool ? `2px dashed ${tool === "hammer" ? C.ergeb : C.objekt}` : "none", outlineOffset: 3, borderRadius: 12 }}>
-                  <TileFace block={resolve(item.id)} />
-                  {!tool && (
-                    <button
-                      onPointerDown={(e) => { e.stopPropagation(); }}
-                      onClick={(e) => { e.stopPropagation(); removeUid(item.uid); }}
-                      aria-label="entfernen"
-                      className="absolute -top-2 -right-2 rounded-full flex items-center justify-center"
-                      style={{ width: 20, height: 20, background: "#fff", border: "1px solid #B7C3CF", color: C.ink, fontSize: 13, lineHeight: 1, cursor: "pointer" }}
-                    >
-                      ×
+          {/* Raster: Bausteine aus den Vorräten hier ablegen (tippen), Zelle antippen leert sie */}
+          <div ref={benchRef} className="rounded-2xl border-2 border-dashed p-2" style={{ borderColor: "#B7C3CF", background: "rgba(255,255,255,0.35)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
+              {Array.from({ length: gridCap }).map((_, cell) => {
+                const item = bench.find((b) => b.cell === cell);
+                if (item) {
+                  return (
+                    <button key={cell} onClick={() => removeUid(item.uid)} title="antippen leert die Zelle"
+                      className="text-left" style={{ filter: snapping ? `drop-shadow(0 0 10px ${ROLE[resolve(item.id).role].hi})` : "none", cursor: "pointer" }}>
+                      <TileFace block={resolve(item.id)} full />
                     </button>
-                  )}
-                </div>
-              </div>
-            ))}
+                  );
+                }
+                return <div key={cell} className="rounded-xl" style={{ minHeight: 62, background: "rgba(27,36,48,0.03)", border: "1px dashed #C4D0DB" }} />;
+              })}
+            </div>
+            {bench.length === 0 && (
+              <p className="text-sm text-slate-400 text-center px-6 py-3" style={{ fontFamily: "Georgia, serif" }}>
+                leer — Bausteine aus den Vorräten hier ablegen (antippen), dann Hammer
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 mt-2 min-h-[52px]">
             <button
-              onClick={() => { if (bench.length && !snapping) setTool((t) => (t === "hammer" ? null : "hammer")); }}
+              onClick={build}
               disabled={bench.length === 0 || snapping}
               className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium select-none transition-all"
               style={{
@@ -853,30 +621,13 @@ export default function StrukturBaukasten({ initialId }) {
                 background: bench.length === 0 || snapping ? "#C4D0DB" : C.ergeb,
                 color: bench.length === 0 || snapping ? "#8595a4" : "#fff",
                 cursor: bench.length === 0 || snapping ? "default" : "pointer",
-                boxShadow: tool === "hammer" ? `inset 0 0 0 3px ${C.ink}` : bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)",
+                boxShadow: bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)",
               }}
             >
               <Hammer size={16} /> Hammer
             </button>
-            <button
-              onClick={() => { if (bench.length && !snapping) setTool((t) => (t === "clone" ? null : "clone")); }}
-              disabled={bench.length === 0 || snapping}
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium select-none transition-all"
-              style={{
-                fontFamily: "ui-monospace, monospace",
-                letterSpacing: "0.04em",
-                background: bench.length === 0 || snapping ? "#C4D0DB" : C.objekt,
-                color: bench.length === 0 || snapping ? "#8595a4" : "#fff",
-                cursor: bench.length === 0 || snapping ? "default" : "pointer",
-                boxShadow: tool === "clone" ? `inset 0 0 0 3px ${C.ink}` : bench.length === 0 || snapping ? "none" : "0 2px 0 rgba(0,0,0,0.18)",
-              }}
-            >
-              <CopyPlus size={16} /> Klon
-            </button>
             <p className="text-xs" style={{ color: hint ? C.anford : "#8595a4" }}>
-              {hint || (tool === "hammer" ? "Auf eine Verknüpfung tippen, um sie zu bauen. (Nochmal Hammer = abbrechen)"
-                : tool === "clone" ? "Auf ein Objekt tippen, um es zu verdoppeln. (Nochmal Klon = abbrechen)"
-                : "Bausteine nah zusammenschieben → Verknüpfung · dann Werkzeug wählen und aufs Objekt tippen.")}
+              {hint || "Die richtigen Bausteine ablegen, dann Hammer — passt es, entsteht die Struktur."}
             </p>
           </div>
         </section>
@@ -927,9 +678,9 @@ export default function StrukturBaukasten({ initialId }) {
             const zutaten = baseInventory.filter((i) => BLOCKS[i].role === "anforderung" && (!allow || allow.has(i)));
             return (
               <>
-                <Shelf title="Träger" role="objekt" ids={trager} onDrag={startDrag} collapsed={!!collapsed.objekt} onToggle={() => toggle("objekt")} />
-                <Shelf title="Verknüpfungen" role="verknuepfung" ids={verkn} onDrag={startDrag} collapsed={!!collapsed.verknuepfung} onToggle={() => toggle("verknuepfung")} />
-                <Shelf title="Zutaten" role="anforderung" ids={zutaten} onDrag={startDrag} collapsed={!!collapsed.anforderung} onToggle={() => toggle("anforderung")} />
+                <Shelf title="Träger" role="objekt" ids={trager} onTap={addByTap} collapsed={!!collapsed.objekt} onToggle={() => toggle("objekt")} />
+                <Shelf title="Verknüpfungen" role="verknuepfung" ids={verkn} onTap={addByTap} collapsed={!!collapsed.verknuepfung} onToggle={() => toggle("verknuepfung")} />
+                <Shelf title="Zutaten" role="anforderung" ids={zutaten} onTap={addByTap} collapsed={!!collapsed.anforderung} onToggle={() => toggle("anforderung")} />
               </>
             );
           })()}
@@ -947,7 +698,7 @@ export default function StrukturBaukasten({ initialId }) {
                     </div>
                     <div className="flex flex-col gap-2">
                       {baseIds.map((id) => (
-                        <PaletteTile key={`base-${id}`} block={RESULTS[id]} onDrag={startDrag} draggable />
+                        <PaletteTile key={`base-${id}`} block={RESULTS[id]} onTap={addByTap} draggable />
                       ))}
                     </div>
                   </div>
@@ -958,9 +709,9 @@ export default function StrukturBaukasten({ initialId }) {
                   noch nichts konstruiert
                 </p>
               )}
-              {/* kettbare Ergebnisse: ziehbar */}
+              {/* kettbare Ergebnisse: antippen → auf die Werkbank */}
               {chainBlocks.map((id) => (
-                <PaletteTile key={id} block={RESULTS[id]} onDrag={startDrag} draggable />
+                <PaletteTile key={id} block={RESULTS[id]} onTap={addByTap} draggable />
               ))}
               {/* nicht-kettbare entdeckte Ergebnisse: nur Sammlung */}
               {discovered.filter((r) => !RESULTS[r].chainable).map((id) => (
@@ -975,12 +726,6 @@ export default function StrukturBaukasten({ initialId }) {
         </footer>
       </div>
 
-      {/* Drag-Overlay: nur beim Ziehen eines Vorrat-Bausteins */}
-      {drag && drag.kind === "palette" && (
-        <div style={{ position: "fixed", left: drag.x, top: drag.y, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 50 }}>
-          <TileFace block={resolve(drag.id)} lifted />
-        </div>
-      )}
     </div>
   );
 }
@@ -1247,14 +992,14 @@ function ShelfHead({ title, role, count, collapsible, collapsed, onToggle }) {
   return <div className="flex items-center gap-2 mb-2">{inner}</div>;
 }
 
-function Shelf({ title, role, ids, onDrag, collapsed, onToggle }) {
+function Shelf({ title, role, ids, onTap, collapsed, onToggle }) {
   return (
     <div>
       <ShelfHead title={title} role={role} collapsible collapsed={collapsed} onToggle={onToggle} />
       {!collapsed && (
         <div className="flex flex-col gap-2">
           {ids.map((id) => (
-            <PaletteTile key={id} block={BLOCKS[id]} onDrag={onDrag} draggable />
+            <PaletteTile key={id} block={BLOCKS[id]} onTap={onTap} draggable />
           ))}
         </div>
       )}
@@ -1262,25 +1007,21 @@ function Shelf({ title, role, ids, onDrag, collapsed, onToggle }) {
   );
 }
 
-// --- Kachel im Vorrat (ziehbar) -------------------------------------
-function PaletteTile({ block, onDrag, disabled, draggable }) {
+// --- Kachel im Vorrat (antippen → auf die Werkbank) -----------------
+function PaletteTile({ block, onTap, disabled, draggable }) {
+  if (!draggable || disabled) {
+    return <div style={{ opacity: disabled ? 0.35 : 1, cursor: "default" }}><TileFace block={block} /></div>;
+  }
   return (
-    <div
-      onPointerDown={draggable && !disabled ? (e) => onDrag(e, block.id) : undefined}
-      style={{
-        touchAction: "none",
-        opacity: disabled ? 0.35 : 1,
-        cursor: draggable && !disabled ? "grab" : "default",
-      }}
-    >
+    <button onClick={() => onTap && onTap(block.id)} title="antippen → auf die Werkbank" style={{ cursor: "pointer", textAlign: "left", width: "100%" }}>
       <TileFace block={block} />
-    </div>
+    </button>
   );
 }
 
 // --- Kachel auf der Werkbank ----------------------------------------
 // --- Gemeinsame Kachel-Optik ----------------------------------------
-function TileFace({ block, lifted }) {
+function TileFace({ block, lifted, full }) {
   const r = ROLE[block.role];
   return (
     <div
@@ -1289,7 +1030,9 @@ function TileFace({ block, lifted }) {
         color: "#fff",
         borderRadius: 12,
         padding: "10px 14px",
-        minWidth: 140,
+        minWidth: full ? 0 : 140,
+        width: full ? "100%" : undefined,
+        minHeight: full ? 62 : undefined,
         boxShadow: lifted
           ? "0 12px 28px rgba(0,0,0,0.28)"
           : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",

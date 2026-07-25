@@ -30,7 +30,7 @@ const C = {
   begriffHi: "#6E6BD0",
 };
 
-const TILE_W = 150, TILE_H = 78, GAP = 46, SNAP = 48;
+const TILE_W = 150;
 
 // Stufen einer Mission: erst die Begriffs-Definitionen, dann der Beweis.
 function stagesOf(mission) {
@@ -51,7 +51,6 @@ export default function BeweisCrafter({ initialId }) {
   const [depth, setDepth] = useState(0);
   const [have, setHave] = useState([]);
   const [bench, setBench] = useState([]);
-  const [drag, setDrag] = useState(null);
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null);
   const [hint, setHint] = useState("");
@@ -130,145 +129,59 @@ export default function BeweisCrafter({ initialId }) {
     backgroundSize: "22px 22px",
   };
 
-  // --- Cluster ---
-  const clustersOf = (items) => {
-    const near = (a, b) => Math.abs(a.x - b.x) < TILE_W + GAP && Math.abs(a.y - b.y) < TILE_H + GAP;
-    const seen = new Set(), groups = [];
-    for (const it of items) {
-      if (seen.has(it.uid)) continue;
-      const stack = [it], group = [];
-      seen.add(it.uid);
-      while (stack.length) {
-        const cur = stack.pop(); group.push(cur);
-        for (const other of items) if (!seen.has(other.uid) && near(cur, other)) { seen.add(other.uid); stack.push(other); }
-      }
-      groups.push(group);
-    }
-    return groups;
+  // --- Raster-Werkbank: Bausteine in Zellen legen, dann Hammer -----------
+  // Kapazität = größter Schritt (Regel + Prämissen) + etwas Luft, mind. 6.
+  const gridCap = useMemo(() => {
+    const maxStep = stage.steps.length ? Math.max(...stage.steps.map((s) => s.premises.length + 1)) : 3;
+    return Math.max(6, maxStep + 2);
+  }, [stage]);
+
+  const firstEmptyCell = (items) => {
+    const used = new Set(items.map((b) => b.cell));
+    for (let i = 0; i < gridCap; i++) if (!used.has(i)) return i;
+    return -1;
   };
 
-  const build = () => {
-    if (snapping) return;
-    const groups = clustersOf(bench);
-    for (const g of groups) {
-      const res = craftFromCluster(stage, haveSet, g.map((t) => ({ kind: t.kind, id: t.id })));
-      if (res.ok) return fuse(g, res);
-    }
-    const hasPair = groups.some((g) => g.length > 1);
-    const nf = fails + 1;
-    setFails(nf);
-    // gestufter Tipp: erst neutral, ab dem 3. Fehlversuch die nötige Bausteinzahl
-    // verraten (nicht welche) — Scaffolding ohne die Lösung preiszugeben.
-    if (nf >= 3 && stage.steps.length) {
-      const minPieces = Math.min(...stage.steps.map((s) => s.premises.length + 1));
-      setHint(`Tipp: die kleinste Verknüpfung hier braucht ${minPieces} Bausteine — genau 1 Regel und ${minPieces - 1} ${isProof ? "Aussage(n)" : "Bestandteil(e)"}.`);
-    } else {
-      setHint(hasPair ? "Das rastet nicht ein — andere Regel oder andere Bausteine?" : (isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Bestandteile + „:=“ zusammenschieben, dann Hammer."));
-    }
-  };
-
-  const fuse = (group, res) => {
-    const cx = group.reduce((s, g) => s + g.x, 0) / group.length;
-    const cy = group.reduce((s, g) => s + g.y, 0) / group.length;
-    const uids = new Set(group.map((g) => g.uid));
-    setHint(""); setFails(0); setSnapping(true);
-    const delay = reduce.current ? 60 : 640;
-    setTimeout(() => {
-      setHave((h) => (h.includes(res.produces) ? h : [...h, res.produces]));
-      setProtocol((p) => [...p, { rule: res.rule, premises: res.premises, produces: res.produces, idea: res.idea }]);
-      setLastIdea(res.idea || null);
-      setFlash(res.produces);
-      setBench((prev) => [...prev.filter((b) => !uids.has(b.uid)), { uid: uidRef.current++, kind: "fakt", id: res.produces, x: cx, y: cy }]);
-      setSnapping(false);
-      setTimeout(() => setFlash((f) => (f === res.produces ? null : f)), 900);
-    }, delay);
-  };
-
-  const addToBenchAt = (kind, id, clientX, clientY) => {
-    if (snapping) return;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const x = rect ? clientX - rect.left : 60, y = rect ? clientY - rect.top : 60;
-    const uid = uidRef.current++;
-    setBench((prev) => [...prev, { uid, kind, id, x, y }]);
-    setHint("");
-    requestAnimationFrame(() => snapMagnet(uid));
-  };
   const addByTap = (kind, id) => {
     if (snapping) return;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const w = rect ? rect.width : 400, h = rect ? rect.height : 300;
     setBench((prev) => {
-      const n = prev.length;
-      const x = Math.min(110 + (n % 4) * 92, w - 60), y = Math.min(70 + Math.floor(n / 4) * 92, h - 50);
-      return [...prev, { uid: uidRef.current++, kind, id, x, y }];
+      const cell = firstEmptyCell(prev);
+      if (cell === -1) return prev; // voll
+      return [...prev, { uid: uidRef.current++, kind, id, cell }];
     });
     setHint("");
   };
   const removeUid = (uid) => { if (!snapping) { setBench((prev) => prev.filter((b) => b.uid !== uid)); setHint(""); } };
 
-  const snapMagnet = (uid) => {
-    setBench((prev) => {
-      const me = prev.find((b) => b.uid === uid);
-      if (!me) return prev;
-      let best = null, bestD = Infinity;
-      for (const other of prev) {
-        if (other.uid === uid) continue;
-        const dx = me.x - other.x, dy = me.y - other.y;
-        const gapX = Math.abs(dx) - TILE_W, gapY = Math.abs(dy) - TILE_H, d = Math.hypot(dx, dy);
-        if (Math.abs(dy) < TILE_H && gapX < SNAP && d < bestD) { bestD = d; best = { other, axis: "x", dir: Math.sign(dx) || 1 }; }
-        else if (Math.abs(dx) < TILE_W && gapY < SNAP && d < bestD) { bestD = d; best = { other, axis: "y", dir: Math.sign(dy) || 1 }; }
-      }
-      if (!best) return prev;
-      const o = best.other;
-      const target = best.axis === "x" ? { x: o.x + best.dir * TILE_W, y: o.y } : { x: o.x, y: o.y + best.dir * TILE_H };
-      return prev.map((b) => (b.uid === uid ? { ...b, x: target.x, y: target.y } : b));
-    });
+  const build = () => {
+    if (snapping || bench.length === 0) return;
+    // lagenunabhängig: alle abgelegten Bausteine bilden die Verknüpfung
+    const res = craftFromCluster(stage, haveSet, bench.map((t) => ({ kind: t.kind, id: t.id })));
+    if (res.ok) return fuse(res);
+    const nf = fails + 1;
+    setFails(nf);
+    if (nf >= 3 && stage.steps.length) {
+      const minPieces = Math.min(...stage.steps.map((s) => s.premises.length + 1));
+      setHint(`Tipp: die kleinste Verknüpfung hier braucht ${minPieces} Bausteine — genau 1 Regel und ${minPieces - 1} ${isProof ? "Aussage(n)" : "Bestandteil(e)"}.`);
+    } else {
+      setHint(bench.length > 1 ? "Das rastet nicht ein — andere Regel oder andere Bausteine?" : (isProof ? "Regel + passende Aussagen ablegen, dann Hammer." : "Bestandteile + „:=“ ablegen, dann Hammer."));
+    }
   };
 
-  const startPaletteDrag = (e, kind, id) => {
-    if (snapping) return;
-    const t = e.touches ? e.touches[0] : e;
-    setDrag({ kind: "palette", tileKind: kind, id, x: t.clientX, y: t.clientY, ox: t.clientX, oy: t.clientY });
-    setFlash(null);
+  const fuse = (res) => {
+    setHint(""); setFails(0); setSnapping(true);
+    const delay = reduce.current ? 60 : 560;
+    setTimeout(() => {
+      setHave((h) => (h.includes(res.produces) ? h : [...h, res.produces]));
+      setProtocol((p) => [...p, { rule: res.rule, premises: res.premises, produces: res.produces, idea: res.idea }]);
+      setLastIdea(res.idea || null);
+      setFlash(res.produces);
+      // verbrauchte Zellen leeren, Ergebnis in die erste Zelle legen
+      setBench([{ uid: uidRef.current++, kind: "fakt", id: res.produces, cell: 0 }]);
+      setSnapping(false);
+      setTimeout(() => setFlash((f) => (f === res.produces ? null : f)), 900);
+    }, delay);
   };
-  const startBenchDrag = (e, item) => {
-    if (snapping) return;
-    e.stopPropagation();
-    const t = e.touches ? e.touches[0] : e;
-    const rect = benchRef.current?.getBoundingClientRect();
-    const offX = rect ? t.clientX - rect.left - item.x : 0, offY = rect ? t.clientY - rect.top - item.y : 0;
-    setDrag({ kind: "bench", id: item.id, uid: item.uid, x: t.clientX, y: t.clientY, ox: t.clientX, oy: t.clientY, offX, offY });
-    setFlash(null);
-  };
-
-  useEffect(() => {
-    if (!drag) return;
-    const move = (e) => {
-      const t = e.touches ? e.touches[0] : e;
-      setDrag((d) => (d ? { ...d, x: t.clientX, y: t.clientY } : d));
-      if (drag.kind === "bench") {
-        const rect = benchRef.current?.getBoundingClientRect();
-        if (rect) {
-          const nx = t.clientX - rect.left - drag.offX, ny = t.clientY - rect.top - drag.offY;
-          setBench((prev) => prev.map((b) => (b.uid === drag.uid ? { ...b, x: nx, y: ny } : b)));
-        }
-      }
-      if (e.cancelable) e.preventDefault();
-    };
-    const up = (e) => {
-      const t = e.changedTouches ? e.changedTouches[0] : e;
-      const moved = Math.hypot(t.clientX - drag.ox, t.clientY - drag.oy);
-      const rect = benchRef.current?.getBoundingClientRect();
-      const overBench = rect && t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom;
-      if (drag.kind === "bench") snapMagnet(drag.uid);
-      else if (overBench) addToBenchAt(drag.tileKind, drag.id, t.clientX, t.clientY);
-      else if (moved < 8) addByTap(drag.tileKind, drag.id);
-      setDrag(null);
-    };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", up);
-    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-  }, [drag, bench, snapping]); // eslint-disable-line
 
   const factLabel = (id) => {
     const f = FACTS[id];
@@ -288,7 +201,7 @@ export default function BeweisCrafter({ initialId }) {
           </div>
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Beweis-Baukasten</h1>
           <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-            Bausteine auf die Werkbank ziehen, zusammenschieben, <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
+            Bausteine aus den Vorräten in die Werkbank-Felder legen (antippen), dann <b>Hammer</b> — was passt, verschmilzt. Was zusammengehört, verrät das Spiel nicht.
             Missionen mit <b>Begriffs-Check</b> starten mit einer Definition: erst den Begriff mit <b>:=</b> festlegen, dann beweisen.
           </p>
         </header>
@@ -429,41 +342,32 @@ export default function BeweisCrafter({ initialId }) {
               <RotateCcw size={12} /> leeren
             </button>
           </div>
-          <div ref={benchRef} className="relative rounded-2xl border-2 border-dashed overflow-hidden"
-            style={{ borderColor: drag ? C.zielHi : "#B7C3CF", background: drag ? "rgba(47,165,136,0.06)" : "rgba(255,255,255,0.35)", minHeight: 260, touchAction: "none" }}>
-            {bench.length === 0 && !snapping && (
-              <span className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 pointer-events-none px-6 text-center" style={{ fontFamily: "Georgia, serif" }}>
-                {isProof ? "leer — Aussagen und eine Regel hierher, dann zusammenschieben" : "leer — die richtigen Bestandteile und „:=“ hierher"}
-              </span>
+          {/* Raster: Bausteine aus den Vorräten hier ablegen (tippen), Zelle antippen leert sie */}
+          <div ref={benchRef} className="rounded-2xl border-2 border-dashed p-2"
+            style={{ borderColor: "#B7C3CF", background: "rgba(255,255,255,0.35)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
+              {Array.from({ length: gridCap }).map((_, cell) => {
+                const item = bench.find((b) => b.cell === cell);
+                if (item) {
+                  const isRule = item.kind === "regel";
+                  const face = isRule ? RULES[item.id] : FACTS[item.id];
+                  return (
+                    <button key={cell} onClick={() => removeUid(item.uid)} title="antippen leert die Zelle"
+                      className="text-left" style={{ filter: snapping ? `drop-shadow(0 0 10px ${isRule ? C.regelHi : C.faktHi})` : "none", cursor: "pointer" }}>
+                      <TileFace kind={item.kind} block={face} isGoal={!isRule && item.id === stage.goal} flash={flash === item.id} label={!isRule ? factLabel(item.id) : undefined} full />
+                    </button>
+                  );
+                }
+                return (
+                  <div key={cell} className="rounded-xl" style={{ minHeight: 62, background: "rgba(27,36,48,0.03)", border: "1px dashed #C4D0DB" }} />
+                );
+              })}
+            </div>
+            {bench.length === 0 && (
+              <p className="text-sm text-slate-400 text-center px-6 py-3" style={{ fontFamily: "Georgia, serif" }}>
+                {isProof ? "leer — Aussagen und eine Regel aus den Vorräten hier ablegen, dann Hammer" : "leer — die richtigen Bestandteile und „:=“ hier ablegen, dann Hammer"}
+              </p>
             )}
-            {clustersOf(bench).filter((g) => g.length > 1).map((g, gi) => {
-              const xs = g.map((it) => it.x), ys = g.map((it) => it.y);
-              const left = Math.min(...xs) - TILE_W / 2 - 8, top = Math.min(...ys) - TILE_H / 2 - 8;
-              const right = Math.max(...xs) + TILE_W / 2 + 8, bottom = Math.max(...ys) + TILE_H / 2 + 8;
-              return <div key={`cl-${gi}`} className="absolute rounded-2xl pointer-events-none transition-all"
-                style={{ left, top, width: right - left, height: bottom - top, border: `2px solid ${C.zielHi}`, background: "rgba(47,165,136,0.07)", zIndex: 0 }} />;
-            })}
-            {bench.map((item) => {
-              const isRule = item.kind === "regel";
-              const face = isRule ? RULES[item.id] : FACTS[item.id];
-              return (
-                <div key={item.uid} onPointerDown={(e) => startBenchDrag(e, item)} className="absolute select-none"
-                  style={{
-                    left: item.x, top: item.y, transform: "translate(-50%, -50%)", touchAction: "none", cursor: "grab",
-                    zIndex: drag && drag.uid === item.uid ? 30 : 5,
-                    opacity: drag && drag.kind === "bench" && drag.uid === item.uid ? 0.5 : 1,
-                    filter: snapping ? `drop-shadow(0 0 10px ${isRule ? C.regelHi : C.faktHi})` : "none",
-                    transition: drag && drag.kind === "bench" && drag.uid === item.uid ? "none" : "left .16s ease, top .16s ease",
-                  }}>
-                  <div style={{ position: "relative" }}>
-                    <TileFace kind={item.kind} block={face} isGoal={!isRule && item.id === stage.goal} flash={flash === item.id} label={!isRule ? factLabel(item.id) : undefined} />
-                    <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); removeUid(item.uid); }}
-                      aria-label="entfernen" className="absolute -top-2 -right-2 rounded-full flex items-center justify-center"
-                      style={{ width: 20, height: 20, background: "#fff", border: "1px solid #B7C3CF", color: C.ink, fontSize: 13, lineHeight: 1, cursor: "pointer" }}>×</button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
 
           <div className="flex items-center gap-3 mt-2 min-h-[52px]">
@@ -482,7 +386,7 @@ export default function BeweisCrafter({ initialId }) {
               </p>
             ) : (
               <p className="text-xs" style={{ color: "#8595a4" }}>
-                {isProof ? "Regel + passende Aussagen zusammenschieben, dann Hammer." : "Die richtigen Bestandteile + „:=“ zusammenschieben."}
+                {isProof ? "Regel + passende Aussagen ablegen, dann Hammer." : "Die richtigen Bestandteile + „:=“ ablegen, dann Hammer."}
               </p>
             )}
           </div>
@@ -521,12 +425,12 @@ export default function BeweisCrafter({ initialId }) {
         <section className="grid gap-4 md:grid-cols-2 mb-4">
           <Shelf title={isProof ? "Bekannte Aussagen" : "Bestandteile"} dot={C.fakt} hintText="ziehen oder tippen → landet auf der Werkbank">
             {have.map((id) => (
-              <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === stage.goal} label={factLabel(id)} onDrag={(e) => startPaletteDrag(e, "fakt", id)} />
+              <PaletteTile key={id} kind="fakt" block={FACTS[id]} isGoal={id === stage.goal} label={factLabel(id)} onTap={() => addByTap("fakt", id)} />
             ))}
           </Shelf>
           <Shelf title="Schlussregeln" dot={C.regel} hintText={isProof ? "genau eine Regel gehört in jede Verknüpfung" : "„:=“ verbindet die Bestandteile"}>
             {stage.pool.rules.map((id) => (
-              <PaletteTile key={id} kind="regel" block={RULES[id]} onDrag={(e) => startPaletteDrag(e, "regel", id)} />
+              <PaletteTile key={id} kind="regel" block={RULES[id]} onTap={() => addByTap("regel", id)} />
             ))}
           </Shelf>
         </section>
@@ -573,11 +477,6 @@ export default function BeweisCrafter({ initialId }) {
         </footer>
       </div>
 
-      {drag && drag.kind === "palette" && (
-        <div style={{ position: "fixed", left: drag.x, top: drag.y, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 50 }}>
-          <TileFace kind={drag.tileKind} block={drag.tileKind === "regel" ? RULES[drag.id] : FACTS[drag.id]} isGoal={drag.tileKind === "fakt" && drag.id === stage.goal} lifted />
-        </div>
-      )}
     </div>
   );
 }
@@ -597,15 +496,15 @@ function Shelf({ title, dot, hintText, children }) {
   );
 }
 
-function PaletteTile({ kind, block, isGoal, label, onDrag }) {
+function PaletteTile({ kind, block, isGoal, label, onTap }) {
   return (
-    <div onPointerDown={onDrag} style={{ touchAction: "none", cursor: "grab" }}>
+    <button onClick={onTap} title="antippen → auf die Werkbank" style={{ cursor: "pointer", textAlign: "left" }}>
       <TileFace kind={kind} block={block} isGoal={isGoal} label={label} />
-    </div>
+    </button>
   );
 }
 
-function TileFace({ kind, block, isGoal, label, lifted, flash }) {
+function TileFace({ kind, block, isGoal, label, lifted, flash, full }) {
   const isRule = kind === "regel";
   const isBegriff = !isRule && block.role === "begriff";
   const base = isRule ? C.regel : isGoal ? C.ziel : isBegriff ? C.begriff : C.fakt;
@@ -613,7 +512,8 @@ function TileFace({ kind, block, isGoal, label, lifted, flash }) {
   const tag = isRule ? (block.tag || "Regel") : label || block.tag || (isGoal ? "Ziel" : isBegriff ? "Begriff" : "Aussage");
   return (
     <div style={{
-      background: `linear-gradient(160deg, ${hi}, ${base})`, color: "#fff", borderRadius: 12, padding: "9px 13px", minWidth: TILE_W - 8,
+      background: `linear-gradient(160deg, ${hi}, ${base})`, color: "#fff", borderRadius: 12, padding: "9px 13px",
+      minWidth: full ? 0 : TILE_W - 8, width: full ? "100%" : undefined, minHeight: full ? 62 : undefined,
       boxShadow: lifted ? "0 12px 28px rgba(0,0,0,0.28)" : flash ? `0 0 14px ${hi}, 0 2px 0 rgba(0,0,0,0.18)` : "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
       border: "1px solid rgba(255,255,255,0.18)", transform: flash ? "scale(1.04)" : "scale(1)", transition: "transform .2s ease",
     }}>

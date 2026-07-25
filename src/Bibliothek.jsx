@@ -14,15 +14,21 @@ const TYP_COUNTS = countBy("typ");
  *  onOpen(mode, targetId) springt in die passende Ansicht und lädt sie.
  * ==================================================================== */
 export default function Bibliothek({ onOpen }) {
-  const [fach, setFach] = useState(null);
-  const [typ, setTyp] = useState(null);
-  const [tag, setTag] = useState(null);
+  // Mehrfachauswahl: Fach/Typ/Thema sind Listen (leer = alle)
+  const [fach, setFach] = useState([]);
+  const [typ, setTyp] = useState([]);
+  const [tag, setTag] = useState([]);
   const [query, setQuery] = useState("");
   const [rotOnly, setRotOnly] = useState(false);
   const [rotation, setRotation] = useState(() => loadRotation());
   const [filtersOpen, setFiltersOpen] = useState(false); // Filterbereich standardmäßig zugeklappt
   const [collapsedFach, setCollapsedFach] = useState({}); // eingeklappte Fach-Abschnitte in der Liste
   const toggleFach = useCallback((id) => setCollapsedFach((c) => ({ ...c, [id]: !c[id] })), []);
+  // ein Wert in einer Auswahlliste umschalten
+  const toggleIn = (setter) => (v) => setter((arr) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]));
+  const toggleFachSel = toggleIn(setFach);
+  const toggleTypSel = toggleIn(setTyp);
+  const toggleTagSel = toggleIn(setTag);
 
   const inRot = useCallback((id) => rotation.includes(id), [rotation]);
   const toggleRot = useCallback((id) => {
@@ -36,9 +42,9 @@ export default function Bibliothek({ onOpen }) {
   const q = query.trim().toLowerCase();
   const results = useMemo(() => {
     return CATALOG_SORTED.filter((c) => {
-      if (fach && c.fach !== fach) return false;
-      if (typ && c.typ !== typ) return false;
-      if (tag && !c.tags.includes(tag)) return false;
+      if (fach.length && !fach.includes(c.fach)) return false;
+      if (typ.length && !typ.includes(c.typ)) return false;
+      if (tag.length && !c.tags.some((t) => tag.includes(t))) return false;
       if (rotOnly && !rotation.includes(c.id)) return false;
       if (q) {
         const hay = `${c.titel} ${c.code} ${c.quelle} ${c.tags.join(" ")}`.toLowerCase();
@@ -66,8 +72,8 @@ export default function Bibliothek({ onOpen }) {
   }, [results]);
 
   const rotItems = useMemo(() => CATALOG_SORTED.filter((c) => rotation.includes(c.id)), [rotation]);
-  const anyFilter = fach || typ || tag || rotOnly || q;
-  const activeCount = [fach, typ, tag, rotOnly].filter(Boolean).length;
+  const anyFilter = fach.length || typ.length || tag.length || rotOnly || q;
+  const activeCount = fach.length + typ.length + tag.length + (rotOnly ? 1 : 0);
 
   return (
     <div style={{ background: C.paper, color: C.ink, minHeight: "100%", fontFamily: "system-ui, sans-serif" }} className="w-full">
@@ -100,26 +106,27 @@ export default function Bibliothek({ onOpen }) {
               <SlidersHorizontal size={13} /> Filter{activeCount ? ` · ${activeCount}` : ""}
               <ChevronDown size={13} style={{ transform: filtersOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
             </button>
-            {/* aktive Filter als entfernbare Chips (auch bei zugeklapptem Panel sichtbar) */}
-            {fach && <SummaryChip color={FACH_COLOR[fach]} label={FACH_LABEL[fach]} onClear={() => setFach(null)} />}
-            {typ && <SummaryChip color={TYP_COLOR[typ]} label={TYP_LABEL[typ]} onClear={() => setTyp(null)} />}
-            {tag && <SummaryChip color={C.ink} label={tag} onClear={() => setTag(null)} />}
+            {/* aktive Filter als entfernbare Chips (Mehrfachauswahl, auch bei zugeklapptem Panel) */}
+            {fach.map((id) => <SummaryChip key={`f-${id}`} color={FACH_COLOR[id]} label={FACH_LABEL[id]} onClear={() => toggleFachSel(id)} />)}
+            {typ.map((id) => <SummaryChip key={`t-${id}`} color={TYP_COLOR[id]} label={TYP_LABEL[id]} onClear={() => toggleTypSel(id)} />)}
+            {tag.map((t) => <SummaryChip key={`g-${t}`} color={C.ink} label={t} onClear={() => toggleTagSel(t)} />)}
             {rotOnly && <SummaryChip color="#B26A1E" label="Rotation" onClear={() => setRotOnly(false)} icon={<Star size={10} />} />}
           </div>
 
           {filtersOpen && (
             <div className="rounded-xl border mt-2 p-2.5 flex flex-col gap-2.5" style={{ background: "#fff", borderColor: C.line }}>
+              <div className="text-[10px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>Mehrfachauswahl möglich — mehrere Fächer, Typen oder Themen kombinieren.</div>
               <FilterGroup label="Fächer">
-                <Chip active={!fach} onClick={() => setFach(null)} label="alle" />
+                <Chip active={fach.length === 0} onClick={() => setFach([])} label="alle" />
                 {FAECHER.map((f) => (
-                  <Chip key={f.id} active={fach === f.id} color={f.color} onClick={() => setFach((x) => (x === f.id ? null : f.id))}
+                  <Chip key={f.id} active={fach.includes(f.id)} color={f.color} onClick={() => toggleFachSel(f.id)}
                     label={f.label} count={FACH_COUNTS[f.id] || 0} />
                 ))}
               </FilterGroup>
               <FilterGroup label="Typen">
-                <Chip active={!typ} onClick={() => setTyp(null)} label="alle" />
+                <Chip active={typ.length === 0} onClick={() => setTyp([])} label="alle" />
                 {TYPEN.filter((t) => TYP_COUNTS[t.id]).map((t) => (
-                  <Chip key={t.id} active={typ === t.id} color={t.color} onClick={() => setTyp((x) => (x === t.id ? null : t.id))}
+                  <Chip key={t.id} active={typ.includes(t.id)} color={t.color} onClick={() => toggleTypSel(t.id)}
                     label={t.label} count={TYP_COUNTS[t.id]} />
                 ))}
                 <span className="mx-0.5 self-center" style={{ width: 1, height: 16, background: C.line }} />
@@ -129,12 +136,12 @@ export default function Bibliothek({ onOpen }) {
               {ALL_TAGS.length > 0 && (
                 <FilterGroup label="Themen">
                   {ALL_TAGS.map((t) => (
-                    <Chip key={t} small active={tag === t} onClick={() => setTag((x) => (x === t ? null : t))} label={t} />
+                    <Chip key={t} small active={tag.includes(t)} onClick={() => toggleTagSel(t)} label={t} />
                   ))}
                 </FilterGroup>
               )}
               {anyFilter && (
-                <button onClick={() => { setFach(null); setTyp(null); setTag(null); setRotOnly(false); setQuery(""); }}
+                <button onClick={() => { setFach([]); setTyp([]); setTag([]); setRotOnly(false); setQuery(""); }}
                   className="self-start text-[11px] underline text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>alle Filter zurücksetzen</button>
               )}
             </div>
