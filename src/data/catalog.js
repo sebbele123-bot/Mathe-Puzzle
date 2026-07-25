@@ -39,6 +39,12 @@ export const TYP_COLOR = Object.fromEntries(TYPEN.map((t) => [t.id, t.color]));
 // "L4 · Ü2.1 — …" -> Kürzel L-Nummer, Übung, Blatt
 const parseTitle = (raw) => {
   let s = raw;
+  // Bauschema-Lektionen: "A · Def 9 — Strahl" / "B · Def 17 — Kongruenzebene"
+  const sm = s.match(/^([AB])\s*·\s*Def\s*(\d+)\s*—\s*/);
+  if (sm) {
+    return { code: `Def ${sm[2]}`, kap: 200 + (sm[1] === "A" ? 0 : 1), nr: Number(sm[2]),
+      quelle: `Bauschema ${sm[1]} — aus Elementarteilen`, name: s.slice(sm[0].length), lektion: null };
+  }
   let lektion = null;
   const lm = s.match(/^L(\d+)\s*·\s*/);
   if (lm) { lektion = `L${lm[1]}`; s = s.slice(lm[0].length); }

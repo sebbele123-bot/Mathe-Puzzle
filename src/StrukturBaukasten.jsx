@@ -85,6 +85,35 @@ const BLOCKS = {
   projpunkte: { id: "projpunkte", role: "anforderung", name: "⟨v⟩, v ≠ 0", sub: "eindim. Teilräume als Punkte" },
   imgt0: { id: "imgt0", role: "anforderung", name: "Im(z) > 0", sub: "obere Halbebene" },
   sl2r: { id: "sl2r", role: "anforderung", name: "SL(2; ℝ)", sub: "z ↦ (az+b)/(cz+d), ad−bc=1" },
+
+  // --- Elementarteile für die Definitions-Bauschemata (A + B) ---------
+  rgeq0: { id: "rgeq0", role: "objekt", name: "ℝ≥0", sub: "nichtnegative reelle Zahlen" },
+  setE: { id: "setE", role: "objekt", name: "E", sub: "Punktmenge (Träger)" },
+  points: { id: "points", role: "objekt", name: "Punkte", sub: "Grundobjekte P" },
+  lines: { id: "lines", role: "objekt", name: "Geraden", sub: "Teilmengen G ⊂ P" },
+  vecnz: { id: "vecnz", role: "anforderung", name: "v ≠ 0", sub: "ein Vektor ungleich 0" },
+  simplytrans: { id: "simplytrans", role: "anforderung", name: "einf. transitiv", sub: "Operation von (E⃗,+) durch Translationen" },
+  translation: { id: "translation", role: "verknuepfung", name: "+ : E⃗×E→E", sub: "Translationen" },
+  glv: { id: "glv", role: "anforderung", name: "GL(V)", sub: "invertierbare lineare Abbildungen" },
+  subgroupGL: { id: "subgroupGL", role: "anforderung", name: "D ⊂ GL", sub: "Untergruppe" },
+  sinvariance: { id: "sinvariance", role: "anforderung", name: "s(gv,gw)=s(v,w)", sub: "s-erhaltend" },
+  det1: { id: "det1", role: "anforderung", name: "det = 1", sub: "orientierungserhaltend" },
+  bijektion: { id: "bijektion", role: "anforderung", name: "φ bijektiv", sub: "umkehrbare Abbildung" },
+  linpart: { id: "linpart", role: "anforderung", name: "φ⃗ invertierbar", sub: "linearer Anteil, φ(p+v)=φ(p)+φ⃗(v)" },
+  halfplane: { id: "halfplane", role: "anforderung", name: "H = ℝv+ℝ≥0w", sub: "Halbebene" },
+  linunabh: { id: "linunabh", role: "anforderung", name: "v, w lin. unabh.", sub: "linear unabhängig" },
+  genauzwei: { id: "genauzwei", role: "anforderung", name: "genau zwei d", sub: "zu je zwei Strahlen A,B: d(A)=B" },
+  incax: { id: "incax", role: "anforderung", name: "2 Punkte ⇒ 1 Gerade", sub: "Inzidenzaxiom" },
+  linege2: { id: "linege2", role: "anforderung", name: "|G| ≥ 2", sub: "jede Gerade hat ≥ 2 Punkte" },
+  orderax: { id: "orderax", role: "anforderung", name: "Anordnungsaxiome", sub: "Zwischen-Relation" },
+  pasch: { id: "pasch", role: "anforderung", name: "Pasch-Axiom", sub: "Gerade trifft Dreiecksseite" },
+  parax: { id: "parax", role: "anforderung", name: "genau eine Parallele", sub: "Parallelenaxiom (Playfair)" },
+  supremum: { id: "supremum", role: "anforderung", name: "Supremumseigenschaft", sub: "Vollständigkeit" },
+  threepts: { id: "threepts", role: "anforderung", name: "A, B, C", sub: "drei Punkte (Dreieck)" },
+  angeordKong: { id: "angeordKong", role: "anforderung", name: "A↦A′,B↦B′,C↦C′", sub: "angeordnete Kongruenz" },
+  kollinear: { id: "kollinear", role: "anforderung", name: "kollinear", sub: "auf einer Geraden" },
+  vgkreis: { id: "vgkreis", role: "anforderung", name: "verallg. Kreis", sub: "Kreis oder erweiterte Gerade" },
+  normb: { id: "normb", role: "anforderung", name: "‖·‖", sub: "Norm aus dem Skalarprodukt" },
 };
 
 // --- Zielstrukturen (Ergebnisse) ------------------------------------
@@ -306,6 +335,32 @@ const RESULTS = {
     note: "SL(2;ℝ) operiert auf H durch z ↦ (az+b)/(cz+d) als Kongruenzgruppe — darauf spielen die Rechnungen von Blatt 10.",
     chainable: false,
   },
+
+  // === Definitions-Bauschemata (A — direkt aus Elementarteilen) =======
+  strahl: { id: "strahl", role: "objekt", name: "A = ℝ≥0·v", sub: "Strahl", ref: "Def 9", note: "Die Halbgerade ℝ≥0·v zu einem Vektor v ≠ 0.", chainable: true },
+  affraum: { id: "affraum", role: "objekt", name: "(E, E⃗)", sub: "affiner Raum", ref: "Def 5", note: "Punktmenge E mit Richtungsraum E⃗ (Vektorraum), der einfach transitiv durch Translationen operiert.", chainable: true },
+  affEbene: { id: "affEbene", role: "objekt", name: "affine Ebene", sub: "dim E⃗ = 2", ref: "Def 5/6", note: "Ein affiner Raum, dessen Richtungsraum zweidimensional ist.", chainable: true },
+  inzgeo: { id: "inzgeo", role: "ergebnis", name: "Inzidenzgeometrie", sub: "Punkte & Geraden", ref: "Def 22", note: "Durch je zwei verschiedene Punkte genau eine Gerade; jede Gerade hat ≥ 2 Punkte.", chainable: true },
+  zwax: { id: "zwax", role: "ergebnis", name: "Zwischenrelation", sub: "axiomatisch", ref: "Def 23", note: "Anordnungsaxiome inklusive Pasch-Axiom.", chainable: true },
+  parallelax: { id: "parallelax", role: "ergebnis", name: "Parallelenaxiom", sub: "Playfair", ref: "Def 25", note: "Zu g und p ∉ g genau eine Parallele durch p.", chainable: false },
+  erwEbene: { id: "erwEbene", role: "objekt", name: "Ê = E ⊔ {∞}", sub: "erweiterte Ebene", ref: "Def 26", note: "Die Ebene um einen Punkt ∞ erweitert; Träger der Möbiusgeometrie. Verallgemeinerter Kreis: echter Kreis oder erweiterte Gerade.", chainable: true },
+
+  // === Definitions-Bauschemata (B — Ketten, Unterdefinitionen elementar) ===
+  ogroup: { id: "ogroup", role: "ergebnis", name: "O(Z,s)", sub: "orthogonale Gruppe", ref: "Def 2", note: "Die s-erhaltenden Elemente von GL(Z): {g | s(gv,gw)=s(v,w)}.", chainable: true },
+  sogroup: { id: "sogroup", role: "ergebnis", name: "SO(Z,s)", sub: "Drehgruppe (det=1)", ref: "Def 3", note: "Die orthogonalen Elemente mit Determinante 1 — die Drehungen.", chainable: true },
+  dsgAbstr: { id: "dsgAbstr", role: "ergebnis", name: "(Z, D)", sub: "Drehspiegelgruppe", ref: "Def 10", note: "D ⊂ GL(Z), dim Z = 2, sodass es zu je zwei Strahlen A, B genau zwei d ∈ D mit d(A)=B gibt.", chainable: true },
+  affgerade: { id: "affgerade", role: "objekt", name: "p + ℝv", sub: "affine Gerade", ref: "Def 6", note: "Gerade im affinen Raum; parallel ⇔ gleicher Richtungsraum.", chainable: true },
+  affinitaet: { id: "affinitaet", role: "ergebnis", name: "Affinität φ", sub: "φ(p+v)=φ(p)+φ⃗(v)", ref: "Def 7", note: "Bijektion eines affinen Raums mit invertierbarem linearem Anteil φ⃗.", chainable: false },
+  halbfahne: { id: "halbfahne", role: "objekt", name: "(A, H)", sub: "Halbraumfahne", ref: "Def 15", note: "Strahl A in einer Halbebene H eines dreidim. Raums, v, w linear unabhängig.", chainable: true },
+  rotgroup: { id: "rotgroup", role: "ergebnis", name: "R ⊂ GL(E)", sub: "Rotationsgruppe", ref: "Def 16", note: "Zu je zwei Halbraumfahnen genau ein überführendes r ∈ R (= SO(E,s)).", chainable: true },
+  kongEbene: { id: "kongEbene", role: "objekt", name: "(E, K)", sub: "Kongruenzebene", ref: "Def 17", note: "Affine Ebene mit Gruppe K, die alle Translationen enthält und deren lineare Anteile eine Drehspiegelgruppe bilden.", chainable: true },
+  euklEbene: { id: "euklEbene", role: "ergebnis", name: "euklid. Ebene", sub: "Kongruenzen = Isometrien", ref: "Def 18", note: "Kongruenzebene zu einem Skalarprodukt; die Kongruenzen sind die Isometrien.", chainable: false },
+  aehnlichkeit: { id: "aehnlichkeit", role: "ergebnis", name: "Ähnlichkeit", sub: "Selbst-Iso, a≠0", ref: "Def 19", note: "Isomorphismus einer Kongruenzebene mit sich; keine Kongruenz ⇒ genau ein Fixpunkt.", chainable: false },
+  dreieck: { id: "dreieck", role: "ergebnis", name: "(A,B,C)", sub: "angeordnetes Dreieck", ref: "Def 20", note: "Drei Punkte mit angeordneter Kongruenz A↦A′, B↦B′, C↦C′.", chainable: false },
+  streckeZw: { id: "streckeZw", role: "ergebnis", name: "[p,q], Zw", sub: "Strecke & Zwischenrelation", ref: "Def 21", note: "Kollineare Tripel (x,y,z) mit ℝ≥0(x−y) ∩ ℝ≥0(z−y) = {0}.", chainable: false },
+  fasteuklGeo: { id: "fasteuklGeo", role: "ergebnis", name: "fasteukl. Geom.", sub: "volle Axiomatik", ref: "Def 24", note: "Inzidenzgeometrie + Zwischenrelation + Kongruenzen + Supremumseigenschaft.", chainable: false },
+  kreisInv: { id: "kreisInv", role: "ergebnis", name: "s_L", sub: "Kreisspiegelung", ref: "Def 27", note: "Inversion am verallgemeinerten Kreis: x ↦ c + r²(x−c)/‖x−c‖², c ↔ ∞.", chainable: true },
+  projRaum: { id: "projRaum", role: "ergebnis", name: "P(V)", sub: "projektiver Raum", ref: "Def 29", note: "Punkte = eindimensionale Teilräume von V; Vervollständigung E ⊔ P(E⃗), Kollineationen = geradentreue Bijektionen.", chainable: false },
 };
 
 // --- Rezepte (Menge benötigter Bausteine → Ergebnis) ----------------
@@ -352,6 +407,32 @@ const RECIPES = [
   { need: ["vr3", "projpunkte"], result: "projEbene" },
   { need: ["cvr", "imgt0"], result: "halbebene" },
   { need: ["halbebene", "sl2r"], result: "hypEbene" },
+
+  // === A: Definitionen direkt aus Elementarteilen =====================
+  { need: ["rgeq0", "vecnz", "skalarmult"], result: "strahl" },        // Def 9
+  { need: ["setE", "vr", "simplytrans"], result: "affraum" },          // Def 5
+  { need: ["affraum", "dim2"], result: "affEbene" },                   // Def 5/6
+  { need: ["points", "lines", "incax", "linege2"], result: "inzgeo" }, // Def 22
+  { need: ["orderax", "pasch"], result: "zwax" },                      // Def 23
+  { need: ["inzgeo", "parax"], result: "parallelax" },                 // Def 25
+  { need: ["affEbene", "unendl"], result: "erwEbene" },                // Def 26
+
+  // === B: Definitionen als Ketten — jede Unterdefinition elementar gebaut ===
+  { need: ["vr2", "skp", "glv", "sinvariance"], result: "ogroup" },        // Def 2  ← skp (Def 1)
+  { need: ["ogroup", "det1"], result: "sogroup" },                          // Def 3  ← O(Z,s)
+  { need: ["vr2", "strahl", "subgroupGL", "genauzwei"], result: "dsgAbstr" }, // Def 10 ← strahl (Def 9)
+  { need: ["affraum", "vecnz"], result: "affgerade" },                      // Def 6  ← affraum (Def 5)
+  { need: ["affraum", "bijektion", "linpart"], result: "affinitaet" },      // Def 7  ← affraum
+  { need: ["vr3", "strahl", "halfplane", "linunabh"], result: "halbfahne" }, // Def 15 ← strahl
+  { need: ["vr3", "halbfahne", "eindeutig"], result: "rotgroup" },          // Def 16 ← halbfahne (Def 15)
+  { need: ["affEbene", "translation", "dsgAbstr"], result: "kongEbene" },   // Def 17 ← affEbene(5) + dsgAbstr(10)
+  { need: ["kongEbene", "skp"], result: "euklEbene" },                      // Def 18 ← kongEbene(17) + skp(1)
+  { need: ["kongEbene", "aehnl"], result: "aehnlichkeit" },                 // Def 19 ← kongEbene
+  { need: ["kongEbene", "threepts", "angeordKong"], result: "dreieck" },    // Def 20 ← kongEbene
+  { need: ["affraum", "kollinear", "zwrel"], result: "streckeZw" },         // Def 21 ← affraum
+  { need: ["inzgeo", "zwax", "kongEbene", "supremum"], result: "fasteuklGeo" }, // Def 24 ← 22 + 23 + 17
+  { need: ["erwEbene", "vgkreis", "normb", "inversion"], result: "kreisInv" }, // Def 27 ← erwEbene(26)
+  { need: ["vr", "projpunkte"], result: "projRaum" },                       // Def 29 ← vr
 ];
 
 // Multimengen-Vergleich (Duplikate zählen): sortierte Listen müssen übereinstimmen
@@ -418,6 +499,33 @@ export const MISSIONS = [
   { id: "m71", task: "L13 · Ü7.1 — Möbiustransformationen", base: ["kong"], steps: ["ebeneHat", "moeb", "moebInf"] },
   { id: "m81", task: "L14 · Ü8.1/9.2 — projektive Ebene", base: ["vr"], steps: ["vr3", "projEbene"] },
   { id: "m10", task: "L15 · Blatt 10 — hyperbolische Ebene", base: ["cvr"], steps: ["halbebene", "hypEbene"] },
+
+  // --- Bauschema A: Definitionen direkt aus Elementarteilen ---
+  { id: "dA9", task: "A · Def 9 — Strahl", base: [], steps: ["strahl"] },
+  { id: "dA1", task: "A · Def 1 — Skalarprodukt", base: ["vr2"], steps: ["skp"] },
+  { id: "dA8", task: "A · Def 8 — Flächeninhalt", base: ["vr2"], steps: ["flaeche"] },
+  { id: "dA5", task: "A · Def 5 — Affiner Raum", base: ["vr"], steps: ["affraum"] },
+  { id: "dA22", task: "A · Def 22 — Inzidenzgeometrie", base: [], steps: ["inzgeo"] },
+  { id: "dA23", task: "A · Def 23 — Zwischenrelation", base: [], steps: ["zwax"] },
+  { id: "dA25", task: "A · Def 25 — Parallelenaxiom", base: [], steps: ["inzgeo", "parallelax"] },
+  { id: "dA26", task: "A · Def 26 — Erweiterte Ebene", base: ["vr"], steps: ["affraum", "affEbene", "erwEbene"] },
+
+  // --- Bauschema B: Definitionen als Ketten (Unterdefinitionen elementar) ---
+  { id: "dB2", task: "B · Def 2 — Orthogonale Gruppe", base: ["vr2"], steps: ["skp", "ogroup"] },
+  { id: "dB3", task: "B · Def 3 — SO(Z,s)", base: ["vr2"], steps: ["skp", "ogroup", "sogroup"] },
+  { id: "dB10", task: "B · Def 10 — Drehspiegelgruppe", base: ["vr2"], steps: ["strahl", "dsgAbstr"] },
+  { id: "dB6", task: "B · Def 6 — Affine Gerade", base: ["vr"], steps: ["affraum", "affgerade"] },
+  { id: "dB7", task: "B · Def 7 — Affinität", base: ["vr"], steps: ["affraum", "affinitaet"] },
+  { id: "dB15", task: "B · Def 15 — Halbraumfahne", base: ["vr3"], steps: ["strahl", "halbfahne"] },
+  { id: "dB16", task: "B · Def 16 — Rotationsgruppe", base: ["vr3"], steps: ["strahl", "halbfahne", "rotgroup"] },
+  { id: "dB17", task: "B · Def 17 — Kongruenzebene", base: ["vr"], steps: ["affraum", "affEbene", "vr2", "strahl", "dsgAbstr", "kongEbene"] },
+  { id: "dB18", task: "B · Def 18 — Euklidische Ebene", base: ["kongEbene"], steps: ["skp", "euklEbene"] },
+  { id: "dB19", task: "B · Def 19 — Ähnlichkeit", base: ["kongEbene"], steps: ["aehnlichkeit"] },
+  { id: "dB20", task: "B · Def 20 — Angeordnetes Dreieck", base: ["kongEbene"], steps: ["dreieck"] },
+  { id: "dB21", task: "B · Def 21 — Strecke & Zwischenrelation", base: ["vr"], steps: ["affraum", "streckeZw"] },
+  { id: "dB24", task: "B · Def 24 — Fasteuklidische Geometrie", base: ["kongEbene"], steps: ["inzgeo", "zwax", "fasteuklGeo"] },
+  { id: "dB27", task: "B · Def 27 — Kreisspiegelung", base: ["vr"], steps: ["affraum", "affEbene", "erwEbene", "kreisInv"] },
+  { id: "dB29", task: "B · Def 29 — Projektiver Raum", base: ["vr"], steps: ["projRaum"] },
 ];
 
 // ====================================================================
