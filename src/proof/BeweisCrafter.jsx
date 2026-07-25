@@ -305,7 +305,6 @@ export default function BeweisCrafter({ initialId }) {
               <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ fontFamily: "Georgia, serif", background: stageWon ? C.begriff : "rgba(138,107,192,0.12)", color: stageWon ? "#fff" : C.begriff, border: `1px solid ${C.begriff}` }}>
                 {stageWon && <Check size={11} />} {goal.name}
               </span>
-              <span className="text-[11px] text-slate-500">Stimmen die Bestandteile, geht es weiter zum Beweis.</span>
             </div>
           </section>
         )}
@@ -389,7 +388,6 @@ export default function BeweisCrafter({ initialId }) {
             <div>
               <div style={{ fontFamily: "Georgia, serif", color: C.begriff }} className="text-base font-semibold">Begriff sitzt: {goal.name}.</div>
               {stage.note && <p className="text-sm text-slate-700 mt-0.5">{stage.note}</p>}
-              <p className="text-xs text-slate-500 mt-1">Weiter geht’s …</p>
             </div>
           </div>
         )}

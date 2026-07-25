@@ -760,11 +760,6 @@ export default function StrukturBaukasten({ initialId }) {
                   {RESULTS[flash].claim}
                 </p>
               )}
-              {RESULTS[flash].chainable && (
-                <p className="text-xs mt-1" style={{ color: C.objekt }}>
-                  → steht jetzt als Baustein bereit.
-                </p>
-              )}
             </div>
           </div>
         )}

@@ -121,7 +121,6 @@ export default function Bibliothek({ onOpen }) {
 
           {filtersOpen && (
             <div className="rounded-xl border mt-2 p-2.5 flex flex-col gap-2.5" style={{ background: "#fff", borderColor: C.line }}>
-              <div className="text-[10px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>Mehrfachauswahl möglich — mehrere Fächer, Typen oder Themen kombinieren.</div>
               <FilterGroup label="Fächer">
                 <Chip active={fach.length === 0} onClick={() => setFach([])} label="alle" />
                 {FAECHER.map((f) => (
