@@ -81,6 +81,7 @@ Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — 
 
 ## Conventions & gotchas
 
+- **No explanatory or tutorial text** in the product unless explicitly requested. Don't add intro paragraphs, how-to hints, onboarding copy, or "so funktioniert's" blurbs to the UI. Keep labels and content functional; the game teaches through interaction, not prose.
 - **Inventory starts empty.** Do not auto-fill the hotbar. Symbols enter the inventory only by collecting them in **Bausteine** (the **+** on a tile). `localStorage` keys: `mp_hotbar_v2`, `mp_inventory_v1`, `mp_werkbank_v1`, `mp_rotation_v1`. Bump the version suffix when changing a schema so stale data doesn't linger.
 - **Mobile-first.** Long chip rows must be single horizontally-scrollable lines (`overflow-x-auto`, not `flex-wrap`); the top nav shows only the active mode's label on small screens so the fullscreen button stays visible; theme-aware and responsive.
 - **Definition sign:** write `:=` with a tiny "Definition" label above it, not the word "Definition".
