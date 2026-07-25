@@ -79,12 +79,21 @@ const tagsFor = (name) => {
 // Neutralelement ist ein reiner Algebra-Grundbaustein, der Rest ist ElGeo.
 const fachFor = (name, code) => (name.includes("Neutralelement") || code.startsWith("Basis") ? "algebra" : "elgeo");
 
+// Rubriken innerhalb eines Fachs (ausklappbare Abschnitte)
+export const RUBRIKEN = [
+  { id: "definitionen", label: "Definitionen" },
+  { id: "saetze", label: "Sätze" },
+  { id: "uebungsblaetter", label: "Übungsblätter" },
+];
+
 // --- Katalog aus den vorhandenen Missionen bauen ----------------------
 const defItems = DEF_LESSONS.map((m) => {
   const p = parseTitle(m.task);
   return {
     id: `def:${m.id}`, mode: "definition", targetId: m.id,
     typ: "definition", fach: fachFor(p.name, p.code),
+    // Bauschema-Lektionen sind Definitionen; die L-Lektionen sind Übungsblatt-Konstruktionen
+    rubrik: p.quelle.startsWith("Bauschema") ? "definitionen" : "uebungsblaetter",
     code: p.code, kap: p.kap, nr: p.nr, quelle: p.quelle,
     titel: p.name, lektion: p.lektion, tags: tagsFor(p.name),
   };
@@ -94,7 +103,7 @@ const proofItems = PROOF_MISSIONS.map((m) => {
   const p = parseTitle(m.title);
   return {
     id: `proof:${m.id}`, mode: "beweis", targetId: m.id,
-    typ: "beweis", fach: fachFor(p.name, p.code),
+    typ: "beweis", fach: fachFor(p.name, p.code), rubrik: "saetze",
     code: p.code, kap: p.kap, nr: p.nr, quelle: p.quelle,
     titel: p.name, lektion: null, hatBegriffscheck: !!m.vocab, tags: tagsFor(p.name),
   };
@@ -103,7 +112,7 @@ const proofItems = PROOF_MISSIONS.map((m) => {
 // Kern-Definitionen als Steckbrief-Karten (öffnen in der Steckbrief-Ansicht)
 const defCards = DEFINITIONS.map((d) => ({
   id: `defcard:${d.id}`, mode: "steckbrief", targetId: d.id,
-  typ: "definition", fach: "elgeo",
+  typ: "definition", fach: "elgeo", rubrik: "definitionen",
   code: `D${d.nr}`, kap: 100 + d.t, nr: d.nr,
   quelle: `Definitionen · ${d.thema}`,
   titel: d.term, lektion: null, tags: d.tags,

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Play, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
-  CATALOG_SORTED, FAECHER, TYPEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
+  CATALOG_SORTED, FAECHER, TYPEN, RUBRIKEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
   ALL_TAGS, countBy, loadRotation, saveRotation,
 } from "./data/catalog.js";
 
@@ -23,7 +23,9 @@ export default function Bibliothek({ onOpen }) {
   const [rotation, setRotation] = useState(() => loadRotation());
   const [filtersOpen, setFiltersOpen] = useState(false); // Filterbereich standardmäßig zugeklappt
   const [collapsedFach, setCollapsedFach] = useState({}); // eingeklappte Fach-Abschnitte in der Liste
+  const [openRubrik, setOpenRubrik] = useState({}); // ausgeklappte Rubriken (Definitionen/Sätze/Übungsblätter) — Standard: zu
   const toggleFach = useCallback((id) => setCollapsedFach((c) => ({ ...c, [id]: !c[id] })), []);
+  const toggleRubrik = useCallback((key) => setOpenRubrik((c) => ({ ...c, [key]: !c[key] })), []);
   // ein Wert in einer Auswahlliste umschalten
   const toggleIn = (setter) => (v) => setter((arr) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]));
   const toggleFachSel = toggleIn(setFach);
@@ -54,19 +56,26 @@ export default function Bibliothek({ onOpen }) {
     });
   }, [fach, typ, tag, q, rotOnly, rotation]);
 
-  // nach Fach → Quelle gruppieren (Fach-Reihenfolge aus FAECHER)
+  // nach Fach → Rubrik (Definitionen/Sätze/Übungsblätter) → Quelle gruppieren
   const groups = useMemo(() => {
+    const byQuelle = (items) => {
+      const per = []; const seen = new Map();
+      for (const it of items) {
+        if (!seen.has(it.quelle)) { seen.set(it.quelle, per.length); per.push({ quelle: it.quelle, items: [] }); }
+        per[seen.get(it.quelle)].items.push(it);
+      }
+      return per;
+    };
     const out = [];
     for (const f of FAECHER) {
-      const items = results.filter((c) => c.fach === f.id);
-      if (!items.length) continue;
-      const perQuelle = [];
-      const seen = new Map();
-      for (const it of items) {
-        if (!seen.has(it.quelle)) { seen.set(it.quelle, perQuelle.length); perQuelle.push({ quelle: it.quelle, items: [] }); }
-        perQuelle[seen.get(it.quelle)].items.push(it);
+      const fitems = results.filter((c) => c.fach === f.id);
+      if (!fitems.length) continue;
+      const rubriken = [];
+      for (const rb of RUBRIKEN) {
+        const items = fitems.filter((c) => c.rubrik === rb.id);
+        if (items.length) rubriken.push({ rubrik: rb, quellen: byQuelle(items), n: items.length });
       }
-      out.push({ fach: f, quellen: perQuelle });
+      out.push({ fach: f, rubriken, n: fitems.length });
     }
     return out;
   }, [results]);
@@ -185,26 +194,39 @@ export default function Bibliothek({ onOpen }) {
           <div className="text-sm text-slate-400 py-8 text-center" style={{ fontFamily: "Georgia, serif" }}>Nichts gefunden.</div>
         )}
         {groups.map((g) => {
-          const isCollapsed = !!collapsedFach[g.fach.id];
-          const n = g.quellen.reduce((s, qg) => s + qg.items.length, 0);
+          const fachCollapsed = !!collapsedFach[g.fach.id];
           return (
           <section key={g.fach.id} className="mb-4">
             <button onClick={() => toggleFach(g.fach.id)} className="flex items-center gap-2 w-full text-left mb-2 hover:opacity-70 transition-opacity">
-              <ChevronDown size={15} className="text-slate-500 shrink-0" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .2s" }} />
+              <ChevronDown size={15} className="text-slate-500 shrink-0" style={{ transform: fachCollapsed ? "rotate(-90deg)" : "none", transition: "transform .2s" }} />
               <span style={{ width: 10, height: 10, borderRadius: 3, background: g.fach.color }} />
               <h2 className="text-base font-semibold" style={{ fontFamily: "Georgia, serif" }}>{g.fach.label}</h2>
-              <span className="text-[11px] text-slate-400">{n}</span>
+              <span className="text-[11px] text-slate-400">{g.n}</span>
             </button>
-            {!isCollapsed && g.quellen.map((qg) => (
-              <div key={qg.quelle} className="mb-3 ml-1">
-                <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {qg.items.map((c) => (
-                    <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId)} />
+            {!fachCollapsed && g.rubriken.map((rb) => {
+              const key = `${g.fach.id}:${rb.rubrik.id}`;
+              // beim Filtern/Suchen automatisch ausklappen, sonst Standard: zu
+              const open = anyFilter || !!openRubrik[key];
+              return (
+                <div key={key} className="ml-1 mb-2">
+                  <button onClick={() => toggleRubrik(key)} className="flex items-center gap-2 w-full text-left mb-1.5 rounded-lg px-2 py-1.5 hover:bg-slate-200/40 transition-colors" style={{ background: open ? "rgba(27,36,48,0.04)" : "transparent" }}>
+                    <ChevronDown size={13} className="text-slate-400 shrink-0" style={{ transform: open ? "none" : "rotate(-90deg)", transition: "transform .2s" }} />
+                    <span className="text-[13px] font-medium" style={{ fontFamily: "Georgia, serif" }}>{rb.rubrik.label}</span>
+                    <span className="text-[11px] text-slate-400 ml-auto">{rb.n}</span>
+                  </button>
+                  {open && rb.quellen.map((qg) => (
+                    <div key={qg.quelle} className="mb-2.5 ml-2">
+                      <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {qg.items.map((c) => (
+                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId)} />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
           );
         })}
