@@ -35,6 +35,9 @@ jobs:
       # SPA-Fallback: 404 auf index.html spiegeln (direkte Deep-Links funktionieren).
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
+        with:
+          # Pages automatisch aktivieren (Actions als Quelle), falls noch nicht geschehen.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
