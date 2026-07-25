@@ -15,6 +15,7 @@
 
 import { MISSIONS as PROOF_MISSIONS } from "../proof/data.js";
 import { MISSIONS as DEF_LESSONS } from "../StrukturBaukasten.jsx";
+import { DEFINITIONS } from "./definitions.js";
 
 // Fächer und Typen als feste Achsen (Reihenfolge = Anzeige-Reihenfolge)
 export const FAECHER = [
@@ -93,7 +94,16 @@ const proofItems = PROOF_MISSIONS.map((m) => {
   };
 });
 
-export const CATALOG = [...defItems, ...proofItems];
+// Kern-Definitionen als Steckbrief-Karten (öffnen in der Steckbrief-Ansicht)
+const defCards = DEFINITIONS.map((d) => ({
+  id: `defcard:${d.id}`, mode: "steckbrief", targetId: d.id,
+  typ: "definition", fach: "elgeo",
+  code: `D${d.nr}`, kap: 100 + d.t, nr: d.nr,
+  quelle: `Definitionen · ${d.thema}`,
+  titel: d.term, lektion: null, tags: d.tags,
+}));
+
+export const CATALOG = [...defItems, ...proofItems, ...defCards];
 
 // nach Kapitel/Nummer sortiert (Grundlagen mit kap=-1 zuerst)
 export const CATALOG_SORTED = [...CATALOG].sort(

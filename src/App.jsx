@@ -5,6 +5,7 @@ import BeweisCrafter from "./proof/BeweisCrafter.jsx";
 import OpenMathPalette from "./OpenMathPalette.jsx";
 import Bibliothek from "./Bibliothek.jsx";
 import Werkbank from "./Werkbank.jsx";
+import Steckbrief from "./Steckbrief.jsx";
 import Inventory from "./Inventory.jsx";
 import { loadCollection, saveCollection } from "./data/symbols.js";
 
@@ -12,7 +13,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "definition" | "beweis" | "bausteine"
-  const [openReq, setOpenReq] = useState({ definition: null, beweis: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null }); // aus der Bibliothek angeforderte Mission je Ansicht
   const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [fs, setFs] = useState(false);
@@ -124,6 +125,8 @@ export default function App() {
 
       {mode === "bibliothek" ? (
         <Bibliothek onOpen={openFromLibrary} />
+      ) : mode === "steckbrief" ? (
+        <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")} />
       ) : mode === "werkbank" ? (
         <Werkbank activeSymbolId={activeSymbol} />
       ) : mode === "definition" ? (
