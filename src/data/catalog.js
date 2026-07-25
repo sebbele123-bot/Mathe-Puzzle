@@ -119,6 +119,7 @@ const defCards = DEFINITIONS.map((d) => ({
 }));
 
 export const CATALOG = [...defItems, ...proofItems, ...defCards];
+export const CATALOG_BY_ID = Object.fromEntries(CATALOG.map((c) => [c.id, c]));
 
 // nach Kapitel/Nummer sortiert (Grundlagen mit kap=-1 zuerst)
 export const CATALOG_SORTED = [...CATALOG].sort(

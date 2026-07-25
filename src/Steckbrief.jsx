@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Check, BookOpen } from "lucide-react";
 import { DEFINITIONS, DEF_BY_ID, DEF_THEMES } from "./data/definitions.js";
 import { loadRotation, saveRotation } from "./data/catalog.js";
@@ -10,11 +10,14 @@ const THEME_COLOR = ["#31597F", "#6B4E9E", "#1F7A63", "#B26A1E", "#2E6B7D"];
  *  Steckbrief — Lese-Ansicht einer Kern-Definition.
  *  Blättern durch alle Definitionen, in die Rotation legbar.
  * ==================================================================== */
-export default function Steckbrief({ defId, onBack }) {
+export default function Steckbrief({ defId, onBack, onReview }) {
   const startIdx = Math.max(0, DEFINITIONS.findIndex((d) => d.id === defId));
   const [idx, setIdx] = useState(startIdx);
   const d = DEFINITIONS[idx] || DEF_BY_ID[defId] || DEFINITIONS[0];
   const color = THEME_COLOR[d.t] || C.begriff;
+
+  // jede angezeigte Definition als "gesehen" werten (fließt in die Rotations-Gewichtung)
+  useEffect(() => { if (d) onReview?.(d.id); }, [d?.id]); // eslint-disable-line
 
   const [rotation, setRotation] = useState(() => loadRotation());
   const rotId = `defcard:${d.id}`;

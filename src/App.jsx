@@ -8,6 +8,8 @@ import Werkbank from "./Werkbank.jsx";
 import Steckbrief from "./Steckbrief.jsx";
 import Inventory from "./Inventory.jsx";
 import { loadCollection, saveCollection } from "./data/symbols.js";
+import { recordOutcome, loadStats, pickWeighted } from "./data/stats.js";
+import { loadRotation, CATALOG_BY_ID } from "./data/catalog.js";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
 
@@ -31,6 +33,18 @@ export default function App() {
     setOpenReq((r) => ({ ...r, [targetMode]: targetId }));
     setMode(targetMode);
   }, []);
+
+  // gemessene Übung festhalten (Fehlversuche) — speist die Rotations-Gewichtung
+  const recordStat = useCallback((catalogId, fails) => { recordOutcome(catalogId, fails); }, []);
+
+  // Rotation starten: gewichteter Zufalls-Zug (Schwächen häufiger) aus der Rotationsliste
+  const startRotation = useCallback(() => {
+    const ids = loadRotation();
+    if (!ids.length) return;
+    const pick = pickWeighted(ids, loadStats());
+    const item = CATALOG_BY_ID[pick];
+    if (item) openFromLibrary(item.mode, item.targetId);
+  }, [openFromLibrary]);
 
   // Vollbildstatus (auch bei Wechsel per Taste/ESC) verfolgen
   useEffect(() => {
@@ -124,17 +138,20 @@ export default function App() {
       </div>
 
       {mode === "bibliothek" ? (
-        <Bibliothek onOpen={openFromLibrary} />
+        <Bibliothek onOpen={openFromLibrary} onStartRotation={startRotation} />
       ) : mode === "steckbrief" ? (
-        <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")} />
+        <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
+          onReview={(defId) => recordStat(`defcard:${defId}`, 0)} />
       ) : mode === "werkbank" ? (
         <Werkbank activeSymbolId={activeSymbol} />
       ) : mode === "definition" ? (
-        <StrukturBaukasten initialId={openReq.definition} />
+        <StrukturBaukasten initialId={openReq.definition}
+          onOutcome={(missionId, fails) => recordStat(`def:${missionId}`, fails)} />
       ) : mode === "bausteine" ? (
         <OpenMathPalette collected={collectedSet} onCollect={collect} />
       ) : (
-        <BeweisCrafter initialId={openReq.beweis} />
+        <BeweisCrafter initialId={openReq.beweis}
+          onOutcome={(missionId, fails) => recordStat(`proof:${missionId}`, fails)} />
       )}
 
       {/* Minecraft-artiges Inventar: Hotbar (1–8) + gesammeltes Lager (E) */}

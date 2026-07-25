@@ -562,7 +562,7 @@ export const MISSIONS = [
 ];
 
 // ====================================================================
-export default function StrukturBaukasten({ initialId }) {
+export default function StrukturBaukasten({ initialId, onOutcome }) {
   const baseInventory = Object.keys(BLOCKS);
   const [discovered, setDiscovered] = useState([]); // result-ids
   const [bench, setBench] = useState([]); // [{uid, id, x, y}] — frei positioniert
@@ -576,6 +576,8 @@ export default function StrukturBaukasten({ initialId }) {
   const benchRef = useRef(null);
   const reduce = useRef(false);
   const uidRef = useRef(1);
+  const missionFails = useRef(0); // Fehlversuche in der aktuellen Lektion (Messwert)
+  const reported = useRef(false); // Ergebnis dieser Lektion schon gemeldet?
 
   useEffect(() => {
     reduce.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -585,13 +587,25 @@ export default function StrukturBaukasten({ initialId }) {
   useEffect(() => {
     if (initialId && MISSIONS.some((m) => m.id === initialId)) {
       setMission(initialId); setPuzzle(true); setBench([]); setHint("");
+      missionFails.current = 0; reported.current = false;
     }
   }, [initialId]); // eslint-disable-line
+
+  // Lektion geschafft (Zielstruktur gebaut) → gemessenes Ergebnis melden
+  useEffect(() => {
+    if (!mission) return;
+    const m = MISSIONS.find((x) => x.id === mission);
+    const goalId = m?.steps[m.steps.length - 1];
+    if (goalId && discovered.includes(goalId) && !reported.current) {
+      reported.current = true;
+      onOutcome?.(mission, missionFails.current);
+    }
+  }, [discovered, mission, onOutcome]);
 
   // kettbare, bereits entdeckte Ergebnisse werden zu ziehbaren Bausteinen
   const chainBlocks = discovered.filter((r) => RESULTS[r].chainable);
 
-  const clearBench = () => { setBench([]); setHint(""); setTool(null); };
+  const clearBench = () => { setBench([]); setHint(""); };
 
   const TILE_W = 150; // ungefähre Kachelbreite
   const TILE_H = 74; // ungefähre Kachelhöhe
@@ -640,6 +654,7 @@ export default function StrukturBaukasten({ initialId }) {
       }, delay);
       return;
     }
+    missionFails.current += 1;
     const partial = RECIPES.some((r) => isSubset(ids, r.need) && ids.length < r.need.length);
     setHint(partial ? "Fast — hier fehlt noch ein Baustein für eine Konstruktion." : "Diese Teile bilden keine bekannte Konstruktion.");
   };
@@ -693,7 +708,7 @@ export default function StrukturBaukasten({ initialId }) {
                 label={m.task}
                 active={mission === m.id}
                 done={m.steps.every((s) => discovered.includes(s))}
-                onClick={() => setMission(mission === m.id ? null : m.id)}
+                onClick={() => { missionFails.current = 0; reported.current = false; setMission(mission === m.id ? null : m.id); }}
               />
             ))}
           </div>

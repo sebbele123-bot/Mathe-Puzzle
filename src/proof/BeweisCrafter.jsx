@@ -45,7 +45,7 @@ function stagesOf(mission) {
   return [...vocab, proof];
 }
 
-export default function BeweisCrafter({ initialId }) {
+export default function BeweisCrafter({ initialId, onOutcome }) {
   const [missionId, setMissionId] = useState(() => (initialId && MISSIONS.some((m) => m.id === initialId) ? initialId : MISSIONS[0].id));
   const [stageIdx, setStageIdx] = useState(0);
   const [depth, setDepth] = useState(0);
@@ -61,6 +61,8 @@ export default function BeweisCrafter({ initialId }) {
   const benchRef = useRef(null);
   const uidRef = useRef(1);
   const reduce = useRef(false);
+  const missionFails = useRef(0); // Fehlversuche über die ganze Mission (Messwert)
+  const reported = useRef(false); // Ergebnis dieser Mission schon gemeldet?
   useEffect(() => { reduce.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches; }, []);
 
   const mission = useMemo(() => MISSIONS.find((x) => x.id === missionId), [missionId]);
@@ -86,6 +88,7 @@ export default function BeweisCrafter({ initialId }) {
     setDepth(defaultProofDepth(m));
     setHave(st[0].kind === "beweis" ? st[0].depths[0].given.slice() : st[0].given.slice());
     setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
+    missionFails.current = 0; reported.current = false;
   };
 
   // Aus der Bibliothek angeforderte Mission laden
@@ -122,6 +125,11 @@ export default function BeweisCrafter({ initialId }) {
       return () => clearTimeout(t);
     }
   }, [stageWon, isProof, stageIdx]); // eslint-disable-line
+
+  // Beweis geschafft → gemessenes Ergebnis (Fehlversuche) einmalig melden
+  useEffect(() => {
+    if (missionWon && !reported.current) { reported.current = true; onOutcome?.(missionId, missionFails.current); }
+  }, [missionWon, missionId, onOutcome]);
 
   const paperBg = {
     backgroundColor: C.paper,
@@ -160,6 +168,7 @@ export default function BeweisCrafter({ initialId }) {
     if (res.ok) return fuse(res);
     const nf = fails + 1;
     setFails(nf);
+    missionFails.current += 1;
     if (nf >= 3 && stage.steps.length) {
       const minPieces = Math.min(...stage.steps.map((s) => s.premises.length + 1));
       setHint(`Tipp: die kleinste Verknüpfung hier braucht ${minPieces} Bausteine — genau 1 Regel und ${minPieces - 1} ${isProof ? "Aussage(n)" : "Bestandteil(e)"}.`);
