@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Play, X, ArrowRight, Star, Library, BookOpen, GitBranch } from "lucide-react";
+import { Play, X, ArrowRight, Star, Library, BookOpen, GitBranch, Flame } from "lucide-react";
 import { CATALOG_BY_ID, FACH_COLOR, TYP_LABEL, TYP_COLOR, loadRotation, saveRotation } from "./data/catalog.js";
 import { loadStats, strengthOf } from "./data/stats.js";
+import { loadXp, levelFromXp } from "./data/xp.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", rot: "#B26A1E", muted: "#5b6875" };
 
@@ -16,6 +17,8 @@ const stufe = (s) => (s == null ? "neu" : s < 0.34 ? "schwach" : s < 0.67 ? "mit
 export default function Training({ onOpen, onStart, onBrowse }) {
   const [rotation, setRotation] = useState(() => loadRotation());
   const stats = loadStats();
+  const xpRaw = loadXp();
+  const xp = levelFromXp(xpRaw.xp);
 
   const remove = useCallback((id) => {
     setRotation((r) => { const next = r.filter((x) => x !== id); saveRotation(next); return next; });
@@ -44,6 +47,22 @@ export default function Training({ onOpen, onStart, onBrowse }) {
           </div>
           <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">Training</h1>
         </header>
+
+        {/* Level & Fortschritt */}
+        <section className="rounded-2xl border px-3 py-2.5 mb-3 flex items-center gap-3" style={{ background: "#fff", borderColor: C.line }}>
+          <span className="inline-flex items-center justify-center rounded-full text-sm font-semibold shrink-0"
+            style={{ width: 34, height: 34, background: C.rot, color: "#fff", fontFamily: "ui-monospace, monospace" }}>{xp.level}</span>
+          <div className="flex-1 min-w-0">
+            <div className="rounded-full overflow-hidden" style={{ height: 7, background: "#E4EAF0" }}>
+              <div className="h-full" style={{ width: `${Math.round(xp.progress * 100)}%`, background: C.rot }} />
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ fontFamily: "ui-monospace, monospace", color: C.muted }}>
+              <span>{xp.inLevel} / {xp.need} XP</span>
+              <span style={{ color: "#9aa7b4" }}>· gesamt {xpRaw.xp}</span>
+              {xpRaw.streak > 0 && <span className="ml-auto inline-flex items-center gap-1" style={{ color: C.rot }}><Flame size={11} />{xpRaw.streak}</span>}
+            </div>
+          </div>
+        </section>
 
         {items.length === 0 ? (
           <div className="rounded-2xl border flex flex-col items-center justify-center gap-3 py-10 px-6 text-center" style={{ background: "#fff", borderColor: C.line }}>

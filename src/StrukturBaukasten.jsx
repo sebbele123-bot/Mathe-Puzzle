@@ -591,16 +591,6 @@ export default function StrukturBaukasten({ initialId, onOutcome }) {
     }
   }, [initialId]); // eslint-disable-line
 
-  // Lektion geschafft (Zielstruktur gebaut) → gemessenes Ergebnis melden
-  useEffect(() => {
-    if (!mission) return;
-    const m = MISSIONS.find((x) => x.id === mission);
-    const goalId = m?.steps[m.steps.length - 1];
-    if (goalId && discovered.includes(goalId) && !reported.current) {
-      reported.current = true;
-      onOutcome?.(mission, missionFails.current);
-    }
-  }, [discovered, mission, onOutcome]);
 
   // kettbare, bereits entdeckte Ergebnisse werden zu ziehbaren Bausteinen
   const chainBlocks = discovered.filter((r) => RESULTS[r].chainable);
@@ -651,6 +641,14 @@ export default function StrukturBaukasten({ initialId, onOutcome }) {
         setFlash(exact.result);
         setBench([{ uid: uidRef.current++, id: exact.result, cell: 0 }]);
         setSnapping(false);
+        // Missionsziel gebaut → gemessenes Ergebnis melden (genau bei der Leistung,
+        // nicht schon beim Öffnen einer früher gebauten Lektion)
+        const m = mission ? MISSIONS.find((x) => x.id === mission) : null;
+        const goalId = m?.steps[m.steps.length - 1];
+        if (goalId && exact.result === goalId && !reported.current) {
+          reported.current = true;
+          onOutcome?.(mission, missionFails.current);
+        }
       }, delay);
       return;
     }
