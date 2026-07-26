@@ -1,13 +1,9 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Play, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Target, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   CATALOG_SORTED, FAECHER, TYPEN, RUBRIKEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
   ALL_TAGS, countBy, loadRotation, saveRotation,
 } from "./data/catalog.js";
-import { loadStats, strengthOf } from "./data/stats.js";
-
-// Stärke-Punkt: grau = ungeübt, rot → gelb → grün mit steigender Stärke
-const strengthDot = (s) => (s == null ? "#C4D0DB" : s < 0.34 ? "#C4623E" : s < 0.67 ? "#C08A2E" : "#1F7A63");
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", muted: "#5b6875" };
 const FACH_COUNTS = countBy("fach");
@@ -18,7 +14,6 @@ const TYP_COUNTS = countBy("typ");
  *  onOpen(mode, targetId) springt in die passende Ansicht und lädt sie.
  * ==================================================================== */
 export default function Bibliothek({ onOpen, onStartRotation }) {
-  const stats = loadStats();
   // Mehrfachauswahl: Fach/Typ/Thema sind Listen (leer = alle)
   const [fach, setFach] = useState([]);
   const [typ, setTyp] = useState([]);
@@ -158,29 +153,17 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
           )}
         </div>
 
-        {/* Rotation-Schnellstart */}
+        {/* Rotation → Training */}
         {rotItems.length > 0 && !rotOnly && (
-          <section className="rounded-xl px-3 py-2.5 mb-4 mt-1" style={{ background: "rgba(178,106,30,0.08)", border: "1px solid #E0B77A" }}>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Star size={13} style={{ color: "#B26A1E" }} />
-              <span className="text-[11px] uppercase tracking-wider" style={{ fontFamily: "ui-monospace, monospace", color: "#8a531a" }}>Deine Rotation · {rotItems.length}</span>
-              <button onClick={() => (onStartRotation ? onStartRotation() : onOpen(rotItems[0].mode, rotItems[0].targetId))}
-                title="gewichteter Zufall — Schwächen häufiger"
-                className="ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs" style={{ background: "#B26A1E", color: "#fff", fontFamily: "ui-monospace, monospace" }}>
-                <Play size={12} /> starten
-              </button>
-            </div>
-            <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-              {rotItems.map((c) => (
-                <button key={c.id} onClick={() => onOpen(c.mode, c.targetId)} title={c.titel}
-                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs border" style={{ background: "#fff", borderColor: "#E0B77A", fontFamily: "ui-monospace, monospace" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 99, background: strengthDot(strengthOf(c.id, stats)) }} title="Stärke" />
-                  <span style={{ color: FACH_COLOR[c.fach] }}>{c.code}</span>
-                  <span className="max-w-[120px] truncate" style={{ fontFamily: "Georgia, serif" }}>{c.titel}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          <button onClick={onStartRotation}
+            className="w-full rounded-xl px-3 py-2 mb-4 mt-1 flex items-center gap-2"
+            style={{ background: "rgba(178,106,30,0.08)", border: "1px solid #E0B77A" }}>
+            <Star size={13} style={{ color: "#B26A1E" }} />
+            <span className="text-[11px] uppercase tracking-wider" style={{ fontFamily: "ui-monospace, monospace", color: "#8a531a" }}>Rotation · {rotItems.length}</span>
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs" style={{ background: "#B26A1E", color: "#fff", fontFamily: "ui-monospace, monospace" }}>
+              <Target size={12} /> Training
+            </span>
+          </button>
         )}
 
         {/* Ergebnis-Zähler + Filter zurücksetzen */}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Boxes, GitBranch, LayoutGrid, Library, Hammer, Maximize, Minimize } from "lucide-react";
+import { Boxes, GitBranch, LayoutGrid, Library, Hammer, Target, Maximize, Minimize } from "lucide-react";
 import StrukturBaukasten from "./StrukturBaukasten.jsx";
 import BeweisCrafter from "./proof/BeweisCrafter.jsx";
 import OpenMathPalette from "./OpenMathPalette.jsx";
 import Bibliothek from "./Bibliothek.jsx";
+import Training from "./Training.jsx";
 import Werkbank from "./Werkbank.jsx";
 import Steckbrief from "./Steckbrief.jsx";
 import Inventory from "./Inventory.jsx";
@@ -11,10 +12,10 @@ import { loadCollection, saveCollection } from "./data/symbols.js";
 import { recordOutcome, loadStats, pickWeighted } from "./data/stats.js";
 import { loadRotation, CATALOG_BY_ID } from "./data/catalog.js";
 
-const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E" };
+const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E", werk: "#2E6B7D" };
 
 export default function App() {
-  const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "definition" | "beweis" | "bausteine"
+  const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null }); // aus der Bibliothek angeforderte Mission je Ansicht
   const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
@@ -107,7 +108,8 @@ export default function App() {
           </span>
           <div className="flex gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
             <ModeButton active={mode === "bibliothek"} onClick={() => setMode("bibliothek")} icon={Library} label="Bibliothek" color={C.ink} />
-            <ModeButton active={mode === "werkbank"} onClick={() => setMode("werkbank")} icon={Hammer} label="Werkbank" color={C.warn} />
+            <ModeButton active={mode === "training"} onClick={() => setMode("training")} icon={Target} label="Training" color={C.warn} />
+            <ModeButton active={mode === "werkbank"} onClick={() => setMode("werkbank")} icon={Hammer} label="Werkbank" color={C.werk} />
             <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
             <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
             <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
@@ -138,7 +140,9 @@ export default function App() {
       </div>
 
       {mode === "bibliothek" ? (
-        <Bibliothek onOpen={openFromLibrary} onStartRotation={startRotation} />
+        <Bibliothek onOpen={openFromLibrary} onStartRotation={() => setMode("training")} />
+      ) : mode === "training" ? (
+        <Training onOpen={openFromLibrary} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
       ) : mode === "steckbrief" ? (
         <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, 0)} />
