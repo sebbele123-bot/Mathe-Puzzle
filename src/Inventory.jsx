@@ -3,7 +3,7 @@ import { X, Grid3x3, Plus } from "lucide-react";
 import { PALETTE_CATEGORIES } from "./data/openmath.js";
 import { CAT_COLOR } from "./OpenMathPalette.jsx";
 import { SYM_ALL, SYM_BY_ID, symLabel } from "./data/symbols.js";
-import { isRenamable, defaultLabel, glyphWithLabel, greekFor } from "./data/labels.js";
+import { isRenamable, defaultLabel, glyphWithLabel, nextHandLabel } from "./data/labels.js";
 
 /* ====================================================================
  *  Minecraft-artiges Inventar
@@ -158,15 +158,9 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
       // Denselben Buchstaben zweimal kurz hintereinander → griechisches Pendant.
       else if (!open && !e.ctrlKey && !e.metaKey && !e.altKey && handId && isRenamable(handId)
                && /^[a-zA-Zα-ωΑ-Ω]$/.test(e.key)) {
-        const now = Date.now();
-        const prev = lastKey.current;
-        const same = prev.ch && prev.ch.toLowerCase() === e.key.toLowerCase() && now - prev.at < 700;
-        const greek = same ? greekFor(e.key) : null;
-        // Schreibweise des Standards übernehmen: Räume/Gruppen groß, Abbildungen/Vektoren klein
-        const def = defaultLabel(handId) || "";
-        const upper = def && def === def.toUpperCase() && def !== def.toLowerCase();
-        setHandLabel(greek || (upper ? e.key.toUpperCase() : e.key.toLowerCase()));
-        lastKey.current = { ch: greek ? null : e.key, at: now };
+        const { label, lastKey: lk } = nextHandLabel(handId, e.key, lastKey.current, Date.now());
+        setHandLabel(label);
+        lastKey.current = lk;
         e.preventDefault();
       } else if (e.key === "Escape" && handLabel) { setHandLabel(null); e.preventDefault(); }
     };

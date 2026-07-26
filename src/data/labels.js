@@ -51,3 +51,27 @@ export const GREEK = {
   t: "τ", u: "υ", f: "φ", c: "χ", y: "ψ", w: "ω",
 };
 export const greekFor = (ch) => GREEK[String(ch).toLowerCase()] || null;
+
+// Fenster (ms), in dem derselbe Buchstabe erneut getippt „griechisch" macht.
+export const DOUBLE_MS = 700;
+
+/**
+ * Entscheidet das neue Hand-Etikett aus einem Tastendruck (reine Logik,
+ * ohne DOM). Denselben Buchstaben zweimal innerhalb DOUBLE_MS → griechisch;
+ * sonst der Buchstabe in der Schreibweise des Standard-Etiketts (Räume/
+ * Gruppen groß, Abbildungen/Vektoren klein).
+ * @param handId  id des Bausteins in der Hand (renamable vorausgesetzt)
+ * @param key     getippter Buchstabe
+ * @param prev    { ch, at } — letzter Tastendruck (ch=null ⇒ kein Vorgänger)
+ * @param now     Zeitstempel (ms)
+ * @returns { label, lastKey } — neues Etikett und der zu merkende Zustand
+ */
+export function nextHandLabel(handId, key, prev = { ch: null, at: 0 }, now = Date.now()) {
+  const same = prev.ch && prev.ch.toLowerCase() === key.toLowerCase() && now - prev.at < DOUBLE_MS;
+  const greek = same ? greekFor(key) : null;
+  const def = defaultLabel(handId) || "";
+  const upper = def && def === def.toUpperCase() && def !== def.toLowerCase();
+  const label = greek || (upper ? key.toUpperCase() : key.toLowerCase());
+  // nach einem Greek-Treffer ch=null: ein dritter Tastendruck startet neu
+  return { label, lastKey: { ch: greek ? null : key, at: now } };
+}
