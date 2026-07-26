@@ -49,7 +49,13 @@ export default function BeweisCrafter({ initialId, onOutcome }) {
   const [missionId, setMissionId] = useState(() => (initialId && MISSIONS.some((m) => m.id === initialId) ? initialId : MISSIONS[0].id));
   const [stageIdx, setStageIdx] = useState(0);
   const [depth, setDepth] = useState(0);
-  const [have, setHave] = useState([]);
+  // Startaussagen der zunächst gewählten Mission — sonst stünde die Werkbank
+  // beim direkten Öffnen (Navigation, ohne initialId) ohne Prämissen da.
+  const [have, setHave] = useState(() => {
+    const m = MISSIONS.find((x) => x.id === (initialId && MISSIONS.some((y) => y.id === initialId) ? initialId : MISSIONS[0].id));
+    const st = stagesOf(m)[0];
+    return st.kind === "beweis" ? st.depths[0].given.slice() : st.given.slice();
+  });
   const [bench, setBench] = useState([]);
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null);

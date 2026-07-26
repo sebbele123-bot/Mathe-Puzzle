@@ -11,7 +11,7 @@ The UI language is **German**. Keep all user-facing strings German; code identif
 ## Stack & commands
 
 - **Vite 5** + **React 18** (no TypeScript) + **TailwindCSS v3**, icons from `lucide-react`.
-- No test runner framework; tests are a plain Node script + ad-hoc Playwright.
+- Two test layers: dependency-free Node scripts (`*.test.mjs`) for pure logic, **Vitest + jsdom** (`*.test.jsx`) for component smoke tests.
 
 ```bash
 npm install
@@ -26,8 +26,13 @@ npm run build:single   # SINGLEFILE=1 → dist-single/index.html (one self-conta
 
 ## Testing & verification
 
-- **Proof engine unit test (no browser):** `node src/proof/engine.test.mjs`. Run this after touching `src/proof/`.
-- **Recipe grounding:** when editing `StrukturBaukasten.jsx` recipes, verify every `need`/`step`/`base` id exists and every buildable structure decomposes to elementary `BLOCKS` (no dangling ids). A throwaway Node script that extracts `BLOCKS`/`RESULTS`/`RECIPES` and recursively expands each result to leaves is the reliable check.
+**`npm test` runs everything** (logic scripts, then Vitest) and is enforced by `.github/workflows/test.yml` on push/PR. Sub-commands: `npm run test:logic`, `npm run test:ui`.
+
+- **Logic tests — plain Node, no framework** (`npm run test:logic`). Each file is standalone and exits non-zero on failure; keep that style when adding one, and wire it into the `test:logic` chain.
+  - `src/proof/engine.test.mjs` — rebuilds every proof mission; `engine.edge.test.mjs` — `givenFor` clamping + multiset premises. Run after touching `src/proof/`.
+  - `src/data/xp.test.mjs` + `xp.transitions.test.mjs` (stubbed clock: day rollover, streaks), `stats.test.mjs` (strength/weighting), `labels.test.mjs` (`nextHandLabel` relabel rule).
+  - `src/data/grounding.test.mjs` — **content integrity**, the check to run after authoring content: proof-mission ids resolve in `FACTS`/`RULES`, `SYMBOL_TASKS` `need`/`distract` ground in the OpenMath palette, every palette symbol has a `DE` label, and every recipe/mission in `StrukturBaukasten.jsx` decomposes to elementary `BLOCKS` with no dangling ids. Because `StrukturBaukasten.jsx` is JSX and can't be imported by plain Node, that part **extracts the data from the source text** — keep the `BLOCKS`/`RESULTS`/`RECIPES`/`MISSIONS` declarations in their current `const X = [/{` form or the extraction regexes need updating (a self-check asserts plausible counts).
+- **Component smoke tests — Vitest + jsdom** (`npm run test:ui`, config in `vitest.config.js`, setup in `src/test/setup.js`). Deliberately few: the tap→hammer→result mechanic for both crafters and the `onOutcome → recordStat` chain (`src/App.test.jsx`). `vitest.config.js` scopes `include` to `src/**/*.test.jsx` **on purpose** — the `.mjs` logic scripts call `process.exit` and must not be collected. Helpers in `src/test/utils.jsx` select tiles by visible text (`tapTile`, `hammer`, `clearBench`).
 - **UI checks (Playwright):** Chromium is pre-installed at `/opt/pw-browsers`; do **not** run `playwright install`. Launch with:
   ```js
   chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
