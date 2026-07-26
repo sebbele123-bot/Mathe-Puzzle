@@ -46,13 +46,16 @@ Single-page app; `src/App.jsx` holds `mode` and renders one view. The global `In
 | Mode | Component | Purpose |
 |------|-----------|---------|
 | `bibliothek` | `Bibliothek.jsx` | Catalog of all material; filter/search, rotation, opens other views |
-| `werkbank` | `Werkbank.jsx` | 8×12 symbol-crafting grid; stamps the active hotbar symbol |
-| `bausteine` | `OpenMathPalette.jsx` | 233-symbol OpenMath library; **+** collects a symbol into the inventory |
+| `training` | `Training.jsx` | The rotation as exercises: strength dots, level/XP header, weighted random draw |
+| `werkbank` | `Werkbank.jsx` | 8×12 symbol-crafting grid; free stamping **and** Symbol-Aufgaben (`SYMBOL_TASKS`) |
+| `bausteine` | `OpenMathPalette.jsx` | 243-symbol library in 21 categories; **+** collects a symbol into the inventory |
 | `beweis` | `proof/BeweisCrafter.jsx` | Proof crafter (grid werkbench + inference engine) |
 | `definition` | `StrukturBaukasten.jsx` | Structure crafter (grid werkbench + recipe engine) |
 | `steckbrief` | `Steckbrief.jsx` | Read-only definition card; reachable only via Bibliothek |
 
-`App` routes "open from library" via `openReq` (`{definition, beweis, steckbrief}`) + `initialId` props; views remount on mode switch and read `initialId`. The active hotbar symbol is lifted from `Inventory` to `App` via `onActive` and passed to `Werkbank`.
+`App` routes "open from library" via `openReq` (`{definition, beweis, steckbrief, werkbank}`) + `initialId`/`taskId` props; views remount on mode switch and read them. The active hotbar symbol is lifted from `Inventory` to `App` via `onActive` and passed to `Werkbank` as `hand`.
+
+Every exercise view reports back through **`onOutcome(id, fails)`**; `App.recordStat` turns that into a namespaced catalog id (`proof:`, `def:`, `sym:`, `defcard:`), writes the rotation statistic and awards XP. The **Weiter-Schleife** (session bar above the nav, `award` state) shows the XP gained and draws the next rotation item without a detour through the Bibliothek — keep new exercise modes wired into `recordStat`, or they stay invisible to rotation and level.
 
 ### Werkbench interaction (both crafters)
 Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — do not reintroduce free-drag:
@@ -63,6 +66,12 @@ Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — 
 ### Two engines
 - **Proofs** — `proof/engine.js` `craftFromCluster(mission, have, tiles)`: needs exactly one rule + a premise multiset matching a `steps` entry; enforces "premises must already be known" (Ordnungszwang). Data in `proof/data.js` (`FACTS`, `RULES`, `MISSIONS`).
 - **Structures** — recipe match in `StrukturBaukasten.jsx`: `RECIPES` is `{ need: [...blockIds], result }`, matched as a **set** (`eqSet`). Ids resolve via `BLOCKS` (elementary) or `RESULTS` (buildable; `chainable: true` ones become placeable blocks). `MISSIONS` are lessons (`base` = given, `steps` = structures to build).
+- **Symbol tasks** — `data/symboldefs.js` `SYMBOL_TASKS`: a definition assembled in the Werkbank from its defining symbol blocks. `need` = required symbol ids (set match, order irrelevant), `distract` = tempting extras that must *not* be placed, `beschreibung` = the short prose shown after a correct build. Grounded in `openmath.js` ids — verify each `need`/`distract` id exists there when authoring.
+
+### Progress: strength & level
+Two independent stores, both fed from `recordStat`:
+- **`data/stats.js`** — Anki-style rotation statistic. Per catalog id it records `attempts`, `failsTotal`, `cleanSolves`, `lastFails`, `lastSeen` and derives a **strength 0..1** (`strengthOf`; `null` = never practised). The rotation draws **randomly weighted by weakness**, so weak and stale items come up more often — it is not a sorted queue. Training lists items weakest-first only as a display.
+- **`data/xp.js`** — XP and levels, deliberately pointed the same direction: `BASE` per type × weakness factor × `REPEAT` damping (1 / 0.4 / 0.2 / 0.1 for the *n*-th solve of the same item on one day), plus `CLEAN_BONUS` and `FIRST_SOLVE_BONUS`. `xpForNext(level) = 80 + 40·(level−1)`. The damping exists to stop grinding one easy item — don't replace the multipliers with flat point awards.
 
 ## Data model & content authoring
 
@@ -71,7 +80,11 @@ Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — 
 | `src/proof/data.js` | Proof facts, rules, missions | new `FACTS`/`RULES`, a `MISSIONS` entry (`goal`, `pool`, `steps`, `depths`, optional `vocab` Begriffs-Gate) |
 | `src/StrukturBaukasten.jsx` | `BLOCKS`, `RESULTS`, `RECIPES`, `MISSIONS` | add elementary `BLOCKS`, a `RESULTS` entry + a `RECIPES` line grounded in blocks, then a `MISSIONS` lesson |
 | `src/data/definitions.js` | 30 ElGeo core definitions (Steckbriefe D1–D30) | append to the `D` array (`nr`, `t` theme index, `term`, `statement`, `uebung?`, `tags`) |
-| `src/data/openmath.js` | 233 categorized symbols (OpenMath + Ergänzungen), German labels | extend the category arrays and the `DE` map |
+| `src/data/openmath.js` | 243 symbols in 21 `PALETTE_CATEGORIES` (OpenMath + Ergänzungen + Struktur-Axiome, Strukturen, Platzhalter), German labels in `DE` | extend the category arrays **and** the `DE` map — a symbol without a `DE` entry shows its raw id |
+| `src/data/symboldefs.js` | `SYMBOL_TASKS` — Werkbank definition puzzles | add `{ id, term, ref, need, distract, beschreibung }`; ids must exist in `openmath.js` |
+| `src/data/labels.js` | `RENAMABLE` — which blocks carry a letter, and how they render | add `id: { tpl, def }`; `$` in `tpl` is replaced by the label (`"$"` = bare letter, `"($,∘)"` = structure notation) |
+| `src/data/stats.js` | rotation statistic + `strengthOf` | no content; change only the strength model |
+| `src/data/xp.js` | XP curve, level thresholds, repeat damping | tune constants at the top of the file |
 | `src/data/symbols.js` | shared symbol list + `localStorage` collection helpers | usually no change |
 | `src/data/catalog.js` | unifies proofs + structure lessons + Steckbriefe into one catalog | derives metadata via `parseTitle`; assigns `fach`, `typ`, `rubrik` |
 
@@ -83,11 +96,18 @@ Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — 
 
 - **No explanatory or tutorial text** in the product unless explicitly requested. Don't add intro paragraphs, how-to hints, onboarding copy, or "so funktioniert's" blurbs to the UI. Keep labels and content functional; the game teaches through interaction, not prose.
 - **Hand slot / labels.** The hotbar mirrors the *inventory* (immutable defaults); the **Hand** slot next to it holds a working copy of the selected block. On desktop, typing a letter relabels the block **in the hand only** — the inventory entry never changes. Typing the same letter twice within 700 ms yields its Greek counterpart (`ff` → φ, `ww` → ω); the label adopts the default's case (group `G` + `h` → `H`). Switching hotbar slots resets the label to the default. Renamable blocks and their display templates live in `src/data/labels.js` (`RENAMABLE`, `tpl` with `$`); placed cells store `{ id, label }`. No relabeling on mobile — deliberate. `E` stays the inventory toggle, so `e` is not available as a label.
-- **Inventory starts empty.** Do not auto-fill the hotbar. Symbols enter the inventory only by collecting them in **Bausteine** (the **+** on a tile). `localStorage` keys: `mp_hotbar_v2`, `mp_inventory_v1`, `mp_werkbank_v1`, `mp_rotation_v1`. Bump the version suffix when changing a schema so stale data doesn't linger.
+- **Inventory starts empty.** Do not auto-fill the hotbar. Symbols enter the inventory only by collecting them in **Bausteine** (the **+** on a tile). `localStorage` keys: `mp_hotbar_v2`, `mp_inventory_v1`, `mp_werkbank_v2`, `mp_rotation_v1`, `mp_stats_v1`, `mp_xp_v1`. Bump the version suffix when changing a schema so stale data doesn't linger — `mp_stats_v1` and `mp_xp_v1` are the player's actual progress, so migrate rather than drop them if the shape has to change.
 - **Mobile-first.** Long chip rows must be single horizontally-scrollable lines (`overflow-x-auto`, not `flex-wrap`); the top nav shows only the active mode's label on small screens so the fullscreen button stays visible; theme-aware and responsive.
 - **Definition sign:** write `:=` with a tiny "Definition" label above it, not the word "Definition".
 - **Colors** are per-file `C` objects (paper `#EAEEF2`, ink `#1B2430`, plus role hues). Reuse them; match the existing palette.
 - Fullscreen only works when the app is opened in its own tab (blocked inside embedded/artifact iframes) — the toggle already shows an explanatory hint; keep it.
+
+## Known limitations / open work
+
+- **Labels are cosmetic so far.** Placed cells store `{ id, label }`, but both matchers compare **ids only** (`eqSet(r.need, ids)` in `StrukturBaukasten.jsx`, the sorted `task.need` join in `Werkbank.jsx`). A block renamed in the hand therefore solves a task exactly like the default one. The intended next step is **matching up to renaming**: a solution counts when a *consistent* bijection of labels maps the built term onto the target (`f∘g` ≙ `g∘h`), so the letter choice is free but reusing one letter for two different roles fails. Implement it in the matchers, not by baking letters into the recipes.
+- **Five definitions are deliberately unbuildable** (Orientierung, Spiegelung/Drehung, Längengerade, Winkelgruppe, Möbius) — see "Faithful build schemes" above. Don't force-fit them into flat recipes.
+- **Self-assessment doesn't exist yet.** `strengthOf` derives strength purely from measured attempts/failures; the docstring in `stats.js` anticipates a personal rating that additionally shifts it.
+- **No relabeling on mobile** — deliberate, not a bug.
 
 ## Publishing the standalone artifact (claude.ai)
 
