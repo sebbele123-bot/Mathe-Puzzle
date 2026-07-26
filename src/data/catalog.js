@@ -36,49 +36,10 @@ export const TYP_LABEL = Object.fromEntries(TYPEN.map((t) => [t.id, t.label]));
 export const TYP_COLOR = Object.fromEntries(TYPEN.map((t) => [t.id, t.color]));
 
 // --- Hilfen zum Ableiten der Metadaten aus den vorhandenen Titeln -----
-// "Ü5.2 — …"  ->  { code:"Ü5.2", kap:5, nr:2, quelle:"Blatt 5", name:"…" }
-// "L4 · Ü2.1 — …" -> Kürzel L-Nummer, Übung, Blatt
-const parseTitle = (raw) => {
-  let s = raw;
-  // Bauschema-Lektionen: "A · Def 9 — Strahl" / "B · Def 17 — Kongruenzebene"
-  const sm = s.match(/^([AB])\s*·\s*Def\s*(\d+)\s*—\s*/);
-  if (sm) {
-    return { code: `Def ${sm[2]}`, kap: 200 + (sm[1] === "A" ? 0 : 1), nr: Number(sm[2]),
-      quelle: `Bauschema ${sm[1]} — aus Elementarteilen`, name: s.slice(sm[0].length), lektion: null };
-  }
-  let lektion = null;
-  const lm = s.match(/^L(\d+)\s*·\s*/);
-  if (lm) { lektion = `L${lm[1]}`; s = s.slice(lm[0].length); }
-  const cm = s.match(/^Ü(\d+)\.(\d+)\s*—\s*/);
-  if (cm) {
-    return { code: `Ü${cm[1]}.${cm[2]}`, kap: Number(cm[1]), nr: Number(cm[2]),
-      quelle: `Blatt ${cm[1]}`, name: s.slice(cm[0].length), lektion };
-  }
-  const bm = s.match(/^Blatt\s*(\d+)\s*—\s*/);
-  if (bm) return { code: `Blatt ${bm[1]}`, kap: Number(bm[1]), nr: 0, quelle: `Blatt ${bm[1]}`, name: s.slice(bm[0].length), lektion };
-  // ohne Übungskürzel (z. B. Grundlagen)
-  const dash = s.indexOf(" — ");
-  const name = dash >= 0 ? s.slice(dash + 3) : s;
-  return { code: lektion || "Basis", kap: -1, nr: 0, quelle: lektion ? "Grundlagen" : "Grundlagen", name, lektion };
-};
-
-// simple Stichwort-Tags aus dem Namen (klein halten, nur grobe Themen)
-const TAG_HINTS = [
-  ["Fixpunkt", "Fixpunkt"], ["Ähnlichkeit", "Ähnlichkeit"], ["Drehung", "Drehung"],
-  ["Drehspiegel", "Drehspiegelung"], ["Spiegel", "Spiegelung"], ["Kreis", "Kreis"],
-  ["Kongruenz", "Kongruenz"], ["Gruppe", "Gruppe"], ["Körper", "Körper"],
-  ["Vektorraum", "Vektorraum"], ["projektiv", "Projektion"], ["Projektion", "Projektion"],
-  ["Cosinus", "Trigonometrie"], ["Möbius", "Möbius"], ["hyperbol", "Hyperbolisch"],
-  ["Fläche", "Flächeninhalt"], ["Länge", "Metrik"], ["Neutral", "Gruppenaxiome"],
-];
-const tagsFor = (name) => {
-  const t = [];
-  for (const [needle, tag] of TAG_HINTS) if (name.includes(needle) && !t.includes(tag)) t.push(tag);
-  return t;
-};
-
-// Neutralelement ist ein reiner Algebra-Grundbaustein, der Rest ist ElGeo.
-const fachFor = (name, code) => (name.includes("Neutralelement") || code.startsWith("Basis") ? "algebra" : "elgeo");
+// Die reinen String-Heuristiken liegen in catalogMeta.js, damit sie ohne
+// den JSX-Import dieser Datei getestet werden können.
+import { parseTitle, tagsFor, fachFor, fachForSymbolRef } from "./catalogMeta.js";
+export { parseTitle, tagsFor, fachFor, fachForSymbolRef, TAG_HINTS } from "./catalogMeta.js";
 
 // Rubriken innerhalb eines Fachs (ausklappbare Abschnitte)
 export const RUBRIKEN = [
@@ -122,7 +83,7 @@ const defCards = DEFINITIONS.map((d) => ({
 // Symbol-Aufgaben: Definition in der Werkbank aus Symbol-Bausteinen bauen
 const symbolItems = SYMBOL_TASKS.map((t, i) => ({
   id: `sym:${t.id}`, mode: "werkbank", targetId: t.id,
-  typ: "definition", fach: /Def \d/.test(t.ref) ? "elgeo" : "algebra",
+  typ: "definition", fach: fachForSymbolRef(t.ref),
   rubrik: "definitionen",
   code: "⊕", kap: 300, nr: i,
   quelle: "Symbol-Aufgaben · Werkbank",
