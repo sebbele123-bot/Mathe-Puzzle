@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw, Copy, Check, Hammer } from "lucide-react";
 import { SYM_BY_ID, symLabel } from "./data/symbols.js";
+import { glyphWithLabel } from "./data/labels.js";
 import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
 
 /* ====================================================================
@@ -10,12 +11,12 @@ import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
  * ==================================================================== */
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63", warn: "#B26A1E" };
 const COLS = 8, ROWS = 12, N = COLS * ROWS;
-const LS_KEY = "mp_werkbank_v1";
+const LS_KEY = "mp_werkbank_v2"; // v2: Zellen tragen { id, label }
 
-export default function Werkbank({ activeSymbolId, taskId, onOutcome }) {
+export default function Werkbank({ hand, taskId, onOutcome }) {
   const task = taskId ? SYMBOL_TASK_BY_ID[taskId] : null;
   if (task) return <TaskBench task={task} onOutcome={onOutcome} />;
-  return <FreeBench activeSymbolId={activeSymbolId} />;
+  return <FreeBench hand={hand} />;
 }
 
 /* --- Aufgabe: Definition aus Symbol-Bausteinen zusammensetzen -------- */
@@ -163,7 +164,7 @@ function TaskBench({ task, onOutcome }) {
 }
 
 /* --- Freies Symbol-Crafting (8×12) ---------------------------------- */
-function FreeBench({ activeSymbolId }) {
+function FreeBench({ hand }) {
   const [cells, setCells] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem(LS_KEY) || "null");
@@ -177,10 +178,11 @@ function FreeBench({ activeSymbolId }) {
 
   useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(cells)); } catch { /* ignore */ } }, [cells]);
 
-  const active = activeSymbolId ? SYM_BY_ID[activeSymbolId] : null;
+  const active = hand?.id ? SYM_BY_ID[hand.id] : null;
 
   const setCell = (i, val) => setCells((c) => c.map((x, k) => (k === i ? val : x)));
-  const place = (i) => { if (active) { setCell(i, active.id); return true; } return false; };
+  // die Hand stempelt Baustein + aktuelles Etikett
+  const place = (i) => { if (active) { setCell(i, { id: active.id, label: hand.label ?? null }); return true; } return false; };
   const nextEmptyAfter = (i) => {
     for (let k = i + 1; k < N; k++) if (!cells[k]) return k;
     return Math.min(i + 1, N - 1);
@@ -189,13 +191,16 @@ function FreeBench({ activeSymbolId }) {
   const clickCell = (i) => {
     setSel(i);
     if (cells[i]) setCell(i, null);          // gefüllt → leeren
-    else if (active) { place(i); setSel(nextEmptyAfter(i)); } // leer → aktives Symbol setzen
+    else if (active) { place(i); setSel(nextEmptyAfter(i)); } // leer → Hand-Baustein setzen
   };
 
   const clearAll = () => setCells(Array(N).fill(null));
 
-  // Ausdruck = Glyphen in Lesereihenfolge (leere Zellen übersprungen)
-  const expr = useMemo(() => cells.map((id) => (id ? SYM_BY_ID[id]?.glyph : null)).filter(Boolean).join(" "), [cells]);
+  // Ausdruck = Zeichen in Lesereihenfolge (leere Zellen übersprungen)
+  const expr = useMemo(
+    () => cells.map((c) => (c ? glyphWithLabel(SYM_BY_ID[c.id], c.label) : null)).filter(Boolean).join(" "),
+    [cells]
+  );
   const filledCount = cells.filter(Boolean).length;
 
   const copyExpr = () => {
@@ -245,7 +250,7 @@ function FreeBench({ activeSymbolId }) {
           <span className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 border" style={{ background: "#fff", borderColor: active ? active.color : C.line, minHeight: 30 }}>
             {active ? (
               <>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: 18, color: active.color }}>{active.glyph}</span>
+                <span style={{ fontFamily: "Georgia, serif", fontSize: 18, color: active.color }}>{glyphWithLabel(active, hand?.label)}</span>
                 <span className="text-xs text-slate-600">{symLabel(active)}</span>
               </>
             ) : (
@@ -260,12 +265,13 @@ function FreeBench({ activeSymbolId }) {
         {/* 8×12-Raster */}
         <div ref={gridRef} className="rounded-2xl border-2 p-2 mb-3" style={{ borderColor: C.line, background: "rgba(255,255,255,0.5)" }}>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: 4 }}>
-            {cells.map((id, i) => {
-              const s = id ? SYM_BY_ID[id] : null;
+            {cells.map((cell, i) => {
+              const s = cell ? SYM_BY_ID[cell.id] : null;
+              const shown = s ? glyphWithLabel(s, cell.label) : null;
               const isSel = i === sel;
               return (
                 <button key={i} onClick={() => clickCell(i)}
-                  title={s ? `${s.glyph} ${symLabel(s)} — tippen leert` : (active ? `${active.glyph} setzen` : "leer")}
+                  title={s ? `${shown} ${symLabel(s)} — tippen leert` : (active ? `${glyphWithLabel(active, hand?.label)} setzen` : "leer")}
                   className="relative rounded-md flex items-center justify-center transition-all"
                   style={{
                     aspectRatio: "1 / 1", minWidth: 0,
@@ -273,7 +279,7 @@ function FreeBench({ activeSymbolId }) {
                     border: isSel ? "2px solid #1B2430" : `1px solid ${s ? "rgba(255,255,255,0.25)" : C.line}`,
                     color: "#fff", cursor: "pointer",
                   }}>
-                  {s ? <span style={{ fontFamily: "Georgia, serif", fontSize: "clamp(13px, 3.6vw, 20px)", lineHeight: 1 }}>{s.glyph}</span>
+                  {s ? <span style={{ fontFamily: "Georgia, serif", fontSize: "clamp(11px, 3vw, 17px)", lineHeight: 1 }}>{shown}</span>
                      : <span style={{ opacity: 0.18, fontSize: 12, color: C.ink }}>·</span>}
                 </button>
               );

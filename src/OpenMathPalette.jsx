@@ -29,6 +29,7 @@ export const CAT_COLOR = {
   extra_linalg: "#2E7D8A",
   extra_axiome: "#8A6BC0",
   extra_strukturen: "#2E6B7D",
+  platzhalter: "#8A5A2E",
 };
 
 export default function OpenMathPalette({ collected, onCollect }) {

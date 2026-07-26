@@ -404,6 +404,23 @@ export const EXTRA_CATEGORIES = [
       { name: "projektive_ebene", glyph: "P(V)", cd: "Struktur", desc: "eindim. Teilräume als Punkte" },
     ],
   },
+  {
+    id: "platzhalter",
+    title: "Platzhalter (Variablen)",
+    desc: "Rolle statt fester Bedeutung — der Buchstabe ist frei wählbar.",
+    symbols: [
+      { name: "abbildung", glyph: "f", cd: "Var", desc: "eine Abbildung" },
+      { name: "vektor", glyph: "v", cd: "Var", desc: "ein Vektor" },
+      { name: "punkt", glyph: "A", cd: "Var", desc: "ein Punkt" },
+      { name: "menge", glyph: "M", cd: "Var", desc: "eine Menge" },
+      { name: "raum", glyph: "V", cd: "Var", desc: "ein Raum" },
+      { name: "skalar", glyph: "a", cd: "Var", desc: "ein Skalar" },
+      { name: "gruppe", glyph: "G", cd: "Var", desc: "eine Gruppe" },
+      { name: "index", glyph: "n", cd: "Var", desc: "ein Index" },
+      { name: "gerade", glyph: "g", cd: "Var", desc: "eine Gerade" },
+      { name: "relation", glyph: "R", cd: "Var", desc: "eine Relation" },
+    ],
+  },
 ];
 
 // flache Liste aller OpenMath-Bausteine (z. B. für Suche)
@@ -523,4 +540,10 @@ export const DE = {
   "Struktur.vektorraum": "Vektorraum", "Struktur.untervektorraum": "Untervektorraum",
   "Struktur.skalarproduktraum": "Skalarproduktraum", "Struktur.affiner_raum": "affiner Raum",
   "Struktur.kongruenzebene": "Kongruenzebene", "Struktur.projektive_ebene": "projektive Ebene",
+
+  // Platzhalter (Variablen)
+  "Var.abbildung": "Abbildung", "Var.vektor": "Vektor", "Var.punkt": "Punkt",
+  "Var.menge": "Menge", "Var.raum": "Raum", "Var.skalar": "Skalar",
+  "Var.gruppe": "Gruppe", "Var.index": "Index", "Var.gerade": "Gerade",
+  "Var.relation": "Relation",
 };

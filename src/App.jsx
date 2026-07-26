@@ -18,7 +18,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null, werkbank: null }); // aus der Bibliothek angeforderte Mission je Ansicht
-  const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
+  const [hand, setHand] = useState(null); // { id, label } aus der Hand (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [xpState, setXpState] = useState(() => levelFromXp(loadXp().xp)); // Level & Fortschritt
   const [award, setAward] = useState(null); // zuletzt vergebene XP (zeigt die Sitzungsleiste)
@@ -196,7 +196,7 @@ export default function App() {
         <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
       ) : mode === "werkbank" ? (
-        <Werkbank activeSymbolId={activeSymbol} taskId={openReq.werkbank}
+        <Werkbank hand={hand} taskId={openReq.werkbank}
           onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />
       ) : mode === "definition" ? (
         <StrukturBaukasten initialId={openReq.definition}
@@ -239,7 +239,7 @@ export default function App() {
       )}
 
       {/* Minecraft-artiges Inventar: Hotbar (1–8) + gesammeltes Lager (E) */}
-      <Inventory onActive={setActiveSymbol} collection={collection} onDiscard={discard} onBrowse={() => setMode("bausteine")} />
+      <Inventory onActive={setHand} collection={collection} onDiscard={discard} onBrowse={() => setMode("bausteine")} />
     </div>
   );
 }

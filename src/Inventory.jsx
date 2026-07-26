@@ -3,6 +3,7 @@ import { X, Grid3x3, Plus } from "lucide-react";
 import { PALETTE_CATEGORIES } from "./data/openmath.js";
 import { CAT_COLOR } from "./OpenMathPalette.jsx";
 import { SYM_ALL, SYM_BY_ID, symLabel } from "./data/symbols.js";
+import { isRenamable, defaultLabel, glyphWithLabel, greekFor } from "./data/labels.js";
 
 /* ====================================================================
  *  Minecraft-artiges Inventar
@@ -45,18 +46,26 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
   const [toast, setToast] = useState("");
   const [hovered, setHovered] = useState(null); // Item-id, über dem der Zeiger schwebt (Desktop)
   const [focusIdx, setFocusIdx] = useState(0); // Tastatur-Fokus im Raster (Pfeiltasten)
+  const [handLabel, setHandLabel] = useState(null); // Etikett in der Hand (flüchtig, nicht im Inventar)
   const toastTimer = useRef(null);
   const pressTimer = useRef(null);
   const longRef = useRef(false);
   const gridRef = useRef(null);
   const focusRef = useRef(null);
+  const lastKey = useRef({ ch: null, at: 0 }); // für „Buchstabe doppelt → griechisch“
 
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(hotbar)); } catch { /* ignore */ }
   }, [hotbar]);
 
-  // aktives Symbol nach außen melden (z. B. an die Werkbank zum Stempeln)
-  useEffect(() => { onActive?.(hotbar[active] ?? null); }, [hotbar, active, onActive]);
+  // Wahlwechsel setzt das Etikett auf den Standard zurück
+  const handId = hotbar[active] ?? null;
+  useEffect(() => { setHandLabel(null); lastKey.current = { ch: null, at: 0 }; }, [active, handId]);
+
+  // Hand nach außen melden: Baustein + aktuelles Etikett
+  useEffect(() => {
+    onActive?.(handId ? { id: handId, label: handLabel ?? defaultLabel(handId) } : null);
+  }, [handId, handLabel, onActive]);
 
   const flash = (msg) => {
     setToast(msg);
@@ -145,10 +154,25 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
         setActive(Number(e.key) - 1); // Inventar zu: Ziffer wählt aktiven Slot
         e.preventDefault();
       } else if (e.key === "e" || e.key === "E") { setOpen((o) => !o); e.preventDefault(); }
+      // Etikett des Bausteins in der Hand setzen: Buchstabe tippen.
+      // Denselben Buchstaben zweimal kurz hintereinander → griechisches Pendant.
+      else if (!open && !e.ctrlKey && !e.metaKey && !e.altKey && handId && isRenamable(handId)
+               && /^[a-zA-Zα-ωΑ-Ω]$/.test(e.key)) {
+        const now = Date.now();
+        const prev = lastKey.current;
+        const same = prev.ch && prev.ch.toLowerCase() === e.key.toLowerCase() && now - prev.at < 700;
+        const greek = same ? greekFor(e.key) : null;
+        // Schreibweise des Standards übernehmen: Räume/Gruppen groß, Abbildungen/Vektoren klein
+        const def = defaultLabel(handId) || "";
+        const upper = def && def === def.toUpperCase() && def !== def.toLowerCase();
+        setHandLabel(greek || (upper ? e.key.toUpperCase() : e.key.toLowerCase()));
+        lastKey.current = { ch: greek ? null : e.key, at: now };
+        e.preventDefault();
+      } else if (e.key === "Escape" && handLabel) { setHandLabel(null); e.preventDefault(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, hovered, hotbar, active, results, focusIdx]); // eslint-disable-line
+  }, [open, hovered, hotbar, active, results, focusIdx, handId, handLabel]); // eslint-disable-line
 
   // Fokus zurücksetzen, wenn sich Suche/Kategorie ändert oder das Inventar öffnet
   useEffect(() => { setFocusIdx(0); }, [cat, open]);
@@ -184,6 +208,23 @@ export default function Inventory({ onActive, collection = [], onDiscard, onBrow
               );
             })}
           </div>
+          {/* Hand: doppelt den gewählten Baustein; Etikett hier änderbar, nicht im Inventar */}
+          {(() => {
+            const hb = handId ? BY_ID[handId] : null;
+            const lab = handLabel ?? defaultLabel(handId);
+            const ren = handId && isRenamable(handId);
+            return (
+              <div className="rounded-lg flex flex-col items-center justify-center shrink-0"
+                title={hb ? `Hand: ${glyphWithLabel(hb, lab)} ${deLabel(hb)}${ren ? " — Buchstabe tippen; doppelt → griechisch" : ""}` : "Hand — leer"}
+                style={{ width: 52, height: 52, background: "rgba(27,36,48,0.86)", backdropFilter: "blur(6px)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+                  border: handLabel ? "2px solid #F0B45E" : "2px solid rgba(255,255,255,0.14)", color: "#fff" }}>
+                {hb ? (
+                  <span style={{ fontFamily: "Georgia, serif", fontSize: "clamp(12px, 3.6vw, 17px)", lineHeight: 1 }}>{glyphWithLabel(hb, lab)}</span>
+                ) : <span style={{ opacity: 0.3, fontSize: 14 }}>·</span>}
+                <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 7, marginTop: 2, opacity: 0.65 }}>Hand</span>
+              </div>
+            );
+          })()}
           <button onClick={() => setOpen((o) => !o)} title="Inventar öffnen (Taste E)"
             className="rounded-lg flex flex-col items-center justify-center shrink-0"
             style={{ width: 46, height: 52, background: "rgba(27,36,48,0.86)", color: "#fff", backdropFilter: "blur(6px)", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
