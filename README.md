@@ -20,14 +20,35 @@ Einmalige Aktivierung (nur der Repo-Eigentümer kann das):
 Danach deployt jeder Push (auf `main` oder den aktiven Feature-Branch) automatisch;
 der Basis-Pfad wird über `BASE_PATH` auf den Repo-Namen gesetzt.
 
-## Zwei Modi
+## Die Modi
 
-| Modus | Was man baut | Mechanik |
-|-------|--------------|----------|
-| **Definitionen** (`StrukturBaukasten`) | Strukturen aus Eigenschaften (z. B. Skalarprodukt = Bilinearform + symmetrisch + positiv definit) | Bausteine auf der Werkbank zusammenschieben, mit dem Hammer einrasten. Ergebnisse werden selbst wieder Bausteine. |
-| **Beweise** (`BeweisCrafter`) | Beweise als Inferenzketten (Fakt + Schlussregel → neuer Fakt) | Fakten auswählen, Schlussregel anwenden, Kette bis zum Ziel bauen. |
+| Modus | Was man tut |
+|-------|-------------|
+| **Bibliothek** | Katalog des gesamten Materials — filtern, suchen, eine Rotation zusammenstellen, alles Übrige von hier aus öffnen. |
+| **Training** | Die Rotation als Übungen: Stärke-Anzeige pro Element, Level und Erfahrungspunkte, „starten" zieht gewichtet zufällig — Schwaches kommt häufiger. |
+| **Definitionen** | Strukturen aus Eigenschaften bauen (z. B. Skalarprodukt = Bilinearform + symmetrisch + positiv definit). Ergebnisse werden selbst wieder Bausteine. |
+| **Beweise** | Beweise als Inferenzketten: Fakt(en) + Schlussregel → neuer Fakt, bis zum Ziel. |
+| **Werkbank** | Symbol-Gitter (8×12): frei schreiben — oder eine Definition aus ihren Symbol-Bausteinen zusammensetzen. |
+| **Bausteine** | Symbolbibliothek (243 Symbole, 21 Kategorien). Über **+** wandert ein Symbol ins Inventar. |
 
-Umschalten oben in der Leiste.
+Umschalten oben in der Leiste. Die **Steckbrief**-Ansicht (Definitionskarte zum
+Nachlesen) hat keinen eigenen Knopf — sie öffnet sich aus Bibliothek und Training.
+
+**Mechanik in beiden Craftern gleich:** Baustein antippen → er springt in die
+nächste freie Zelle; eine gefüllte Zelle antippen → sie leert sich; der **Hammer**
+wertet alles Gelegte gemeinsam aus (Reihenfolge egal). Nichts wird gezogen.
+
+## Inventar, Hand und Etiketten
+
+Das Inventar startet **leer** — Symbole kommen ausschließlich durch Einsammeln in
+**Bausteine** hinein. Die Hotbar spiegelt das Inventar; der **Hand**-Slot daneben
+hält eine Arbeitskopie des gewählten Bausteins. Am Rechner benennt ein Tastendruck
+den Baustein **nur in der Hand** um (`G` + `h` → `H`); derselbe Buchstabe zweimal
+kurz hintereinander ergibt den griechischen Partner (`ff` → φ, `ww` → ω). Der
+Inventar-Baustein bleibt unverändert.
+
+Fortschritt (Inventar, Werkbank, Rotation, Statistik, XP) liegt im `localStorage`
+des Browsers — kein Server, kein Konto.
 
 ## Der Beweis-Modus im Detail
 
@@ -47,19 +68,24 @@ Vier Schwierigkeits-Mechaniken sind aktiv:
 Das **Beweisprotokoll** unten wächst mit jedem Schritt und ist am Ende der
 zusammengesetzte Beweis.
 
-### Enthaltene Beweis-Missionen (Prototyp)
+### Enthaltene Beweis-Missionen
 
 1. **Neutralelement ist eindeutig** — kleines Einstiegs-Puzzle (Algebra).
 2. **Ü5.2 — Fixpunkt einer Ähnlichkeit** — 3 Tiefenstufen, antiholomorpher Distraktor.
 3. **Ü2.1 — O(ℚ²) ist keine Drehspiegelgruppe** — Widerspruchsbeweis, Norm-Distraktor.
+4. **Ü5.1 — Verkettung von Drehungen** — 3 Tiefenstufen, mit Begriffs-Gate.
+5. **Ü6.1 — Kreisspiegelung**
+6. **Ü8.3 — Zentralprojektion** — 2 Tiefenstufen.
+7. **Ü4.1 — Cosinus-Satz** — 2 Tiefenstufen, mit Begriffs-Gate.
 
 ## Entwicklung
 
 ```bash
 npm install
-npm run dev      # Entwicklungsserver
-npm run build    # Produktions-Build nach dist/
-npm run preview  # Build lokal ansehen
+npm run dev           # Entwicklungsserver
+npm run build         # Produktions-Build nach dist/
+npm run preview       # Build lokal ansehen
+npm run build:single  # alles in eine Datei: dist-single/index.html (offline lauffähig)
 ```
 
 Logik-Test des Beweis-Modus (ohne Browser):
@@ -88,8 +114,23 @@ Multimenge gegen `steps`; es ist kein zusätzlicher Code nötig.
 
 ```
 src/
-  App.jsx                 Modus-Umschalter
-  StrukturBaukasten.jsx   Definitions-Modus (erste Version)
+  App.jsx                 Modus-Umschalter, Hand-Slot, XP-Vergabe
+  Bibliothek.jsx          Katalog: filtern, suchen, Rotation zusammenstellen
+  Training.jsx            Rotation als Übungen, Level und Stärke-Anzeige
+  StrukturBaukasten.jsx   Definitions-Modus (Bausteine, Rezepte, Lektionen)
+  Werkbank.jsx            Symbol-Gitter, freies Schreiben und Symbol-Aufgaben
+  OpenMathPalette.jsx     Symbolbibliothek zum Einsammeln
+  Inventory.jsx           Hotbar, Lager und Hand-Slot
+  Steckbrief.jsx          Definitionskarte zum Nachlesen
+  data/
+    definitions.js        30 Kern-Definitionen der Elementargeometrie
+    openmath.js           243 Symbole in 21 Kategorien, deutsche Bezeichnungen
+    symboldefs.js         Symbol-Aufgaben für die Werkbank
+    labels.js             umbenennbare Bausteine und ihre Schreibweisen
+    catalog.js            fasst alles zu einem durchsuchbaren Katalog zusammen
+    stats.js              Stärke pro Element (steuert die Rotation)
+    xp.js                 Erfahrungspunkte und Level
+    symbols.js            gemeinsame Symbolliste, Inventar im localStorage
   proof/
     data.js               Fakten, Regeln, Missionen
     engine.js             Auswertung eines Zuges

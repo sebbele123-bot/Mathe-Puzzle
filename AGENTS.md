@@ -37,7 +37,7 @@ npm run build:single   # SINGLEFILE=1 → dist-single/index.html (one self-conta
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/deploy.yml` builds and publishes `dist/` to GitHub Pages on push to `main` or the active feature branch. Pages must be enabled once in repo settings (Source: **GitHub Actions**); the workflow token cannot enable it. Live site: **https://sebbele123-bot.github.io/Mathe-Puzzle/**.
+`.github/workflows/deploy.yml` builds and publishes `dist/` to GitHub Pages on push to `main` or the active feature branch. **The branch name is hardcoded** in the workflow's `on.push.branches` list (currently `claude/math-crafting-game-p0rebr`) — work on a differently-named branch simply never deploys, with no error. Add the new branch there when the working branch changes. Pages must be enabled once in repo settings (Source: **GitHub Actions**); the workflow token cannot enable it. Live site: **https://sebbele123-bot.github.io/Mathe-Puzzle/**.
 
 ## Architecture
 
@@ -51,9 +51,9 @@ Single-page app; `src/App.jsx` holds `mode` and renders one view. The global `In
 | `bausteine` | `OpenMathPalette.jsx` | 243-symbol library in 21 categories; **+** collects a symbol into the inventory |
 | `beweis` | `proof/BeweisCrafter.jsx` | Proof crafter (grid werkbench + inference engine) |
 | `definition` | `StrukturBaukasten.jsx` | Structure crafter (grid werkbench + recipe engine) |
-| `steckbrief` | `Steckbrief.jsx` | Read-only definition card; reachable only via Bibliothek |
+| `steckbrief` | `Steckbrief.jsx` | Read-only definition card; no nav button — reachable only from Bibliothek or Training |
 
-`App` routes "open from library" via `openReq` (`{definition, beweis, steckbrief, werkbank}`) + `initialId`/`taskId` props; views remount on mode switch and read them. The active hotbar symbol is lifted from `Inventory` to `App` via `onActive` and passed to `Werkbank` as `hand`.
+`App` routes "open from library" via `openReq` (`{definition, beweis, steckbrief, werkbank}`) + `initialId`/`taskId` props. Switching mode swaps the rendered component, so views mount fresh; a view that must react to a *new* target while already mounted needs a `useEffect` on `[initialId]` (as in `StrukturBaukasten` and `BeweisCrafter`) — a `useState` initializer alone would keep the stale mission. The active hotbar symbol is lifted from `Inventory` to `App` via `onActive` and passed to `Werkbank` as `hand`.
 
 Every exercise view reports back through **`onOutcome(id, fails)`**; `App.recordStat` turns that into a namespaced catalog id (`proof:`, `def:`, `sym:`, `defcard:`), writes the rotation statistic and awards XP. The **Weiter-Schleife** (session bar above the nav, `award` state) shows the XP gained and draws the next rotation item without a detour through the Bibliothek — keep new exercise modes wired into `recordStat`, or they stay invisible to rotation and level.
 
@@ -86,7 +86,9 @@ Two independent stores, both fed from `recordStat`:
 | `src/data/stats.js` | rotation statistic + `strengthOf` | no content; change only the strength model |
 | `src/data/xp.js` | XP curve, level thresholds, repeat damping | tune constants at the top of the file |
 | `src/data/symbols.js` | shared symbol list + `localStorage` collection helpers | usually no change |
-| `src/data/catalog.js` | unifies proofs + structure lessons + Steckbriefe into one catalog | derives metadata via `parseTitle`; assigns `fach`, `typ`, `rubrik` |
+| `src/data/catalog.js` | unifies **four** sources — structure lessons (`def:`), proof missions (`proof:`), Steckbriefe (`defcard:`), symbol tasks (`sym:`) — into one catalog | derives metadata via `parseTitle`; assigns `fach`, `typ`, `rubrik` |
+
+**Catalog gotcha:** `fach` is assigned by string heuristics, not by a field you set. `fachFor` sends anything containing *Neutralelement* or a `Basis…` code to `algebra`, everything else to `elgeo`; symbol tasks are classified by `/Def \d/.test(t.ref)`. So a new symbol task lands in `elgeo` only if its `ref` reads like `"Def 3.1"` — otherwise it silently shows up under Algebra. Check where a new entry appears in the Bibliothek after adding it. Note also that `catalog.js` imports `StrukturBaukasten.jsx`, so it **cannot be loaded by plain Node** (`ERR_UNKNOWN_FILE_EXTENSION`) — verification scripts must extract the data, not import it.
 
 **Bibliothek grouping:** Fach → **Rubrik** (`Definitionen` / `Sätze` / `Übungsblätter`, `RUBRIKEN` in `catalog.js`) → Quelle. Rubriken are collapsible (default collapsed, auto-open when a filter/search is active). Filters (Fach/Typ/Thema) are **multi-select arrays**. Rotation is a curated list in `localStorage`.
 
@@ -111,7 +113,7 @@ Two independent stores, both fed from `recordStat`:
 
 ## Publishing the standalone artifact (claude.ai)
 
-When asked to update the live artifact: `SINGLEFILE=1 npm run build`, then extract the inlined `<style>`+`<script>` from `dist-single/index.html` into a fragment file (no `<html>/<head>/<body>`, just styles + `<div id="root"></div>` + scripts) and publish that file to the **same** artifact URL to keep it stable.
+When asked to update the live artifact: `npm run build:single`, then extract the inlined `<style>`+`<script>` from `dist-single/index.html` into a fragment file (no `<html>/<head>/<body>`, just styles + `<div id="root"></div>` + scripts) and publish that file to the **same** artifact URL to keep it stable.
 
 ## Git
 
