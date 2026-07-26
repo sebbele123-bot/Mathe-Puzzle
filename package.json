@@ -6,6 +6,7 @@
   "description": "Crafting-Spiel: mathematische Definitionen und Beweise aus sinnvoll großen Bausteinen zusammensetzen.",
   "scripts": {
     "dev": "vite",
+    "test": "node src/proof/engine.test.mjs && node src/data/xp.test.mjs && node src/data/stats.test.mjs",
     "build": "vite build",
     "build:single": "SINGLEFILE=1 vite build",
     "preview": "vite preview"
