@@ -17,7 +17,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
-  const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null, werkbank: null }); // aus der Bibliothek angeforderte Mission je Ansicht
   const [activeSymbol, setActiveSymbol] = useState(null); // aktives Hotbar-Symbol (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [xpState, setXpState] = useState(() => levelFromXp(loadXp().xp)); // Level & Fortschritt
@@ -143,7 +143,7 @@ export default function App() {
           <div className="flex gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
             <ModeButton active={mode === "bibliothek"} onClick={() => setMode("bibliothek")} icon={Library} label="Bibliothek" color={C.ink} />
             <ModeButton active={mode === "training"} onClick={() => setMode("training")} icon={Target} label="Training" color={C.warn} />
-            <ModeButton active={mode === "werkbank"} onClick={() => setMode("werkbank")} icon={Hammer} label="Werkbank" color={C.werk} />
+            <ModeButton active={mode === "werkbank"} onClick={() => { setOpenReq((r) => ({ ...r, werkbank: null })); setMode("werkbank"); }} icon={Hammer} label="Werkbank" color={C.werk} />
             <ModeButton active={mode === "bausteine"} onClick={() => setMode("bausteine")} icon={LayoutGrid} label="Bausteine" color={C.verkn} />
             <ModeButton active={mode === "beweis"} onClick={() => setMode("beweis")} icon={GitBranch} label="Beweise" color={C.ziel} />
             <ModeButton active={mode === "definition"} onClick={() => setMode("definition")} icon={Boxes} label="Definitionen" color={C.fakt} />
@@ -196,7 +196,8 @@ export default function App() {
         <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
       ) : mode === "werkbank" ? (
-        <Werkbank activeSymbolId={activeSymbol} />
+        <Werkbank activeSymbolId={activeSymbol} taskId={openReq.werkbank}
+          onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />
       ) : mode === "definition" ? (
         <StrukturBaukasten initialId={openReq.definition}
           onOutcome={(missionId, fails) => recordStat(`def:${missionId}`, "definition", fails)} />

@@ -16,6 +16,7 @@
 import { MISSIONS as PROOF_MISSIONS } from "../proof/data.js";
 import { MISSIONS as DEF_LESSONS } from "../StrukturBaukasten.jsx";
 import { DEFINITIONS } from "./definitions.js";
+import { SYMBOL_TASKS } from "./symboldefs.js";
 
 // Fächer und Typen als feste Achsen (Reihenfolge = Anzeige-Reihenfolge)
 export const FAECHER = [
@@ -118,7 +119,17 @@ const defCards = DEFINITIONS.map((d) => ({
   titel: d.term, lektion: null, tags: d.tags,
 }));
 
-export const CATALOG = [...defItems, ...proofItems, ...defCards];
+// Symbol-Aufgaben: Definition in der Werkbank aus Symbol-Bausteinen bauen
+const symbolItems = SYMBOL_TASKS.map((t, i) => ({
+  id: `sym:${t.id}`, mode: "werkbank", targetId: t.id,
+  typ: "definition", fach: /Def \d/.test(t.ref) ? "elgeo" : "algebra",
+  rubrik: "definitionen",
+  code: "⊕", kap: 300, nr: i,
+  quelle: "Symbol-Aufgaben · Werkbank",
+  titel: t.term, lektion: null, tags: tagsFor(t.term),
+}));
+
+export const CATALOG = [...defItems, ...proofItems, ...defCards, ...symbolItems];
 export const CATALOG_BY_ID = Object.fromEntries(CATALOG.map((c) => [c.id, c]));
 
 // nach Kapitel/Nummer sortiert (Grundlagen mit kap=-1 zuerst)

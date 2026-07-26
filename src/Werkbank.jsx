@@ -1,17 +1,169 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { RotateCcw, Copy, Check } from "lucide-react";
+import { RotateCcw, Copy, Check, Hammer } from "lucide-react";
 import { SYM_BY_ID, symLabel } from "./data/symbols.js";
+import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
 
 /* ====================================================================
  *  Werkbank — Symbol-Crafting
- *  8×12-Raster. In jede Zelle kommt ein Symbol-Baustein (aus der Hotbar).
- *  Reihenweise gelesen ergeben die Zellen einen Ausdruck.
+ *  Frei: 8×12-Raster, Symbole aus der Hotbar, ergibt einen Ausdruck.
+ *  Aufgabe: eine Definition aus ihren Symbol-Bausteinen zusammensetzen.
  * ==================================================================== */
-const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63" };
+const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63", warn: "#B26A1E" };
 const COLS = 8, ROWS = 12, N = COLS * ROWS;
 const LS_KEY = "mp_werkbank_v1";
 
-export default function Werkbank({ activeSymbolId }) {
+export default function Werkbank({ activeSymbolId, taskId, onOutcome }) {
+  const task = taskId ? SYMBOL_TASK_BY_ID[taskId] : null;
+  if (task) return <TaskBench task={task} onOutcome={onOutcome} />;
+  return <FreeBench activeSymbolId={activeSymbolId} />;
+}
+
+/* --- Aufgabe: Definition aus Symbol-Bausteinen zusammensetzen -------- */
+const TASK_CELLS = 12;
+
+function TaskBench({ task, onOutcome }) {
+  const [cells, setCells] = useState(() => Array(TASK_CELLS).fill(null));
+  const [done, setDone] = useState(false);
+  const [hint, setHint] = useState("");
+  const fails = useRef(0);
+  const reported = useRef(false);
+
+  // Vorrat: nötige Bausteine + Distraktoren, stabil gemischt
+  const pool = useMemo(() => {
+    const all = [...task.need, ...task.distract];
+    return all.map((id, i) => ({ id, k: (i * 7919) % all.length })).sort((a, b) => a.k - b.k).map((x) => x.id);
+  }, [task]);
+
+  useEffect(() => {
+    setCells(Array(TASK_CELLS).fill(null)); setDone(false); setHint("");
+    fails.current = 0; reported.current = false;
+  }, [task.id]);
+
+  const placed = cells.filter(Boolean);
+  const addSymbol = (id) => {
+    if (done) return;
+    setCells((c) => { const i = c.indexOf(null); if (i === -1) return c; const n = [...c]; n[i] = id; return n; });
+    setHint("");
+  };
+  const clearCell = (i) => { if (!done) { setCells((c) => c.map((x, k) => (k === i ? null : x))); setHint(""); } };
+  const clearAll = () => { if (!done) { setCells(Array(TASK_CELLS).fill(null)); setHint(""); } };
+
+  const check = () => {
+    if (done || !placed.length) return;
+    const a = [...placed].sort().join("|");
+    const b = [...task.need].sort().join("|");
+    if (a === b) {
+      setDone(true);
+      if (!reported.current) { reported.current = true; onOutcome?.(task.id, fails.current); }
+      return;
+    }
+    fails.current += 1;
+    const missing = task.need.filter((n) => !placed.includes(n)).length;
+    setHint(placed.length < task.need.length || missing
+      ? "Das ist noch nicht die Definition — es fehlt etwas oder es ist zu viel dabei."
+      : "Diese Zusammenstellung trifft die Definition nicht.");
+  };
+
+  return (
+    <div style={{ background: C.paper, color: C.ink, minHeight: "100%", fontFamily: "system-ui, sans-serif" }} className="w-full">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+        <header className="mb-4">
+          <div style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.18em" }} className="text-[11px] uppercase text-slate-500 mb-1">
+            Werkbank · {task.ref}
+          </div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Bauen</span>
+            <h1 style={{ fontFamily: "Georgia, serif" }} className="text-3xl sm:text-4xl font-semibold leading-tight">{task.term}</h1>
+          </div>
+        </header>
+
+        {/* Bauplatz */}
+        <div className="rounded-2xl border-2 border-dashed p-2 mb-3" style={{ borderColor: done ? C.ziel : "#B7C3CF", background: done ? "rgba(31,122,99,0.06)" : "rgba(255,255,255,0.5)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(72px, 1fr))`, gap: 5 }}>
+            {cells.map((id, i) => {
+              const s = id ? SYM_BY_ID[id] : null;
+              return (
+                <button key={i} onClick={() => clearCell(i)} title={s ? `${s.glyph} ${symLabel(s)}` : undefined}
+                  className="rounded-lg flex flex-col items-center justify-center transition-all"
+                  style={{ minHeight: 58, padding: "4px 2px",
+                    background: s ? `linear-gradient(160deg, rgba(255,255,255,0.20), rgba(255,255,255,0)), ${s.color}` : "rgba(27,36,48,0.03)",
+                    border: s ? "1px solid rgba(255,255,255,0.22)" : "1px dashed #C4D0DB",
+                    color: "#fff", cursor: s && !done ? "pointer" : "default" }}>
+                  {s ? (<>
+                    <span style={{ fontFamily: "Georgia, serif", fontSize: 17, lineHeight: 1 }}>{s.glyph}</span>
+                    <span style={{ fontSize: 7, opacity: 0.9, marginTop: 2, maxWidth: "100%" }} className="truncate px-0.5 text-center">{symLabel(s)}</span>
+                  </>) : <span style={{ opacity: 0.16, fontSize: 12, color: C.ink }}>·</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Prüfen */}
+        <div className="flex items-center gap-3 mb-4 min-h-[46px]">
+          <button onClick={check} disabled={done || !placed.length}
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium select-none"
+            style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em",
+              background: done || !placed.length ? "#C4D0DB" : C.ziel, color: done || !placed.length ? "#8595a4" : "#fff",
+              cursor: done || !placed.length ? "default" : "pointer", boxShadow: done || !placed.length ? "none" : "0 2px 0 rgba(0,0,0,0.18)" }}>
+            <Hammer size={16} /> Hammer
+          </button>
+          {!done && placed.length > 0 && (
+            <button onClick={clearAll} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors" style={{ fontFamily: "ui-monospace, monospace" }}>
+              <RotateCcw size={12} /> leeren
+            </button>
+          )}
+          {hint && !done && <p className="text-xs" style={{ color: C.warn }}>{hint}</p>}
+        </div>
+
+        {/* geschafft: kurze Beschreibung */}
+        {done && (
+          <div className="mb-4 rounded-xl px-4 py-3 flex items-start gap-3" style={{ background: "rgba(31,122,99,0.10)", border: `1px solid ${C.ziel}` }}>
+            <div className="mt-0.5 shrink-0 rounded-full p-1" style={{ background: C.ziel }}><Check size={14} color="#fff" /></div>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span style={{ fontFamily: "ui-monospace, monospace" }} className="text-[10px] uppercase tracking-wider text-slate-500">Gebaut</span>
+                <span style={{ fontFamily: "Georgia, serif", color: C.ziel }} className="text-lg font-semibold">{task.term}</span>
+              </div>
+              <p className="text-[15px] text-slate-800 mt-1.5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>{task.beschreibung}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Vorrat */}
+        {!done && (
+          <section className="rounded-2xl p-3 border-2 border-dashed" style={{ borderColor: "#B7C3CF", background: "rgba(255,255,255,0.35)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span style={{ background: C.ziel, width: 10, height: 10, borderRadius: 3 }} />
+              <span style={{ fontFamily: "ui-monospace, monospace", letterSpacing: "0.12em" }} className="text-[11px] uppercase text-slate-500">Bausteine</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 6 }}>
+              {pool.map((id) => {
+                const s = SYM_BY_ID[id];
+                if (!s) return null;
+                const used = placed.filter((x) => x === id).length;
+                return (
+                  <button key={id} onClick={() => addSymbol(id)} title={`${s.glyph} ${symLabel(s)}`}
+                    className="rounded-lg flex flex-col items-center justify-center transition-all"
+                    style={{ minHeight: 58, padding: "5px 3px", color: "#fff", opacity: used ? 0.45 : 1,
+                      background: `linear-gradient(160deg, rgba(255,255,255,0.20), rgba(255,255,255,0)), ${s.color}`,
+                      border: "1px solid rgba(255,255,255,0.18)", cursor: "pointer",
+                      boxShadow: "0 2px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
+                    <span style={{ fontFamily: "Georgia, serif", fontSize: 18, lineHeight: 1 }}>{s.glyph}</span>
+                    <span style={{ fontSize: 7.5, opacity: 0.9, marginTop: 2, maxWidth: "100%" }} className="truncate px-0.5 text-center">{symLabel(s)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* --- Freies Symbol-Crafting (8×12) ---------------------------------- */
+function FreeBench({ activeSymbolId }) {
   const [cells, setCells] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem(LS_KEY) || "null");
