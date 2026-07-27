@@ -4,6 +4,7 @@ import { CATALOG_BY_ID, FACH_COLOR, FACH_LABEL, TYP_COLOR, TYP_LABEL } from "./d
 import { loadStats, strengthOf } from "./data/stats.js";
 import { BAUEN, QUIZ, AUFLOESUNG, modiFor, pickModus, stufeFor, vorgabenFor } from "./data/karten.js";
 import { quizFor, hasQuiz } from "./data/quiz.js";
+import { splitDefinition } from "./data/defsatz.js";
 import { DEF_BY_ID } from "./data/definitions.js";
 import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
 import { MISSIONS as PROOF_MISSIONS } from "./proof/data.js";
@@ -221,10 +222,21 @@ function Aufloesung({ item, onVerstanden }) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-5">
       <div className="rounded-2xl border px-4 py-4" style={{ background: "#fff", borderColor: C.line }}>
-        <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5" style={{ fontFamily: "ui-monospace, monospace" }}>Definition</div>
-        <p className="text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif", lineHeight: 1.5 }}>
-          {text || item.titel}
-        </p>
+        {(() => {
+          const { definiendum, definiens } = splitDefinition(text || item.titel);
+          return (
+            <div>
+              <div className="text-[8px] uppercase tracking-wider text-slate-400 mb-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>Definition</div>
+              <div className="flex items-baseline gap-2">
+                {definiendum && (
+                  <span className="shrink-0 text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif" }}>{definiendum}</span>
+                )}
+                <span className="shrink-0 text-xl" style={{ color: FACH_COLOR[item.fach], fontFamily: "ui-monospace, monospace" }}>:=</span>
+                <p className="text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif", lineHeight: 1.5 }}>{definiens}</p>
+              </div>
+            </div>
+          );
+        })()}
         {kann && (
           <>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-4 mb-1.5" style={{ fontFamily: "ui-monospace, monospace" }}>Wozu</div>

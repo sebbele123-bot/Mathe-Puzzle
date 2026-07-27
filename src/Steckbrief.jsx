@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Check, BookOpen } from "lucide-react";
 import { DEFINITIONS, DEF_BY_ID, DEF_THEMES } from "./data/definitions.js";
 import { loadRotation, saveRotation } from "./data/catalog.js";
+import { splitDefinition } from "./data/defsatz.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", begriff: "#6B4E9E", ziel: "#1F7A63" };
 const THEME_COLOR = ["#31597F", "#6B4E9E", "#1F7A63", "#B26A1E", "#2E6B7D"];
@@ -59,14 +60,23 @@ export default function Steckbrief({ defId, onBack, onReview }) {
               <BookOpen size={18} style={{ color }} className="mt-1 shrink-0" />
               <h1 style={{ fontFamily: "Georgia, serif" }} className="text-2xl sm:text-3xl font-semibold leading-tight">{d.term}</h1>
             </div>
-            {/* Definitionszeichen := über der Aussage */}
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className="shrink-0 leading-none" style={{ fontFamily: "ui-monospace, monospace" }}>
-                <span className="block text-[8px] uppercase tracking-wider text-slate-400 text-center">Definition</span>
-                <span className="block text-xl text-center" style={{ color }}>:=</span>
-              </span>
-              <p className="text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif", lineHeight: 1.5 }}>{d.statement}</p>
-            </div>
+            {/* Definitionszeichen zwischen Definiendum und Aussage:
+                „s := symmetrische …", nicht „:= s: symmetrische …" */}
+            {(() => {
+              const { definiendum, definiens } = splitDefinition(d.statement);
+              return (
+                <div className="mt-3">
+                  <div className="text-[8px] uppercase tracking-wider text-slate-400 mb-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>Definition</div>
+                  <div className="flex items-baseline gap-2">
+                    {definiendum && (
+                      <span className="shrink-0 text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif" }}>{definiendum}</span>
+                    )}
+                    <span className="shrink-0 text-xl" style={{ color, fontFamily: "ui-monospace, monospace" }}>:=</span>
+                    <p className="text-base sm:text-lg text-slate-800" style={{ fontFamily: "Georgia, serif", lineHeight: 1.5 }}>{definiens}</p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {d.tags?.length > 0 && (
               <div className="flex gap-1.5 flex-wrap mt-4">
