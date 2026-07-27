@@ -117,7 +117,7 @@ const BLOCKS = {
 };
 
 // --- Zielstrukturen (Ergebnisse) ------------------------------------
-const RESULTS = {
+export const RESULTS = {
   // Algebra-Schicht: Menge + Addition (assoziativ, neutral, invers, kommutativ) → abelsche Gruppe
   addgrpR: {
     id: "addgrpR", role: "objekt", name: "(ℝ, +)", sub: "abelsche Gruppe",
@@ -364,7 +364,7 @@ const RESULTS = {
 };
 
 // --- Kurzbeschreibungen: nach dem Bauen in einem Satz, was das Objekt ist ---
-const KURZ = {
+export const KURZ = {
   // A — direkt
   strahl: "Ein Strahl ist die Halbgerade ℝ≥0·v — von einem Punkt aus in Richtung eines Vektors v ≠ 0.",
   affraum: "Ein affiner Raum ist eine Punktmenge mit einem Vektorraum als Richtungsraum, der einfach transitiv durch Translationen wirkt — Geometrie ohne ausgezeichneten Ursprung.",
@@ -397,7 +397,7 @@ const KURZ = {
 };
 
 // --- Rezepte (Menge benötigter Bausteine → Ergebnis) ----------------
-const RECIPES = [
+export const RECIPES = [
   // Algebra-Schicht (volle Tiefe): Menge + Addition (assoz., neutral, invers, kommutativ) → abelsche Gruppe
   { need: ["rset", "opAdd", "assoc", "neutral", "inverse", "kommut"], result: "addgrpR" },
   { need: ["qset", "opAdd", "assoc", "neutral", "inverse", "kommut"], result: "addgrpQ" },
@@ -562,9 +562,16 @@ export const MISSIONS = [
 ];
 
 // ====================================================================
-export default function StrukturBaukasten({ initialId, onOutcome }) {
+// Die ersten `n` Schritte einer Lektion gelten als vorgefertigt (Karteikarten-Stufe).
+// Der letzte Schritt bleibt immer zu bauen, sonst wäre die Lektion geschenkt.
+const vorgefertigt = (mission, n) =>
+  !mission || !n ? [] : mission.steps.slice(0, Math.min(n, mission.steps.length - 1));
+
+export default function StrukturBaukasten({ initialId, onOutcome, vorgaben = 0 }) {
   const baseInventory = Object.keys(BLOCKS);
-  const [discovered, setDiscovered] = useState([]); // result-ids
+  const [discovered, setDiscovered] = useState(
+    () => vorgefertigt(MISSIONS.find((m) => m.id === initialId), vorgaben)
+  ); // result-ids
   const [bench, setBench] = useState([]); // [{uid, id, x, y}] — frei positioniert
   const [snapping, setSnapping] = useState(false);
   const [flash, setFlash] = useState(null); // zuletzt entdecktes Ergebnis
@@ -586,10 +593,14 @@ export default function StrukturBaukasten({ initialId, onOutcome }) {
   // Aus der Bibliothek angeforderte Lektion öffnen (im Übungsmodus)
   useEffect(() => {
     if (initialId && MISSIONS.some((m) => m.id === initialId)) {
+      const m = MISSIONS.find((x) => x.id === initialId);
       setMission(initialId); setPuzzle(true); setBench([]); setHint("");
+      // vorgefertigte Teile der Stufe gelten als bereits entdeckt
+      const vor = vorgefertigt(m, vorgaben);
+      if (vor.length) setDiscovered((d) => [...new Set([...d, ...vor])]);
       missionFails.current = 0; reported.current = false;
     }
-  }, [initialId]); // eslint-disable-line
+  }, [initialId, vorgaben]); // eslint-disable-line
 
 
   // kettbare, bereits entdeckte Ergebnisse werden zu ziehbaren Bausteinen

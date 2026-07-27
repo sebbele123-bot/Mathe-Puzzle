@@ -15,6 +15,7 @@ import { dirname, join } from "node:path";
 import { FACTS, RULES, MISSIONS as PROOF_MISSIONS } from "../proof/data.js";
 import { PALETTE_CATEGORIES, DE } from "./openmath.js";
 import { SYMBOL_TASKS } from "./symboldefs.js";
+import { QUIZ } from "./quiz.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -99,6 +100,31 @@ const list = (xs, n = 6) => xs.slice(0, n).join(", ") + (xs.length > n ? ` … (
   t("Palette: Symbol-ids eindeutig", dups.length === 0, list([...new Set(dups)]));
   const noDe = all.filter((id) => !(id in DE));
   t("Palette: jedes Symbol hat ein DE-Label", noDe.length === 0, list(noDe));
+}
+
+// ====================================================================
+//  3b) Quizfragen — wohlgeformt? (ids gegen den Katalog: catalog.test.jsx)
+// ====================================================================
+{
+  const bad = [];
+  for (const [id, fragen] of Object.entries(QUIZ)) {
+    if (!Array.isArray(fragen) || fragen.length === 0) { bad.push(`${id}: keine Fragen`); continue; }
+    fragen.forEach((f, i) => {
+      const wo = `${id}[${i}]`;
+      if (!f.frage) bad.push(`${wo}: Frage fehlt`);
+      if (!f.hinweis) bad.push(`${wo}: Hinweis fehlt`);
+      if (f.art === "abcd") {
+        if (!Array.isArray(f.optionen) || f.optionen.length < 2) bad.push(`${wo}: zu wenige Optionen`);
+        else if (!Number.isInteger(f.richtig) || f.richtig < 0 || f.richtig >= f.optionen.length)
+          bad.push(`${wo}: richtig=${f.richtig} liegt außerhalb der Optionen`);
+        else if (new Set(f.optionen).size !== f.optionen.length) bad.push(`${wo}: doppelte Optionen`);
+      } else if (f.art === "janein") {
+        if (typeof f.richtig !== "boolean") bad.push(`${wo}: richtig muss true/false sein`);
+        if (f.optionen) bad.push(`${wo}: ja/nein braucht keine Optionen`);
+      } else bad.push(`${wo}: unbekannte Art „${f.art}"`);
+    });
+  }
+  t("Quizfragen: wohlgeformt", bad.length === 0, list(bad));
 }
 
 // ====================================================================

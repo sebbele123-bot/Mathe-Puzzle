@@ -58,6 +58,16 @@ Single-page app; `src/App.jsx` holds `mode` and renders one view. The global `In
 | `beweis` | `proof/BeweisCrafter.jsx` | Proof crafter (grid werkbench + inference engine) |
 | `definition` | `StrukturBaukasten.jsx` | Structure crafter (grid werkbench + recipe engine) |
 | `steckbrief` | `Steckbrief.jsx` | Read-only definition card; no nav button — reachable only from Bibliothek or Training |
+| `karte` | `Karteikarte.jsx` | **Karteikarte** — how a single catalog entry is opened everywhere (Bibliothek *and* Training) |
+
+### Karteikarte
+A single catalog entry is a **Karteikarte**. It offers several modes and draws **one per opening**, based on the measured strength (`pickModus` in `src/data/karten.js`): never practised → `aufloesung` (see it first), weak → `bauen`, middling → build or quiz, strong → `quiz`. The player can override the draw with the mode chips.
+
+- **`bauen`** delegates to the existing crafter for that entry, with an automatic **Stufe** from the strength (`stufeFor`): weak → many prefabricated parts, strong → from scratch. Proofs use their existing `depths` (`initialDepth`); structure lessons and symbol tasks pre-supply the first *n* parts (`vorgaben`) — the last step always stays for the player.
+- **`quiz`** uses hand-written questions in `src/data/quiz.js` (`abcd` or `janein`, each with a `hinweis` that explains rather than just scoring). A card without questions simply doesn't offer the mode.
+- **`aufloesung`** shows the definition plus *„Wozu"* — for structures derived from `RECIPES`: which other structures consume this one.
+
+Quiz and Auflösung report as XP kind `steckbrief` (light review); building reports by the entry's own type. `karten.js` is deliberately JSX-free so the logic is Node-testable (`karten.test.mjs`).
 
 `App` routes "open from library" via `openReq` (`{definition, beweis, steckbrief, werkbank}`) + `initialId`/`taskId` props. Switching mode swaps the rendered component, so views mount fresh; a view that must react to a *new* target while already mounted needs a `useEffect` on `[initialId]` (as in `StrukturBaukasten` and `BeweisCrafter`) — a `useState` initializer alone would keep the stale mission. The active hotbar symbol is lifted from `Inventory` to `App` via `onActive` and passed to `Werkbank` as `hand`.
 

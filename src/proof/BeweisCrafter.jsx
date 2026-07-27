@@ -45,16 +45,18 @@ function stagesOf(mission) {
   return [...vocab, proof];
 }
 
-export default function BeweisCrafter({ initialId, onOutcome }) {
+export default function BeweisCrafter({ initialId, onOutcome, initialDepth = null }) {
   const [missionId, setMissionId] = useState(() => (initialId && MISSIONS.some((m) => m.id === initialId) ? initialId : MISSIONS[0].id));
   const [stageIdx, setStageIdx] = useState(0);
-  const [depth, setDepth] = useState(0);
+  // Von der Karteikarte vorgegebene Stufe: 0 = viel gegeben, höher = von vorn
+  const [depth, setDepth] = useState(initialDepth ?? 0);
   // Startaussagen der zunächst gewählten Mission — sonst stünde die Werkbank
   // beim direkten Öffnen (Navigation, ohne initialId) ohne Prämissen da.
   const [have, setHave] = useState(() => {
     const m = MISSIONS.find((x) => x.id === (initialId && MISSIONS.some((y) => y.id === initialId) ? initialId : MISSIONS[0].id));
     const st = stagesOf(m)[0];
-    return st.kind === "beweis" ? st.depths[0].given.slice() : st.given.slice();
+    if (st.kind !== "beweis") return st.given.slice();
+    return st.depths[Math.min(initialDepth ?? 0, st.depths.length - 1)].given.slice();
   });
   const [bench, setBench] = useState([]);
   const [snapping, setSnapping] = useState(false);
@@ -91,8 +93,12 @@ export default function BeweisCrafter({ initialId, onOutcome }) {
     const st = stagesOf(m);
     setMissionId(id);
     setStageIdx(0);
-    setDepth(defaultProofDepth(m));
-    setHave(st[0].kind === "beweis" ? st[0].depths[0].given.slice() : st[0].given.slice());
+    // von der Karteikarte vorgegebene Stufe hat Vorrang
+    const d = initialDepth ?? defaultProofDepth(m);
+    setDepth(d);
+    setHave(st[0].kind === "beweis"
+      ? st[0].depths[Math.min(d, st[0].depths.length - 1)].given.slice()
+      : st[0].given.slice());
     setBench([]); setProtocol([]); setHint(""); setLastIdea(null); setFlash(null); setFails(0);
     missionFails.current = 0; reported.current = false;
   };

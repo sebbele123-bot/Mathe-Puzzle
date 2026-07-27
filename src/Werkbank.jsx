@@ -13,17 +13,26 @@ const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63", 
 const COLS = 8, ROWS = 10, N = COLS * ROWS;
 const LS_KEY = "mp_werkbank_v2"; // v2: Zellen tragen { id, label }
 
-export default function Werkbank({ hand, taskId, onOutcome, collection = [], training = false }) {
+export default function Werkbank({ hand, taskId, onOutcome, collection = [], training = false, vorgaben = 0 }) {
   const task = taskId ? SYMBOL_TASK_BY_ID[taskId] : null;
-  if (task) return <TaskBench task={task} onOutcome={onOutcome} />;
+  if (task) return <TaskBench task={task} onOutcome={onOutcome} vorgaben={vorgaben} />;
   return <FreeBench hand={hand} collection={collection} training={training} />;
 }
 
 /* --- Aufgabe: Definition aus Symbol-Bausteinen zusammensetzen -------- */
 const TASK_CELLS = 12;
 
-function TaskBench({ task, onOutcome }) {
-  const [cells, setCells] = useState(() => Array(TASK_CELLS).fill(null));
+// Vorgefertigte Teile: die ersten `n` nötigen Symbole liegen schon.
+// Mindestens eines bleibt immer selbst zu legen.
+const vorbelegt = (task, n) => {
+  const cells = Array(TASK_CELLS).fill(null);
+  const geben = Math.min(n || 0, Math.max(0, task.need.length - 1));
+  for (let i = 0; i < geben; i++) cells[i] = task.need[i];
+  return cells;
+};
+
+function TaskBench({ task, onOutcome, vorgaben = 0 }) {
+  const [cells, setCells] = useState(() => vorbelegt(task, vorgaben));
   const [done, setDone] = useState(false);
   const [hint, setHint] = useState("");
   const fails = useRef(0);
@@ -36,9 +45,9 @@ function TaskBench({ task, onOutcome }) {
   }, [task]);
 
   useEffect(() => {
-    setCells(Array(TASK_CELLS).fill(null)); setDone(false); setHint("");
+    setCells(vorbelegt(task, vorgaben)); setDone(false); setHint("");
     fails.current = 0; reported.current = false;
-  }, [task.id]);
+  }, [task.id, vorgaben]); // eslint-disable-line
 
   const placed = cells.filter(Boolean);
   const addSymbol = (id) => {

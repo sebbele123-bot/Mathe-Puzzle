@@ -6,6 +6,7 @@ import {
   CATALOG, CATALOG_BY_ID, CATALOG_SORTED, ALL_TAGS, countBy,
   FAECHER, TYPEN, RUBRIKEN,
 } from "./catalog.js";
+import { QUIZ } from "./quiz.js";
 
 const FACH_IDS = new Set(FAECHER.map((f) => f.id));
 const TYP_IDS = new Set(TYPEN.map((t) => t.id));
@@ -51,6 +52,11 @@ describe("CATALOG", () => {
   it("zählt je Fach vollständig ab", () => {
     const counts = countBy("fach");
     expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(CATALOG.length);
+  });
+
+  it("verweist mit jeder Quizfrage auf einen echten Katalogeintrag", () => {
+    const unbekannt = Object.keys(QUIZ).filter((id) => !CATALOG_BY_ID[id]);
+    expect(unbekannt).toEqual([]);
   });
 
   it("erzeugt die vier Quellen mit ihren id-Präfixen", () => {

@@ -205,7 +205,7 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
                       <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {qg.items.map((c) => (
-                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId)} />
+                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.id)} />
                         ))}
                       </div>
                     </div>

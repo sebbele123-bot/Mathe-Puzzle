@@ -8,6 +8,7 @@ import Training from "./Training.jsx";
 import Werkbank from "./Werkbank.jsx";
 import Steckbrief from "./Steckbrief.jsx";
 import Inventory from "./Inventory.jsx";
+import Karteikarte from "./Karteikarte.jsx";
 import { loadCollection, saveCollection } from "./data/symbols.js";
 import { recordOutcome, loadStats, pickWeighted, strengthOf } from "./data/stats.js";
 import { loadRotation, CATALOG_BY_ID } from "./data/catalog.js";
@@ -18,6 +19,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null, werkbank: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [karteId, setKarteId] = useState(null); // aktuell geöffnete Karteikarte (Katalog-id)
   const [hand, setHand] = useState(null); // { id, label } aus der Hand (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [xpState, setXpState] = useState(() => levelFromXp(loadXp().xp)); // Level & Fortschritt
@@ -39,6 +41,12 @@ export default function App() {
     setMode(targetMode);
   }, []);
 
+  // Ein Katalogeintrag wird überall als Karteikarte geöffnet.
+  const openKarte = useCallback((catalogId) => {
+    setKarteId(catalogId);
+    setMode("karte");
+  }, []);
+
   // gemessene Übung festhalten (Fehlversuche) → Rotations-Gewichtung + XP
   const recordStat = useCallback((catalogId, kind, fails) => {
     const before = strengthOf(catalogId, loadStats()); // Stärke VOR dieser Übung
@@ -57,9 +65,9 @@ export default function App() {
     const item = CATALOG_BY_ID[pick];
     if (!item) return false;
     setAward(null);
-    openFromLibrary(item.mode, item.targetId);
+    openKarte(pick);
     return true;
-  }, [openFromLibrary]);
+  }, [openKarte]);
 
   // Training starten: Sitzung eröffnen und erstes Element ziehen
   const startRotation = useCallback(() => {
@@ -189,9 +197,12 @@ export default function App() {
       </div>
 
       {mode === "bibliothek" ? (
-        <Bibliothek onOpen={openFromLibrary} onStartRotation={() => setMode("training")} />
+        <Bibliothek onOpen={openKarte} onStartRotation={() => setMode("training")} />
       ) : mode === "training" ? (
-        <Training onOpen={openFromLibrary} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
+        <Training onOpen={openKarte} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
+      ) : mode === "karte" ? (
+        <Karteikarte catalogId={karteId} collection={collection} training={session.active}
+          onOutcome={(catalogId, art, fails) => recordStat(catalogId, art, fails)} />
       ) : mode === "steckbrief" ? (
         <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
