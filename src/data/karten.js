@@ -37,9 +37,11 @@ export const istUebbar = (item) => !!item && (kannBauen(item) || hasQuiz(item.id
 export const uebbareIds = (ids, byId) => ids.filter((id) => istUebbar(byId[id]));
 
 // Vorlieben je Stärkeband — der erste verfügbare Modus gewinnt.
+// Gezogen werden nur Übungen (Bauen/Quiz); die Auflösung ist Nachschlagen
+// und steht als Reiter bereit, wird aber nie als Aufgabe gestellt.
 const VORLIEBE = {
-  neu: [AUFLOESUNG, BAUEN, QUIZ],      // nie geübt: erst zeigen, was es ist
-  schwach: [BAUEN, AUFLOESUNG, QUIZ],  // schwach: bauen, mit viel Vorgabe
+  neu: [BAUEN, QUIZ, AUFLOESUNG],      // nie geübt: bauen — Stufe 0 gibt viel vor
+  schwach: [BAUEN, QUIZ, AUFLOESUNG],
   mittelBau: [BAUEN, QUIZ, AUFLOESUNG],
   mittelQuiz: [QUIZ, BAUEN, AUFLOESUNG],
   stark: [QUIZ, BAUEN, AUFLOESUNG],    // stark: kurzer Check statt vollem Bau

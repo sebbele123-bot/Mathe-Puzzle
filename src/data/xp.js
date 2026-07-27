@@ -7,6 +7,10 @@
  * ==================================================================== */
 const KEY = "mp_xp_v1";
 
+// Grundwert nach Schwierigkeit 1–10: 4 XP je Stufe (4 … 40).
+// Nur Bauen und Quiz vergeben XP — die Auflösung ist Nachschlagen.
+const XP_PRO_STUFE = 4;
+// Rückfall für Aufgaben ohne Schwierigkeitsangabe
 const BASE = { beweis: 18, definition: 10, steckbrief: 4 };
 const CLEAN_BONUS = 6;
 const FIRST_SOLVE_BONUS = 10;
@@ -47,7 +51,7 @@ export function saveXp(s) {
  * @param strengthBefore Stärke VOR dieser Übung (null = ungeübt)
  * @returns { gained, total, level, leveledUp, streak, breakdown }
  */
-export function awardXp(id, kind, fails = 0, strengthBefore = null) {
+export function awardXp(id, kind, fails = 0, strengthBefore = null, schwierigkeit = null) {
   const s = loadXp();
   const today = dayKey();
 
@@ -64,7 +68,10 @@ export function awardXp(id, kind, fails = 0, strengthBefore = null) {
 
   const beforeLevel = levelFromXp(s.xp).level;
 
-  const base = BASE[kind] ?? BASE.definition;
+  // Schwierigkeit bestimmt den Grundwert; ohne Angabe der alte Typ-Wert
+  const base = Number.isFinite(schwierigkeit)
+    ? XP_PRO_STUFE * Math.min(10, Math.max(1, Math.round(schwierigkeit)))
+    : BASE[kind] ?? BASE.definition;
   const clean = fails === 0 ? CLEAN_BONUS : 0;
   // ungeübt/schwach zieht mehr XP als längst Beherrschtes
   const weakness = 1 + (1 - (strengthBefore ?? 0)) * 0.5;
@@ -83,6 +90,6 @@ export function awardXp(id, kind, fails = 0, strengthBefore = null) {
   return {
     gained, total: s.xp, level: after.level, leveledUp: after.level > beforeLevel,
     streak: s.streak,
-    breakdown: { base, clean, weakness: +weakness.toFixed(2), repeat, first },
+    breakdown: { base, schwierigkeit, clean, weakness: +weakness.toFixed(2), repeat, first },
   };
 }

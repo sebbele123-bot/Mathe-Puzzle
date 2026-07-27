@@ -61,13 +61,13 @@ Single-page app; `src/App.jsx` holds `mode` and renders one view. The global `In
 | `karte` | `Karteikarte.jsx` | **Karteikarte** — how a single catalog entry is opened everywhere (Bibliothek *and* Training) |
 
 ### Karteikarte
-A single catalog entry is a **Karteikarte**. It offers several modes and draws **one per opening**, based on the measured strength (`pickModus` in `src/data/karten.js`): never practised → `aufloesung` (see it first), weak → `bauen`, middling → build or quiz, strong → `quiz`. The player can override the draw with the mode chips.
+A single catalog entry is a **Karteikarte**. It offers several modes and draws **one per opening**, based on the measured strength (`pickModus` in `src/data/karten.js`): never practised or weak → `bauen` (Stufe 0 hands over most parts), middling → build or quiz, strong → `quiz`. The player can override the draw with the mode chips.
 
 - **`bauen`** delegates to the existing crafter for that entry, with an automatic **Stufe** from the strength (`stufeFor`): weak → many prefabricated parts, strong → from scratch. Proofs use their existing `depths` (`initialDepth`); structure lessons and symbol tasks pre-supply the first *n* parts (`vorgaben`) — the last step always stays for the player.
 - **`quiz`** uses hand-written questions in `src/data/quiz.js` (`abcd` or `janein`, each with a `hinweis` that explains rather than just scoring). A card without questions simply doesn't offer the mode.
 - **`aufloesung`** shows the definition plus *„Wozu"* — for structures derived from `RECIPES`: which other structures consume this one.
 
-Quiz and Auflösung report as XP kind `steckbrief` (light review); building reports by the entry's own type. `karten.js` is deliberately JSX-free so the logic is Node-testable (`karten.test.mjs`).
+Only **Bauen** and **Quiz** award XP; the Auflösung reports nothing. The amount follows the difficulty 1–10 (see `data/schwierigkeit.js`), not the card type. `pickModus` therefore only ever draws an exercise — the Auflösung stays available as a tab but is never set as the task. `karten.js` is deliberately JSX-free so the logic is Node-testable (`karten.test.mjs`).
 
 **Only trainable cards may enter the rotation.** `istUebbar(item)` = buildable **or** has quiz questions. A card offering nothing but the Auflösung would count as "practised" by merely being looked at, raising its strength without anything being tested — so its rotation button is disabled (removing an *existing* entry stays possible, or old entries would be stuck). `uebbareIds` filters the stored rotation both at the draw (`App.nextInRotation`) and in the Training list, so display and draw agree. Currently 63 of 91 entries are trainable; the other 28 are Steckbriefe without questions — writing questions for one makes it trainable, no code change needed.
 
@@ -89,7 +89,10 @@ Both `BeweisCrafter` and `StrukturBaukasten` use the **same grid mechanic** — 
 ### Progress: strength & level
 Two independent stores, both fed from `recordStat`:
 - **`data/stats.js`** — Anki-style rotation statistic. Per catalog id it records `attempts`, `failsTotal`, `cleanSolves`, `lastFails`, `lastSeen` and derives a **strength 0..1** (`strengthOf`; `null` = never practised). The rotation draws **randomly weighted by weakness**, so weak and stale items come up more often — it is not a sorted queue. Training lists items weakest-first only as a display.
-- **`data/xp.js`** — XP and levels, deliberately pointed the same direction: `BASE` per type × weakness factor × `REPEAT` damping (1 / 0.4 / 0.2 / 0.1 for the *n*-th solve of the same item on one day), plus `CLEAN_BONUS` and `FIRST_SOLVE_BONUS`. `xpForNext(level) = 80 + 40·(level−1)`. The damping exists to stop grinding one easy item — don't replace the multipliers with flat point awards.
+- **`data/xp.js`** — XP and levels, deliberately pointed the same direction: base × weakness factor × `REPEAT` damping (1 / 0.4 / 0.2 / 0.1 for the *n*-th solve of the same item on one day), plus `CLEAN_BONUS` and `FIRST_SOLVE_BONUS`. `xpForNext(level) = 80 + 40·(level−1)`. The damping exists to stop grinding one easy item — don't replace the multipliers with flat point awards.
+  **The base comes from the difficulty** (`XP_PRO_STUFE · schwierigkeit`, 4…40 for 1…10); `BASE` per type is only the fallback when no difficulty is supplied. **Only Bauen and Quiz award XP** — the Auflösung reports nothing at all, so looking something up never moves progress.
+
+- **`data/schwierigkeit.js`** — every exercise carries a difficulty 1–10. A hand-written entry in `SCHWIERIGKEIT` (keyed by catalog id) always wins; otherwise it is *estimated* from the size of the task (`geschaetzt`, anchored at `ROH_MIN`/`ROH_MAX` so new content doesn't shift the scale). The estimate is a stopgap: symbol tasks all measure 4–5 blocks even though Halbgruppe and Kongruenzebene are worlds apart — those are hand-rated, and anything that feels wrong should be. Quiz questions each carry their own `schwierigkeit`; a run reports the **mean** (`quizSchwierigkeit`).
 
 ## Data model & content authoring
 

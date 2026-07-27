@@ -4,6 +4,7 @@ import { CATALOG_BY_ID, FACH_COLOR, FACH_LABEL, TYP_COLOR, TYP_LABEL } from "./d
 import { loadStats, strengthOf } from "./data/stats.js";
 import { BAUEN, QUIZ, AUFLOESUNG, modiFor, pickModus, stufeFor, vorgabenFor } from "./data/karten.js";
 import { quizFor, hasQuiz } from "./data/quiz.js";
+import { schwierigkeitFor, quizSchwierigkeit } from "./data/schwierigkeit.js";
 import { splitDefinition } from "./data/defsatz.js";
 import { DEF_BY_ID } from "./data/definitions.js";
 import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
@@ -24,8 +25,31 @@ const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63", 
 const MODUS_LABEL = { [BAUEN]: "Bauen", [QUIZ]: "Quiz", [AUFLOESUNG]: "Auflösung" };
 const MODUS_ICON = { [BAUEN]: Hammer, [QUIZ]: HelpCircle, [AUFLOESUNG]: BookOpen };
 
-// XP-Art: Bauen zählt nach Typ, Quiz und Auflösung sind leichte Wiederholung
+// XP-Art nur zur Einordnung — den Grundwert bestimmt die Schwierigkeit
 const bauArt = (item) => (item.mode === "beweis" ? "beweis" : "definition");
+
+/**
+ * Umfang einer Bauaufgabe — Grundlage der geschätzten Schwierigkeit,
+ * falls keine Handbewertung vorliegt.
+ */
+function rohUmfang(item) {
+  if (item.mode === "beweis") {
+    const m = PROOF_MISSIONS.find((x) => x.id === item.targetId);
+    return m ? m.steps.length + m.steps.reduce((n, s) => n + s.premises.length, 0) : null;
+  }
+  if (item.mode === "definition") {
+    const m = DEF_LESSONS.find((x) => x.id === item.targetId);
+    if (!m) return null;
+    const zutaten = m.steps.reduce(
+      (n, s) => n + (RECIPES.find((r) => r.result === s)?.need.length || 0), 0);
+    return m.steps.length + zutaten;
+  }
+  if (item.mode === "werkbank") {
+    const t = SYMBOL_TASK_BY_ID[item.targetId];
+    return t ? t.need.length + t.distract.length : null;
+  }
+  return null;
+}
 
 /** Wie viele Stufen hat diese Karte? (Beweise: Tiefen, sonst: Schritte) */
 function maxStufeFor(item) {
@@ -67,7 +91,7 @@ const ergebnisseZuDefNr = (nr) =>
     .map((r) => r.id);
 
 /** Definitionstext und „was sie kann" aus den vorhandenen Daten. */
-function inhaltFor(item) {
+export function inhaltFor(item) {
   if (item.mode === "steckbrief") {
     const d = DEF_BY_ID[item.targetId];
     // Übungsblatt-Kürzel sagen nichts darüber, wozu die Definition taugt —
@@ -102,10 +126,12 @@ export default function Karteikarte({ catalogId, onOutcome, collection = [], tra
   const maxStufe = item ? maxStufeFor(item) : 0;
   const stufe = stufeFor(staerke, maxStufe);
   const vorgaben = vorgabenFor(stufe, maxStufe);
+  // Schwierigkeit der Bauaufgabe (Handbewertung schlägt Schätzung)
+  const bauSchwer = item ? schwierigkeitFor(catalogId, rohUmfang(item)) : null;
 
   if (!item) return null;
 
-  const melden = (art, fails) => onOutcome?.(catalogId, art, fails);
+  const melden = (art, fails, schwer) => onOutcome?.(catalogId, art, fails, schwer);
 
   return (
     <div style={{ background: C.paper, color: C.ink, minHeight: "100%" }} className="w-full">
@@ -146,14 +172,14 @@ export default function Karteikarte({ catalogId, onOutcome, collection = [], tra
       {/* Inhalt des gewählten Modus */}
       {modus === BAUEN && (
         <Bauen item={item} vorgaben={vorgaben} stufe={stufe} collection={collection} training={training}
-          onFertig={(fails) => melden(bauArt(item), fails)} />
+          onFertig={(fails) => melden(bauArt(item), fails, bauSchwer)} />
       )}
       {modus === QUIZ && (
-        <QuizModus fragen={quizFor(catalogId)} onFertig={(fehler) => melden("steckbrief", fehler)} />
+        <QuizModus fragen={quizFor(catalogId)}
+          onFertig={(fehler, schwer) => melden("quiz", fehler, schwer)} />
       )}
-      {modus === AUFLOESUNG && (
-        <Aufloesung item={item} onVerstanden={() => melden("steckbrief", 0)} />
-      )}
+      {/* Auflösung ist Nachschlagen — sie vergibt keine XP und meldet nichts */}
+      {modus === AUFLOESUNG && <Aufloesung item={item} />}
     </div>
   );
 }
@@ -183,7 +209,7 @@ function QuizModus({ fragen, onFertig }) {
   const antworten = (wert) => { if (gewaehlt === null) { setGewaehlt(wert); if (wert !== f.richtig) fehler.current += 1; } };
   const weiter = () => {
     if (letzte) {
-      if (!gemeldet.current) { gemeldet.current = true; onFertig(fehler.current); }
+      if (!gemeldet.current) { gemeldet.current = true; onFertig(fehler.current, quizSchwierigkeit(fragen)); }
       return;
     }
     setIdx((i) => i + 1); setGewaehlt(null);
@@ -236,9 +262,8 @@ function QuizModus({ fragen, onFertig }) {
 }
 
 /* --- Auflösung: was es ist und wofür es taugt ------------------------- */
-function Aufloesung({ item, onVerstanden }) {
+function Aufloesung({ item }) {
   const { text, kann } = inhaltFor(item);
-  const [quittiert, setQuittiert] = useState(false);
   return (
     <div className="max-w-5xl mx-auto px-4 py-5">
       <div className="rounded-2xl border px-4 py-4" style={{ background: "#fff", borderColor: C.line }}>
@@ -264,11 +289,6 @@ function Aufloesung({ item, onVerstanden }) {
           </>
         )}
       </div>
-      <button onClick={() => { if (!quittiert) { setQuittiert(true); onVerstanden(); } }} disabled={quittiert}
-        className="mt-3 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium"
-        style={{ fontFamily: "ui-monospace, monospace", background: quittiert ? "#C4D0DB" : C.ink, color: quittiert ? "#8595a4" : "#fff", cursor: quittiert ? "default" : "pointer" }}>
-        <Check size={15} /> {quittiert ? "notiert" : "verstanden"}
-      </button>
     </div>
   );
 }

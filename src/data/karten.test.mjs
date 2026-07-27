@@ -33,7 +33,8 @@ const steckbrief = { mode: "steckbrief" };
 // --- Modus-Wahl nach Stärke -------------------------------------------
 {
   const alle = [BAUEN, QUIZ, AUFLOESUNG];
-  t("nie geübt → erst zeigen", pickModus(alle, null) === AUFLOESUNG);
+  // Gezogen werden nur Übungen — die Auflösung ist Nachschlagen
+  t("nie geübt → bauen (Stufe 0 gibt viel vor)", pickModus(alle, null) === BAUEN);
   t("schwach → bauen", pickModus(alle, 0.1) === BAUEN);
   t("mittel + niedriger Wurf → bauen", pickModus(alle, 0.5, 0.2) === BAUEN);
   t("mittel + hoher Wurf → Quiz", pickModus(alle, 0.5, 0.9) === QUIZ);
@@ -41,7 +42,10 @@ const steckbrief = { mode: "steckbrief" };
 
   // fehlende Modi werden übersprungen
   t("stark ohne Quiz → bauen", pickModus([BAUEN, AUFLOESUNG], 0.95) === BAUEN);
-  t("schwach ohne Bauen → Auflösung", pickModus([QUIZ, AUFLOESUNG], 0.1) === AUFLOESUNG);
+  t("schwach ohne Bauen → Quiz", pickModus([QUIZ, AUFLOESUNG], 0.1) === QUIZ);
+  t("Auflösung nur, wenn es sonst nichts gibt", pickModus([AUFLOESUNG], null) === AUFLOESUNG);
+  t("Auflösung wird nie über eine Übung gezogen",
+    [null, 0.1, 0.5, 0.9].every((s) => pickModus(alle, s, 0.3) !== AUFLOESUNG));
   t("nur ein Modus → dieser", pickModus([AUFLOESUNG], 0.5, 0.9) === AUFLOESUNG);
   t("keine Modi → null", pickModus([], 0.5) === null);
 

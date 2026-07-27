@@ -14,6 +14,7 @@ export const QUIZ = {
   "defcard:d01": [
     {
       art: "abcd",
+      schwierigkeit: 3,
       frage: "Welche Eigenschaft gehört nicht zur Definition eines Skalarprodukts?",
       optionen: ["Bilinearität", "Symmetrie", "positive Definitheit", "Assoziativität"],
       richtig: 3,
@@ -21,6 +22,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
+      schwierigkeit: 2,
       frage: "Positive Definitheit bedeutet s(v,v) > 0 für alle v ≠ 0.",
       richtig: true,
       hinweis: "Genau das ist die Bedingung — für v = 0 ist s(0,0) = 0.",
@@ -29,6 +31,7 @@ export const QUIZ = {
   "defcard:d02": [
     {
       art: "janein",
+      schwierigkeit: 3,
       frage: "O(Z,s) besteht aus den Elementen von GL(Z), die das Skalarprodukt erhalten.",
       richtig: true,
       hinweis: "O(Z,s) = { g ∈ GL(Z) | s(gv,gw) = s(v,w) für alle v,w }.",
@@ -39,6 +42,7 @@ export const QUIZ = {
   "def:dA1": [
     {
       art: "abcd",
+      schwierigkeit: 3,
       frage: "Aus welchen drei Zutaten baust du das Skalarprodukt?",
       optionen: [
         "Bilinearform + symmetrisch + positiv definit",
@@ -53,6 +57,7 @@ export const QUIZ = {
   "def:dA9": [
     {
       art: "abcd",
+      schwierigkeit: 2,
       frage: "Wie ist ein Strahl aufgebaut?",
       optionen: [
         "ℝ≥0 · v für einen Vektor v ≠ 0",
@@ -65,6 +70,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
+      schwierigkeit: 3,
       frage: "Auch der Nullvektor ist als Richtung eines Strahls zugelassen.",
       richtig: false,
       hinweis: "Es wird v ≠ 0 verlangt, sonst wäre die Menge nur {0}.",
@@ -75,12 +81,14 @@ export const QUIZ = {
   "proof:p_neutral": [
     {
       art: "janein",
+      schwierigkeit: 4,
       frage: "In einer Menge mit assoziativer Verknüpfung kann es zwei verschiedene neutrale Elemente geben.",
       richtig: false,
       hinweis: "Sind e und e′ beide neutral, so gilt e = e∘e′ = e′.",
     },
     {
       art: "abcd",
+      schwierigkeit: 5,
       frage: "Welcher Ausdruck trägt den Beweis?",
       optionen: [
         "e∘e′ — einmal von links, einmal von rechts ausgewertet",
@@ -97,6 +105,7 @@ export const QUIZ = {
   "sym:s_halbgruppe": [
     {
       art: "abcd",
+      schwierigkeit: 2,
       frage: "Was macht eine Menge mit Verknüpfung zur Halbgruppe?",
       optionen: [
         "abgeschlossen und assoziativ",
@@ -109,6 +118,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
+      schwierigkeit: 3,
       frage: "Jedes Monoid ist auch eine Halbgruppe.",
       richtig: true,
       hinweis: "Ein Monoid ist eine Halbgruppe mit neutralem Element — die Halbgruppen-Eigenschaften bleiben erhalten.",
@@ -117,6 +127,7 @@ export const QUIZ = {
   "sym:s_gruppe": [
     {
       art: "abcd",
+      schwierigkeit: 2,
       frage: "Was fehlt einem Monoid noch zur Gruppe?",
       optionen: [
         "zu jedem Element ein inverses",
@@ -129,6 +140,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
+      schwierigkeit: 3,
       frage: "Jede Gruppe ist kommutativ.",
       richtig: false,
       hinweis: "Nur abelsche Gruppen sind kommutativ — die Drehspiegelgruppe zum Beispiel ist es nicht.",
@@ -137,6 +149,7 @@ export const QUIZ = {
   "sym:s_koerper": [
     {
       art: "abcd",
+      schwierigkeit: 4,
       frage: "Wodurch wird aus einem Ring ein Körper?",
       optionen: [
         "kommutative Multiplikation und Inverse für alle Elemente ≠ 0",

@@ -49,10 +49,10 @@ export default function App() {
   }, []);
 
   // gemessene Übung festhalten (Fehlversuche) → Rotations-Gewichtung + XP
-  const recordStat = useCallback((catalogId, kind, fails) => {
+  const recordStat = useCallback((catalogId, kind, fails, schwierigkeit = null) => {
     const before = strengthOf(catalogId, loadStats()); // Stärke VOR dieser Übung
     recordOutcome(catalogId, fails);
-    const res = awardXp(catalogId, kind, fails, before);
+    const res = awardXp(catalogId, kind, fails, before, schwierigkeit);
     setXpState(levelFromXp(res.total));
     setAward({ ...res, id: catalogId });
     setSession((s) => (s.active ? { ...s, done: s.done + 1 } : s));
@@ -204,7 +204,7 @@ export default function App() {
         <Training onOpen={openKarte} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
       ) : mode === "karte" ? (
         <Karteikarte catalogId={karteId} collection={collection} training={session.active}
-          onOutcome={(catalogId, art, fails) => recordStat(catalogId, art, fails)} />
+          onOutcome={(catalogId, art, fails, schwer) => recordStat(catalogId, art, fails, schwer)} />
       ) : mode === "steckbrief" ? (
         <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />

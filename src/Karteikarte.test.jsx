@@ -2,7 +2,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import Karteikarte from "./Karteikarte.jsx";
+import Karteikarte, { inhaltFor } from "./Karteikarte.jsx";
 import { recordOutcome } from "./data/stats.js";
 import { CATALOG } from "./data/catalog.js";
 
@@ -12,30 +12,31 @@ const RICHTIG = /Bilinearform \+ symmetrisch \+ positiv definit/;
 describe("Karteikarte", () => {
   it("zeigt Kopf und die verfügbaren Modi", () => {
     render(<Karteikarte catalogId={KARTE} />);
-    expect(screen.getByText("Skalarprodukt")).toBeTruthy();
+    expect(screen.getAllByText("Skalarprodukt").length).toBeGreaterThan(0);
     for (const m of ["Bauen", "Quiz", "Auflösung"]) {
       expect(screen.getByRole("button", { name: m })).toBeTruthy();
     }
   });
 
-  it("zieht bei einer nie geübten Karte zuerst die Auflösung", () => {
+  it("zieht bei einer nie geübten Karte das Bauen — nicht die Auflösung", () => {
     render(<Karteikarte catalogId={KARTE} />);
-    expect(screen.getByRole("button", { name: "Auflösung" }).getAttribute("aria-pressed")).toBe("true");
-    // der Definitionstext der Lektion steht auf der Karte
+    expect(screen.getByRole("button", { name: "Bauen" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("zeigt in der Auflösung den Definitionstext", () => {
+    render(<Karteikarte catalogId={KARTE} />);
+    fireEvent.click(screen.getByRole("button", { name: "Auflösung" }));
     expect(screen.getByText(/symmetrische, positiv definite Bilinearform/)).toBeTruthy();
   });
 
-  it("meldet die Auflösung erst auf „verstanden“ — und nur einmal", () => {
+  it("vergibt für die Auflösung nichts — sie ist Nachschlagen", () => {
     const onOutcome = vi.fn();
     render(<Karteikarte catalogId={KARTE} onOutcome={onOutcome} />);
+    fireEvent.click(screen.getByRole("button", { name: "Auflösung" }));
+    expect(screen.getByText(/symmetrische, positiv definite Bilinearform/)).toBeTruthy();
+    // kein Knopf, der Fortschritt meldet, und keine Meldung
+    expect(screen.queryByRole("button", { name: /verstanden/ })).toBeNull();
     expect(onOutcome).not.toHaveBeenCalled();
-
-    const knopf = screen.getByRole("button", { name: /verstanden/ });
-    fireEvent.click(knopf);
-    expect(onOutcome).toHaveBeenCalledWith(KARTE, "steckbrief", 0);
-
-    fireEvent.click(screen.getByRole("button", { name: /notiert/ }));
-    expect(onOutcome).toHaveBeenCalledTimes(1);
   });
 
   it("wertet das Quiz aus und meldet die Fehlerzahl", () => {
@@ -49,7 +50,7 @@ describe("Karteikarte", () => {
     expect(screen.getByText(/Genau das Rezept/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "fertig" }));
-    expect(onOutcome).toHaveBeenCalledWith(KARTE, "steckbrief", 0);
+    expect(onOutcome).toHaveBeenCalledWith(KARTE, "quiz", 0, 3);
   });
 
   it("zählt eine falsche Antwort als Fehler", () => {
@@ -58,7 +59,7 @@ describe("Karteikarte", () => {
     fireEvent.click(screen.getByRole("button", { name: "Quiz" }));
     fireEvent.click(screen.getByRole("button", { name: /Vektorraum \+ Dimension 2/ }));
     fireEvent.click(screen.getByRole("button", { name: "fertig" }));
-    expect(onOutcome).toHaveBeenCalledWith(KARTE, "steckbrief", 1);
+    expect(onOutcome).toHaveBeenCalledWith(KARTE, "quiz", 1, 3);
   });
 
   it("öffnet im Baumodus die Bauansicht mit Stufenangabe", () => {
@@ -81,11 +82,11 @@ describe("Karteikarte", () => {
   it("nennt im Wozu niemals Übungsblatt-Kürzel", () => {
     const beanstandet = [];
     for (const c of CATALOG) {
-      const { unmount } = render(<Karteikarte catalogId={c.id} />);
-      if (screen.queryByText(/Wird gebraucht/)) beanstandet.push(`${c.id}: Ü-Beschreibung`);
-      const wozu = screen.queryByText(/^Baustein für:/);
-      if (wozu && /Ü\s*\d/.test(wozu.textContent)) beanstandet.push(`${c.id}: ${wozu.textContent}`);
-      unmount();
+      const { kann } = inhaltFor(c);
+      if (!kann) continue;
+      if (/Wird gebraucht/.test(kann)) beanstandet.push(`${c.id}: Ü-Beschreibung`);
+      if (/Ü\s*\d/.test(kann)) beanstandet.push(`${c.id}: ${kann}`);
+      if (!/^Baustein für:/.test(kann)) beanstandet.push(`${c.id}: unerwartete Form „${kann}"`);
     }
     expect(beanstandet).toEqual([]);
   });
