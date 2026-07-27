@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Target, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, ArrowRight, Plus, Minus, Check, BookOpen, GitBranch, Target, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   CATALOG_SORTED, FAECHER, TYPEN, RUBRIKEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
   ALL_TAGS, countBy, loadRotation, saveRotation,
 } from "./data/catalog.js";
+import { istUebbar } from "./data/karten.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", muted: "#5b6875" };
 const FACH_COUNTS = countBy("fach");
@@ -222,6 +223,7 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
 }
 
 function ItemCard({ item, inRot, onToggleRot, onOpen }) {
+  const uebbar = istUebbar(item);
   const fc = FACH_COLOR[item.fach];
   const tc = TYP_COLOR[item.typ];
   return (
@@ -249,10 +251,16 @@ function ItemCard({ item, inRot, onToggleRot, onOpen }) {
       </button>
       {/* Aktionen */}
       <div className="shrink-0 flex flex-col border-l" style={{ borderColor: C.line }}>
-        <button onClick={onToggleRot} title={inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
+        {/* Nur übbare Karten dürfen in die Rotation — sonst gäbe es dort
+            nichts zu tun außer nachschlagen. */}
+        {/* Herausnehmen ist immer erlaubt, sonst bliebe ein alter Eintrag gefangen */}
+        <button onClick={uebbar || inRot ? onToggleRot : undefined} disabled={!uebbar && !inRot}
+          title={!uebbar && !inRot ? "nicht übbar — keine Aufgabe und keine Quizfragen"
+            : inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
           className="flex-1 flex items-center justify-center px-2.5 transition-colors"
-          style={{ background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E", borderBottom: `1px solid ${C.line}` }}>
-          {inRot ? <Check size={15} /> : <Plus size={15} />}
+          style={{ background: inRot ? "#B26A1E" : "#fff", color: !uebbar && !inRot ? "#C4D0DB" : inRot ? "#fff" : "#B26A1E",
+            borderBottom: `1px solid ${C.line}`, cursor: uebbar || inRot ? "pointer" : "default" }}>
+          {!uebbar && !inRot ? <Minus size={15} /> : inRot ? <Check size={15} /> : <Plus size={15} />}
         </button>
         <button onClick={onOpen} title="öffnen" className="flex-1 flex items-center justify-center px-2.5 text-slate-500 hover:text-slate-800 transition-colors">
           <ArrowRight size={15} />

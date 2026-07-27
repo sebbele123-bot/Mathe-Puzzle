@@ -7,6 +7,7 @@ import {
   FAECHER, TYPEN, RUBRIKEN,
 } from "./catalog.js";
 import { QUIZ } from "./quiz.js";
+import { istUebbar, kannBauen } from "./karten.js";
 
 const FACH_IDS = new Set(FAECHER.map((f) => f.id));
 const TYP_IDS = new Set(TYPEN.map((t) => t.id));
@@ -57,6 +58,18 @@ describe("CATALOG", () => {
   it("verweist mit jeder Quizfrage auf einen echten Katalogeintrag", () => {
     const unbekannt = Object.keys(QUIZ).filter((id) => !CATALOG_BY_ID[id]);
     expect(unbekannt).toEqual([]);
+  });
+
+  it("lässt nur übbare Karten in die Rotation — jede andere hat weder Aufgabe noch Quiz", () => {
+    const uebbar = CATALOG.filter(istUebbar);
+    const nicht = CATALOG.filter((c) => !istUebbar(c));
+    // jede übbare Karte hat wirklich etwas zu tun
+    expect(uebbar.every((c) => kannBauen(c) || QUIZ[c.id])).toBe(true);
+    // und jede nicht übbare wirklich nicht
+    expect(nicht.every((c) => !kannBauen(c) && !QUIZ[c.id])).toBe(true);
+    // alle baubaren Ansichten sind übbar, Steckbriefe nur mit Fragen
+    expect(nicht.every((c) => c.mode === "steckbrief")).toBe(true);
+    expect(uebbar.length + nicht.length).toBe(CATALOG.length);
   });
 
   it("erzeugt die vier Quellen mit ihren id-Präfixen", () => {

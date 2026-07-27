@@ -2,6 +2,7 @@
  * Lauf: node src/data/karten.test.mjs */
 import {
   BAUEN, QUIZ, AUFLOESUNG, kannBauen, modiFor, pickModus, stufeFor, vorgabenFor,
+  istUebbar, uebbareIds,
 } from "./karten.js";
 
 let pass = 0, fail = 0;
@@ -67,6 +68,31 @@ const steckbrief = { mode: "steckbrief" };
   t("höchste Stufe → keine Vorgabe", vorgabenFor(3, 3) === 0);
   t("dazwischen", vorgabenFor(1, 3) === 2);
   t("nie negativ", vorgabenFor(9, 3) === 0);
+}
+
+// --- übbar: nur solche Karten dürfen in die Rotation -------------------
+{
+  // baubar → übbar, unabhängig von Quizfragen
+  t("Bau-Lektion ist übbar", istUebbar({ id: "def:dA1", mode: "definition" }));
+  t("Beweis ist übbar", istUebbar({ id: "proof:p_neutral", mode: "beweis" }));
+  t("Symbol-Aufgabe ist übbar", istUebbar({ id: "sym:s_gruppe", mode: "werkbank" }));
+
+  // Steckbrief: nur mit Quizfragen
+  t("Steckbrief mit Quizfragen ist übbar", istUebbar({ id: "defcard:d01", mode: "steckbrief" }));
+  t("Steckbrief ohne Quizfragen ist nicht übbar", !istUebbar({ id: "defcard:d04", mode: "steckbrief" }));
+  t("ohne Eintrag → nicht übbar", !istUebbar(null) && !istUebbar(undefined));
+
+  // Rotation eindampfen
+  const byId = {
+    "def:dA1": { id: "def:dA1", mode: "definition" },
+    "defcard:d01": { id: "defcard:d01", mode: "steckbrief" },  // hat Quiz
+    "defcard:d04": { id: "defcard:d04", mode: "steckbrief" },  // hat keins
+  };
+  t("uebbareIds wirft nicht übbare heraus",
+    eq(uebbareIds(["def:dA1", "defcard:d01", "defcard:d04"], byId), ["def:dA1", "defcard:d01"]));
+  t("uebbareIds verkraftet unbekannte ids", eq(uebbareIds(["gibtsnicht"], byId), []));
+  t("uebbareIds erhält die Reihenfolge",
+    eq(uebbareIds(["defcard:d01", "def:dA1"], byId), ["defcard:d01", "def:dA1"]));
 }
 
 console.log(`\n${pass} ok, ${fail} fehlgeschlagen`);

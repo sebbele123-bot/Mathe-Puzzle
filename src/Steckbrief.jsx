@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Check, BookOpen } from "lucide-react";
 import { DEFINITIONS, DEF_BY_ID, DEF_THEMES } from "./data/definitions.js";
-import { loadRotation, saveRotation } from "./data/catalog.js";
+import { loadRotation, saveRotation, CATALOG_BY_ID } from "./data/catalog.js";
+import { istUebbar } from "./data/karten.js";
 import { splitDefinition } from "./data/defsatz.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", begriff: "#6B4E9E", ziel: "#1F7A63" };
@@ -23,6 +24,8 @@ export default function Steckbrief({ defId, onBack, onReview }) {
   const [rotation, setRotation] = useState(() => loadRotation());
   const rotId = `defcard:${d.id}`;
   const inRot = rotation.includes(rotId);
+  // nicht übbare Karten dürfen nicht in die Rotation (Herausnehmen bleibt erlaubt)
+  const rotErlaubt = istUebbar(CATALOG_BY_ID[rotId]) || inRot;
   const toggleRot = () => setRotation((r) => {
     const next = r.includes(rotId) ? r.filter((x) => x !== rotId) : [...r, rotId];
     saveRotation(next);
@@ -88,7 +91,7 @@ export default function Steckbrief({ defId, onBack, onReview }) {
           </div>
 
           <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderTop: `1px solid ${C.line}` }}>
-            <button onClick={toggleRot}
+            <button onClick={rotErlaubt ? toggleRot : undefined} disabled={!rotErlaubt}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm border transition-colors"
               style={{ fontFamily: "ui-monospace, monospace",
                 background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E",

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Play, X, ArrowRight, Star, Library, BookOpen, GitBranch, Flame } from "lucide-react";
 import { CATALOG_BY_ID, FACH_COLOR, TYP_LABEL, TYP_COLOR, loadRotation, saveRotation } from "./data/catalog.js";
+import { uebbareIds } from "./data/karten.js";
 import { loadStats, strengthOf } from "./data/stats.js";
 import { loadXp, levelFromXp } from "./data/xp.js";
 
@@ -24,7 +25,12 @@ export default function Training({ onOpen, onStart, onBrowse }) {
     setRotation((r) => { const next = r.filter((x) => x !== id); saveRotation(next); return next; });
   }, []);
 
-  const items = useMemo(() => rotation.map((id) => CATALOG_BY_ID[id]).filter(Boolean), [rotation]);
+  // nur übbare Karten — die Liste zeigt genau das, was die Rotation auch zieht.
+  // (Reste aus älteren Ständen lassen sich in der Bibliothek entfernen.)
+  const items = useMemo(
+    () => uebbareIds(rotation, CATALOG_BY_ID).map((id) => CATALOG_BY_ID[id]),
+    [rotation]
+  );
 
   // schwächste zuerst — der Zug ist zufällig, die Liste zeigt den Bedarf
   const sorted = useMemo(() => {

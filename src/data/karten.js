@@ -11,6 +11,8 @@
  *  Bewusst frei von JSX-Importen, damit die Logik mit Node testbar ist.
  * ==================================================================== */
 
+import { hasQuiz } from "./quiz.js";
+
 export const BAUEN = "bauen";
 export const QUIZ = "quiz";
 export const AUFLOESUNG = "aufloesung";
@@ -20,9 +22,19 @@ const BAU_ANSICHTEN = new Set(["definition", "beweis", "werkbank"]);
 export const kannBauen = (item) => !!item && BAU_ANSICHTEN.has(item.mode);
 
 /** Welche Modi bietet diese Karte an? (kanonische Reihenfolge) */
-export function modiFor(item, hasQuiz = false) {
-  return [kannBauen(item) && BAUEN, hasQuiz && QUIZ, AUFLOESUNG].filter(Boolean);
+export function modiFor(item, mitQuiz = false) {
+  return [kannBauen(item) && BAUEN, mitQuiz && QUIZ, AUFLOESUNG].filter(Boolean);
 }
+
+/**
+ * Lässt sich diese Karte überhaupt üben? Nur solche dürfen in die Rotation.
+ * Übbar heißt: es gibt etwas zu bauen oder Quizfragen. Die bloße Auflösung
+ * ist Nachschlagen — sie misst nichts und taugt nicht als Übung.
+ */
+export const istUebbar = (item) => !!item && (kannBauen(item) || hasQuiz(item.id));
+
+/** Rotation auf übbare Karten eindampfen (alte Stände können andere enthalten). */
+export const uebbareIds = (ids, byId) => ids.filter((id) => istUebbar(byId[id]));
 
 // Vorlieben je Stärkeband — der erste verfügbare Modus gewinnt.
 const VORLIEBE = {

@@ -12,6 +12,7 @@ import Karteikarte from "./Karteikarte.jsx";
 import { loadCollection, saveCollection } from "./data/symbols.js";
 import { recordOutcome, loadStats, pickWeighted, strengthOf } from "./data/stats.js";
 import { loadRotation, CATALOG_BY_ID } from "./data/catalog.js";
+import { uebbareIds } from "./data/karten.js";
 import { awardXp, loadXp, levelFromXp } from "./data/xp.js";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E", werk: "#2E6B7D" };
@@ -59,7 +60,8 @@ export default function App() {
 
   // nächstes Element der Rotation: gewichteter Zufalls-Zug (Schwächen häufiger)
   const nextInRotation = useCallback((exclude = null) => {
-    const ids = loadRotation();
+    // alte Stände können nicht übbare Karten enthalten — die zieht die Rotation nicht
+    const ids = uebbareIds(loadRotation(), CATALOG_BY_ID);
     if (!ids.length) return false;
     const pick = pickWeighted(ids, loadStats(), exclude);
     const item = CATALOG_BY_ID[pick];
