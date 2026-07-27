@@ -44,11 +44,35 @@ function maxStufeFor(item) {
   return 0;
 }
 
+// Lesbare Bezeichnung eines Ergebnisses: `sub` trägt meist den deutschen
+// Namen, ist aber mitunter eine Formel („dim E⃗ = 2", „Kongruenzen =
+// Isometrien") — dann steht die Bezeichnung in `name`.
+const bezeichnung = (r) => (r?.sub && !r.sub.includes("=") ? r.sub : r?.name || "");
+
+/** Wofür werden diese Ergebnisse anderswo als Zutat gebraucht? */
+function bausteinFuer(ids) {
+  if (!ids.length) return null;
+  const namen = [...new Set(
+    RECIPES.filter((rec) => rec.need.some((n) => ids.includes(n)))
+      .map((rec) => bezeichnung(RESULTS[rec.result]))
+      .filter(Boolean)
+  )];
+  return namen.length ? `Baustein für: ${namen.join(", ")}.` : null;
+}
+
+// Steckbrief Dn ↔ Ergebnis, dessen ref auf „Def n" verweist (auch „Def 5/6")
+const ergebnisseZuDefNr = (nr) =>
+  Object.values(RESULTS)
+    .filter((r) => (r.ref?.match(/^Def\s*([\d/]+)/)?.[1] || "").split("/").includes(String(nr)))
+    .map((r) => r.id);
+
 /** Definitionstext und „was sie kann" aus den vorhandenen Daten. */
 function inhaltFor(item) {
   if (item.mode === "steckbrief") {
     const d = DEF_BY_ID[item.targetId];
-    return { text: d?.statement, kann: d?.uebung ? `Wird gebraucht in ${d.uebung}.` : null };
+    // Übungsblatt-Kürzel sagen nichts darüber, wozu die Definition taugt —
+    // stattdessen konkret: welche Bausteine auf ihr aufbauen.
+    return { text: d?.statement, kann: d ? bausteinFuer(ergebnisseZuDefNr(d.nr)) : null };
   }
   if (item.mode === "werkbank") {
     const t = SYMBOL_TASK_BY_ID[item.targetId];
@@ -62,13 +86,9 @@ function inhaltFor(item) {
   const m = DEF_LESSONS.find((x) => x.id === item.targetId);
   const ziel = m?.steps[m.steps.length - 1];
   const r = ziel ? RESULTS[ziel] : null;
-  // „was sie kann": wofür dieses Ergebnis anderswo als Zutat gebraucht wird
-  const weiter = ziel
-    ? RECIPES.filter((rec) => rec.need.includes(ziel)).map((rec) => RESULTS[rec.result]?.sub || rec.result)
-    : [];
   return {
     text: ziel ? KURZ[ziel] || r?.note : null,
-    kann: weiter.length ? `Baustein für: ${[...new Set(weiter)].join(", ")}.` : null,
+    kann: ziel ? bausteinFuer([ziel]) : null,
   };
 }
 

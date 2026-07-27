@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import Karteikarte from "./Karteikarte.jsx";
 import { recordOutcome } from "./data/stats.js";
+import { CATALOG } from "./data/catalog.js";
 
 const KARTE = "def:dA1"; // A · Def 1 — Skalarprodukt: bauen + Quiz + Auflösung
 const RICHTIG = /Bilinearform \+ symmetrisch \+ positiv definit/;
@@ -73,6 +74,20 @@ describe("Karteikarte", () => {
     recordOutcome(KARTE, 0); recordOutcome(KARTE, 0); recordOutcome(KARTE, 0);
     render(<Karteikarte catalogId={KARTE} />);
     expect(screen.getByRole("button", { name: "Quiz" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  // „Wird gebraucht in Ü0.4" sagt nichts darüber, wozu eine Definition
+  // taugt. Das Wozu nennt ausschließlich konkrete Bausteine.
+  it("nennt im Wozu niemals Übungsblatt-Kürzel", () => {
+    const beanstandet = [];
+    for (const c of CATALOG) {
+      const { unmount } = render(<Karteikarte catalogId={c.id} />);
+      if (screen.queryByText(/Wird gebraucht/)) beanstandet.push(`${c.id}: Ü-Beschreibung`);
+      const wozu = screen.queryByText(/^Baustein für:/);
+      if (wozu && /Ü\s*\d/.test(wozu.textContent)) beanstandet.push(`${c.id}: ${wozu.textContent}`);
+      unmount();
+    }
+    expect(beanstandet).toEqual([]);
   });
 
   it("gibt einer mehrstufigen Beweiskarte die leichteste Stufe, wenn sie neu ist", () => {
