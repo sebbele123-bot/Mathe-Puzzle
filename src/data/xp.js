@@ -7,9 +7,12 @@
  * ==================================================================== */
 const KEY = "mp_xp_v1";
 
-// Grundwert nach Schwierigkeit 1–10: 4 XP je Stufe (4 … 40).
+// Grundwert nach Schwierigkeit: 4 XP je Stufe. Eine einzelne Aufgabe liegt
+// auf der Skala 1–10 (4 … 40 XP); ein Quiz reicht die Summe seiner Fragen
+// herein und darf darüber liegen — mehr Fragen bringen mehr.
 // Nur Bauen und Quiz vergeben XP — die Auflösung ist Nachschlagen.
 const XP_PRO_STUFE = 4;
+const STUFE_MAX = 100; // reiner Schutz vor Unsinn in den Daten
 // Rückfall für Aufgaben ohne Schwierigkeitsangabe
 const BASE = { beweis: 18, definition: 10, steckbrief: 4 };
 const CLEAN_BONUS = 6;
@@ -70,7 +73,7 @@ export function awardXp(id, kind, fails = 0, strengthBefore = null, schwierigkei
 
   // Schwierigkeit bestimmt den Grundwert; ohne Angabe der alte Typ-Wert
   const base = Number.isFinite(schwierigkeit)
-    ? XP_PRO_STUFE * Math.min(10, Math.max(1, Math.round(schwierigkeit)))
+    ? XP_PRO_STUFE * Math.min(STUFE_MAX, Math.max(1, Math.round(schwierigkeit)))
     : BASE[kind] ?? BASE.definition;
   const clean = fails === 0 ? CLEAN_BONUS : 0;
   // ungeübt/schwach zieht mehr XP als längst Beherrschtes

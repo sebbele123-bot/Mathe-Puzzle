@@ -59,9 +59,14 @@ export const SCHWIERIGKEIT = {
 export const schwierigkeitFor = (catalogId, roh) =>
   SCHWIERIGKEIT[catalogId] ?? geschaetzt(roh);
 
-/** Schwierigkeit eines Quizdurchgangs: Mittel der gestellten Fragen. */
+/**
+ * Schwierigkeit eines Quizdurchgangs: Summe der gestellten Fragen.
+ * Jede Frage trägt ihre eigene Stufe bei — mehr Fragen bringen also mehr,
+ * und schwerere mehr als leichte. Der Wert darf 10 überschreiten: die
+ * Skala 1–10 gilt je Frage, nicht für den ganzen Durchgang.
+ */
 export function quizSchwierigkeit(fragen) {
   const werte = (fragen || []).map((f) => f.schwierigkeit).filter(Number.isFinite);
   if (!werte.length) return MIN;
-  return stufe(werte.reduce((a, b) => a + b, 0) / werte.length);
+  return Math.max(MIN, Math.round(werte.reduce((a, b) => a + b, 0)));
 }

@@ -43,10 +43,18 @@ const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${co
   t("ohne Handbewertung wird geschätzt", schwierigkeitFor("def:gibtsnicht", 24) === 10);
 }
 
-// --- Quizdurchgang: Mittel der Fragen ---------------------------------
+// --- Quizdurchgang: Summe der Fragen ----------------------------------
 {
-  t("Mittel zweier Fragen", quizSchwierigkeit([{ schwierigkeit: 2 }, { schwierigkeit: 4 }]) === 3);
+  t("Summe zweier Fragen", quizSchwierigkeit([{ schwierigkeit: 2 }, { schwierigkeit: 4 }]) === 6);
   t("einzelne Frage", quizSchwierigkeit([{ schwierigkeit: 7 }]) === 7);
+  t("mehr Fragen → höherer Wert",
+    quizSchwierigkeit([{ schwierigkeit: 3 }, { schwierigkeit: 3 }]) >
+    quizSchwierigkeit([{ schwierigkeit: 3 }]));
+  t("schwerere Fragen → höherer Wert bei gleicher Anzahl",
+    quizSchwierigkeit([{ schwierigkeit: 5 }, { schwierigkeit: 5 }]) >
+    quizSchwierigkeit([{ schwierigkeit: 2 }, { schwierigkeit: 2 }]));
+  t("Summe darf 10 überschreiten",
+    quizSchwierigkeit([{ schwierigkeit: 6 }, { schwierigkeit: 7 }]) === 13);
   t("ohne Fragen → 1", quizSchwierigkeit([]) === MIN && quizSchwierigkeit(null) === MIN);
   t("unbewertete Fragen zählen nicht mit", quizSchwierigkeit([{ schwierigkeit: 6 }, {}]) === 6);
 }
@@ -78,8 +86,13 @@ const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${co
   // ohne Angabe bleibt der alte Typ-Wert
   const ohne = awardXp("a:ohne", "beweis", 0, 0.5);
   t("ohne Schwierigkeit gilt der Typ-Grundwert", ohne.breakdown.base === 18);
-  t("Schwierigkeit wird auf die Skala begrenzt",
-    awardXp("a:hoch", "quiz", 0, 0.5, 99).breakdown.base === 40);
+  // ein längeres Quiz bringt mehr als ein kürzeres mit denselben Fragen
+  const kurz = awardXp("q:kurz", "quiz", 0, 0.5, quizSchwierigkeit([{ schwierigkeit: 3 }]));
+  const lang = awardXp("q:lang", "quiz", 0, 0.5, quizSchwierigkeit([{ schwierigkeit: 3 }, { schwierigkeit: 3 }]));
+  t("mehr Fragen bringen mehr XP", lang.gained > kurz.gained, `${kurz.gained} vs ${lang.gained}`);
+  t("Summe über 10 wirkt sich aus", awardXp("a:13", "quiz", 0, 0.5, 13).breakdown.base === 52);
+  t("Unsinn in den Daten bleibt gedeckelt",
+    awardXp("a:absurd", "quiz", 0, 0.5, 99999).breakdown.base === 400);
 }
 
 console.log(`\n${pass} ok, ${fail} fehlgeschlagen`);
