@@ -167,6 +167,9 @@ export const RULES = {
 
 // steps: gültige Inferenzen  { rule, premises:[factId...], produces }
 // depths: Starttiefen (leicht → schwer), jede mit ihrer given-Menge
+// Neue Bauaufgabe? Sie braucht eine Schwierigkeit (1–10) in
+// `data/schwierigkeit.js` — entweder in SCHWIERIGKEIT bewertet oder
+// ausdrücklich in SCHAETZUNG_OK. Sonst schlägt schwierigkeit.test.jsx fehl.
 export const MISSIONS = [
   {
     id: "p_neutral",

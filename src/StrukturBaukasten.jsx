@@ -511,6 +511,9 @@ const missionIngredients = (mission) => {
 // --- Missionen als Lektionen ---
 // base = fertige Bausteine, ab denen die Lektion spielt (angemessene Starttiefe).
 // steps = die ab dieser Tiefe noch zu bauenden Zwischen- und Zielstrukturen.
+// Neue Bauaufgabe? Sie braucht eine Schwierigkeit (1–10) in
+// `data/schwierigkeit.js` — entweder in SCHWIERIGKEIT bewertet oder
+// ausdrücklich in SCHAETZUNG_OK. Sonst schlägt schwierigkeit.test.jsx fehl.
 export const MISSIONS = [
   // L0 geht bewusst bis zu den Axiomen — das ist ihr Thema
   { id: "m00", task: "L0 · Grundlagen — Körper & Vektorraum", base: ["rset"], steps: ["addgrpR", "fieldR", "vr"] },

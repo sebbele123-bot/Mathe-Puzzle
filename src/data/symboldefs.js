@@ -5,6 +5,9 @@
  *  `need` = nötige Symbol-ids, `distract` = verführerische Zusätze.
  * ==================================================================== */
 
+// Neue Bauaufgabe? Sie braucht eine Schwierigkeit (1–10) in
+// `data/schwierigkeit.js` — entweder in SCHWIERIGKEIT bewertet oder
+// ausdrücklich in SCHAETZUNG_OK. Sonst schlägt schwierigkeit.test.jsx fehl.
 export const SYMBOL_TASKS = [
   {
     id: "s_halbgruppe", term: "Halbgruppe", ref: "Grundlagen (Algebra)",

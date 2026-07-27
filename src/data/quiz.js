@@ -7,6 +7,10 @@
  *    { art: "abcd",   frage, optionen: [...], richtig: <Index>, hinweis }
  *    { art: "janein", frage, richtig: <bool>, hinweis }
  *  `hinweis` wird nach der Antwort gezeigt — er begründet, statt nur zu werten.
+ *
+ *  SCHWIERIGKEIT: Jede Frage braucht `schwierigkeit` (1–10). Maßstab und
+ *  Ankerbeispiele stehen in `schwierigkeit.js`; ohne den Wert schlägt
+ *  `schwierigkeit.test.jsx` fehl.
  * ==================================================================== */
 
 export const QUIZ = {
