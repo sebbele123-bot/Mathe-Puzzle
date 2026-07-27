@@ -197,6 +197,7 @@ export default function App() {
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
       ) : mode === "werkbank" ? (
         <Werkbank hand={hand} taskId={openReq.werkbank}
+          collection={collection} training={session.active}
           onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />
       ) : mode === "definition" ? (
         <StrukturBaukasten initialId={openReq.definition}

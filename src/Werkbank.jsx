@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { RotateCcw, Copy, Check, Hammer } from "lucide-react";
+import { RotateCcw, Copy, Check, Hammer, Boxes } from "lucide-react";
 import { SYM_BY_ID, symLabel } from "./data/symbols.js";
 import { glyphWithLabel } from "./data/labels.js";
 import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
@@ -10,13 +10,13 @@ import { SYMBOL_TASK_BY_ID } from "./data/symboldefs.js";
  *  Aufgabe: eine Definition aus ihren Symbol-Bausteinen zusammensetzen.
  * ==================================================================== */
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", ziel: "#1F7A63", warn: "#B26A1E" };
-const COLS = 8, ROWS = 12, N = COLS * ROWS;
+const COLS = 8, ROWS = 10, N = COLS * ROWS;
 const LS_KEY = "mp_werkbank_v2"; // v2: Zellen tragen { id, label }
 
-export default function Werkbank({ hand, taskId, onOutcome }) {
+export default function Werkbank({ hand, taskId, onOutcome, collection = [], training = false }) {
   const task = taskId ? SYMBOL_TASK_BY_ID[taskId] : null;
   if (task) return <TaskBench task={task} onOutcome={onOutcome} />;
-  return <FreeBench hand={hand} />;
+  return <FreeBench hand={hand} collection={collection} training={training} />;
 }
 
 /* --- Aufgabe: Definition aus Symbol-Bausteinen zusammensetzen -------- */
@@ -164,17 +164,23 @@ function TaskBench({ task, onOutcome }) {
 }
 
 /* --- Freies Symbol-Crafting (8×12) ---------------------------------- */
-function FreeBench({ hand }) {
+function FreeBench({ hand, collection = [], training = false }) {
   const [cells, setCells] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem(LS_KEY) || "null");
-      if (Array.isArray(s) && s.length === N) return s;
+      // auf die aktuelle Rasterhöhe bringen (gekürzt/aufgefüllt), statt zu verwerfen
+      if (Array.isArray(s)) return Array.from({ length: N }, (_, i) => s[i] ?? null);
     } catch { /* ignore */ }
     return Array(N).fill(null);
   });
   const [sel, setSel] = useState(0);
   const [copied, setCopied] = useState(false);
+  // „an die Werkbank setzen": das gesamte Inventar liegt unter der Werkbank
+  // in Reichweite. Im Training ist es von vornherein aufgeklappt.
+  const [sitting, setSitting] = useState(training);
   const gridRef = useRef(null);
+
+  useEffect(() => { if (training) setSitting(true); }, [training]);
 
   useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(cells)); } catch { /* ignore */ } }, [cells]);
 
@@ -194,7 +200,19 @@ function FreeBench({ hand }) {
     else if (active) { place(i); setSel(nextEmptyAfter(i)); } // leer → Hand-Baustein setzen
   };
 
+  // aus dem Inventar unter der Werkbank direkt in die gewählte Zelle setzen
+  const placeFromLager = (id) => {
+    setCell(sel, { id, label: null });
+    setSel(nextEmptyAfter(sel));
+  };
+
   const clearAll = () => setCells(Array(N).fill(null));
+
+  // gesammelte Bausteine in Inventar-Reihenfolge
+  const lager = useMemo(
+    () => collection.map((id) => SYM_BY_ID[id]).filter(Boolean),
+    [collection]
+  );
 
   // Ausdruck = Zeichen in Lesereihenfolge (leere Zellen übersprungen)
   const expr = useMemo(
@@ -257,7 +275,19 @@ function FreeBench({ hand }) {
               <span className="text-xs text-slate-400">—</span>
             )}
           </span>
-          <button onClick={clearAll} className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors" style={{ fontFamily: "ui-monospace, monospace" }}>
+          <button
+            onClick={() => setSitting((s) => !s)}
+            aria-pressed={sitting}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] transition-colors border"
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              background: sitting ? C.ink : "rgba(255,255,255,0.6)",
+              color: sitting ? "#fff" : C.ink,
+              borderColor: sitting ? C.ink : "#B7C3CF",
+            }}>
+            <Boxes size={12} /> {sitting ? "aufstehen" : "an die Werkbank setzen"}
+          </button>
+          <button onClick={clearAll} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors" style={{ fontFamily: "ui-monospace, monospace" }}>
             <RotateCcw size={12} /> leeren
           </button>
         </div>
@@ -300,6 +330,35 @@ function FreeBench({ hand }) {
             {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? "kopiert" : "kopieren"}
           </button>
         </div>
+
+        {/* An der Werkbank: das gesamte Inventar in Reichweite, kleiner Abstand */}
+        {sitting && (
+          <div className="mt-3 rounded-2xl border p-2" style={{ borderColor: C.line, background: "rgba(255,255,255,0.5)" }}>
+            <div className="flex items-center gap-2 px-1 pb-2">
+              <span className="text-[10px] uppercase tracking-wider text-slate-500" style={{ fontFamily: "ui-monospace, monospace" }}>Inventar</span>
+              <span className="text-[10px] text-slate-400" style={{ fontFamily: "ui-monospace, monospace" }}>{lager.length}</span>
+            </div>
+            {lager.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center px-6 py-4" style={{ fontFamily: "Georgia, serif" }}>
+                Dein Inventar ist leer.
+              </p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(50px, 1fr))", gap: 4 }}>
+                {lager.map((s) => (
+                  <button key={s.id} onClick={() => placeFromLager(s.id)}
+                    title={`${s.glyph} ${symLabel(s)} — in Zelle ${sel + 1} setzen`}
+                    className="rounded-md flex flex-col items-center justify-center transition-all"
+                    style={{ minHeight: 44, padding: "3px 1px", color: "#fff",
+                      background: `linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0)), ${s.color}`,
+                      border: "1px solid rgba(255,255,255,0.18)", cursor: "pointer" }}>
+                    <span style={{ fontFamily: "Georgia, serif", fontSize: 16, lineHeight: 1, maxWidth: "100%" }} className="truncate px-0.5">{s.glyph}</span>
+                    <span style={{ fontSize: 7, opacity: 0.85, marginTop: 1, maxWidth: "100%" }} className="truncate px-0.5 text-center">{symLabel(s)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
