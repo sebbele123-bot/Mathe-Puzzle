@@ -1,0 +1,39 @@
+name: "💡 Idee oder Feedback"
+description: "Ein Vorschlag, eine neue Aufgabe/Mission oder allgemeines Feedback zur Website."
+title: "[Idee]: "
+labels: ["enhancement", "website"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vielen Dank für deine Idee! Erzähl uns, was **Mathe-Puzzle** besser machen würde.
+
+  - type: dropdown
+    id: art
+    attributes:
+      label: Worum geht es?
+      options:
+        - Neue Definition / Aufgabe
+        - Neue Beweis-Mission
+        - Verbesserung eines bestehenden Modus
+        - Bedienung / Nutzerführung
+        - Inhaltlicher Fehler (Mathematik)
+        - Sonstiges Feedback
+    validations:
+      required: true
+
+  - type: textarea
+    id: idee
+    attributes:
+      label: Deine Idee
+      description: Beschreibe deinen Vorschlag so konkret wie möglich.
+    validations:
+      required: true
+
+  - type: textarea
+    id: nutzen
+    attributes:
+      label: Warum wäre das nützlich?
+      description: Wem hilft es und in welcher Situation?
+    validations:
+      required: false
