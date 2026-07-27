@@ -65,6 +65,7 @@ A single catalog entry is a **Karteikarte**. It offers several modes and draws *
 
 - **`bauen`** delegates to the existing crafter for that entry, with an automatic **Stufe** from the strength (`stufeFor`): weak → many prefabricated parts, strong → from scratch. Proofs use their existing `depths` (`initialDepth`); structure lessons and symbol tasks pre-supply the first *n* parts (`vorgaben`) — the last step always stays for the player.
 - **`quiz`** uses hand-written questions in `src/data/quiz.js` (`abcd` or `janein`, each with a `hinweis` that explains rather than just scoring). A card without questions simply doesn't offer the mode.
+  **The answer options are shuffled on every showing** (`mischeOptionen`) — in the raw data the correct answer sits at index 0 in 6 of 7 questions, so without shuffling "always pick the first" would score 86 % and the quiz would measure nothing. Keep `richtig` as the index into the *stored* order; the shuffle maps it. A component test fails if the shuffle is ever removed.
 - **`aufloesung`** shows the definition plus *„Wozu"* — for structures derived from `RECIPES`: which other structures consume this one.
 
 Only **Bauen** and **Quiz** award XP; the Auflösung reports nothing. The amount follows the difficulty 1–10 (see `data/schwierigkeit.js`), not the card type. `pickModus` therefore only ever draws an exercise — the Auflösung stays available as a tab but is never set as the task. `karten.js` is deliberately JSX-free so the logic is Node-testable (`karten.test.mjs`).

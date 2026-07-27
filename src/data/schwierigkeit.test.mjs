@@ -8,7 +8,7 @@ globalThis.localStorage = {
 };
 const { stufe, geschaetzt, quizSchwierigkeit, schwierigkeitFor, SCHWIERIGKEIT, MIN, MAX } =
   await import("./schwierigkeit.js");
-const { QUIZ } = await import("./quiz.js");
+const { QUIZ, mischeOptionen } = await import("./quiz.js");
 const { awardXp } = await import("./xp.js");
 
 let pass = 0, fail = 0;
@@ -93,6 +93,34 @@ const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${co
   t("Summe über 10 wirkt sich aus", awardXp("a:13", "quiz", 0, 0.5, 13).breakdown.base === 52);
   t("Unsinn in den Daten bleibt gedeckelt",
     awardXp("a:absurd", "quiz", 0, 0.5, 99999).breakdown.base === 400);
+}
+
+// --- Mischen der Antwortmöglichkeiten ----------------------------------
+{
+  const frage = { art: "abcd", optionen: ["A", "B", "C", "D"], richtig: 0 };
+
+  // Inhalt bleibt vollständig, nur die Reihenfolge ändert sich
+  let alleVollstaendig = true, richtigStimmt = true;
+  for (let i = 0; i < 200; i++) {
+    const g = mischeOptionen(frage);
+    if ([...g.optionen].sort().join() !== ["A","B","C","D"].join()) alleVollstaendig = false;
+    if (g.optionen[g.richtig] !== frage.optionen[frage.richtig]) richtigStimmt = false;
+  }
+  t("Mischen behält alle Antworten", alleVollstaendig);
+  t("richtig zeigt weiter auf denselben Text", richtigStimmt);
+
+  // die richtige Antwort landet auf allen Positionen
+  const gesehen = new Set();
+  for (let i = 0; i < 400; i++) gesehen.add(mischeOptionen(frage).richtig);
+  t("richtige Antwort erscheint auf jeder Position", gesehen.size === 4, `Positionen: ${[...gesehen].sort()}`);
+
+  // gesteuerter Zufall: nachvollziehbar statt zufällig geprüft
+  const fest = mischeOptionen(frage, () => 0);
+  t("mit festem Zufall reproduzierbar", fest.optionen.length === 4 && fest.optionen[fest.richtig] === "A");
+
+  // eine einzelne Antwort bleibt unverändert
+  const einzel = mischeOptionen({ art: "abcd", optionen: ["nur eine"], richtig: 0 });
+  t("eine Antwort bleibt an Position 0", einzel.richtig === 0);
 }
 
 console.log(`\n${pass} ok, ${fail} fehlgeschlagen`);

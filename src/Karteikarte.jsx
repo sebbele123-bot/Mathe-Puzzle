@@ -3,7 +3,7 @@ import { Check, X, BookOpen, Hammer, HelpCircle } from "lucide-react";
 import { CATALOG_BY_ID, FACH_COLOR, FACH_LABEL, TYP_COLOR, TYP_LABEL } from "./data/catalog.js";
 import { loadStats, strengthOf } from "./data/stats.js";
 import { BAUEN, QUIZ, AUFLOESUNG, modiFor, pickModus, stufeFor, vorgabenFor } from "./data/karten.js";
-import { quizFor, hasQuiz } from "./data/quiz.js";
+import { quizFor, hasQuiz, mischeOptionen } from "./data/quiz.js";
 import { schwierigkeitFor, quizSchwierigkeit } from "./data/schwierigkeit.js";
 import { splitDefinition } from "./data/defsatz.js";
 import { DEF_BY_ID } from "./data/definitions.js";
@@ -202,11 +202,15 @@ function QuizModus({ fragen, onFertig }) {
   const gemeldet = useRef(false);
 
   const f = fragen[idx];
+  // Reihenfolge der Antworten: je Aufruf der Frage neu gewürfelt, aber
+  // stabil, solange dieselbe Frage angezeigt wird.
+  const gemischt = useMemo(() => (f && f.art === "abcd" ? mischeOptionen(f) : null), [f]);
   if (!f) return null;
   const letzte = idx === fragen.length - 1;
-  const richtig = gewaehlt !== null && gewaehlt === f.richtig;
+  const richtigWert = f.art === "janein" ? f.richtig : gemischt.richtig;
+  const richtig = gewaehlt !== null && gewaehlt === richtigWert;
 
-  const antworten = (wert) => { if (gewaehlt === null) { setGewaehlt(wert); if (wert !== f.richtig) fehler.current += 1; } };
+  const antworten = (wert) => { if (gewaehlt === null) { setGewaehlt(wert); if (wert !== richtigWert) fehler.current += 1; } };
   const weiter = () => {
     if (letzte) {
       if (!gemeldet.current) { gemeldet.current = true; onFertig(fehler.current, quizSchwierigkeit(fragen)); }
@@ -217,7 +221,7 @@ function QuizModus({ fragen, onFertig }) {
 
   const optionen = f.art === "janein"
     ? [{ wert: true, text: "ja" }, { wert: false, text: "nein" }]
-    : f.optionen.map((text, i) => ({ wert: i, text }));
+    : gemischt.optionen.map((text, i) => ({ wert: i, text }));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-5">
@@ -230,7 +234,7 @@ function QuizModus({ fragen, onFertig }) {
       <div className="flex flex-col gap-2">
         {optionen.map((o) => {
           const dieseGewaehlt = gewaehlt !== null && gewaehlt === o.wert;
-          const dieseRichtig = gewaehlt !== null && o.wert === f.richtig;
+          const dieseRichtig = gewaehlt !== null && o.wert === richtigWert;
           const farbe = dieseRichtig ? C.ziel : dieseGewaehlt ? C.falsch : C.line;
           return (
             <button key={String(o.wert)} onClick={() => antworten(o.wert)} disabled={gewaehlt !== null}

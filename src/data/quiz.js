@@ -174,3 +174,24 @@ export const hasQuiz = (catalogId) => quizFor(catalogId).length > 0;
 /** Ist eine Antwort richtig? (Index bei abcd, Bool bei ja/nein) */
 export const istRichtig = (frage, antwort) =>
   frage.art === "janein" ? antwort === frage.richtig : antwort === frage.richtig;
+
+/**
+ * Antwortmöglichkeiten mischen — bei jedem Aufruf der Frage neu.
+ * Ohne das trüge die Position Information: in den Daten steht die
+ * richtige Antwort fast immer vorn, „immer die erste" käme damit weit.
+ * Gemischt wird nur die Anzeige; `richtig` in den Daten bleibt, wie es ist.
+ *
+ * @returns { optionen, richtig } — Texte in neuer Reihenfolge und der
+ *          Index, an dem die richtige Antwort jetzt steht.
+ */
+export function mischeOptionen(frage, rnd = Math.random) {
+  const reihenfolge = frage.optionen.map((_, i) => i);
+  for (let i = reihenfolge.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [reihenfolge[i], reihenfolge[j]] = [reihenfolge[j], reihenfolge[i]];
+  }
+  return {
+    optionen: reihenfolge.map((i) => frage.optionen[i]),
+    richtig: reihenfolge.indexOf(frage.richtig),
+  };
+}

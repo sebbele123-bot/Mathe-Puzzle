@@ -91,6 +91,33 @@ describe("Karteikarte", () => {
     expect(beanstandet).toEqual([]);
   });
 
+  // In den Daten steht die richtige Antwort fast immer vorn. Ohne Mischen
+  // käme „immer die erste" durch — dann misst das Quiz nichts mehr.
+  // Dass alle vier Positionen vorkommen, prüft der reine Test in
+  // schwierigkeit.test.mjs mit 400 Ziehungen; hier geht es nur darum,
+  // dass das Mischen in der Oberfläche wirklich angeschlossen ist und
+  // die Bewertung der Position folgt.
+  it("mischt die Antworten und bewertet trotzdem die richtige", () => {
+    const positionen = new Set();
+    for (let i = 0; i < 12; i++) {
+      const onOutcome = vi.fn();
+      const { unmount } = render(<Karteikarte catalogId={KARTE} onOutcome={onOutcome} />);
+      fireEvent.click(screen.getByRole("button", { name: "Quiz" }));
+
+      const antworten = screen.getAllByRole("button")
+        .filter((b) => /Bilinearform|Vektorraum \+ Dimension|Linearform/.test(b.textContent));
+      positionen.add(antworten.findIndex((b) => RICHTIG.test(b.textContent)));
+
+      // egal an welcher Stelle sie steht: die inhaltlich richtige zählt
+      fireEvent.click(screen.getByRole("button", { name: RICHTIG }));
+      fireEvent.click(screen.getByRole("button", { name: "fertig" }));
+      expect(onOutcome).toHaveBeenCalledWith(KARTE, "quiz", 0, 3);
+      unmount();
+    }
+    // die Position ist nicht mehr fest — sonst trüge sie wieder Information
+    expect(positionen.size).toBeGreaterThan(1);
+  });
+
   it("gibt einer mehrstufigen Beweiskarte die leichteste Stufe, wenn sie neu ist", () => {
     render(<Karteikarte catalogId="proof:p_fixpunkt" />);
     fireEvent.click(screen.getByRole("button", { name: "Bauen" }));
