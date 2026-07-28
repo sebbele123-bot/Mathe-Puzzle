@@ -16,6 +16,12 @@ export default function Steckbrief({ defId, onBack, onReview }) {
   const d = DEFINITIONS[idx] || DEF_BY_ID[defId] || DEFINITIONS[0];
   const color = THEME_COLOR[d.t] || C.begriff;
 
+  // eine neu angeforderte Karte auch ohne Neu-Mounten aufschlagen
+  useEffect(() => {
+    const i = DEFINITIONS.findIndex((x) => x.id === defId);
+    if (i >= 0) setIdx(i);
+  }, [defId]);
+
   // jede angezeigte Definition als "gesehen" werten (fließt in die Rotations-Gewichtung)
   useEffect(() => { if (d) onReview?.(d.id); }, [d?.id]); // eslint-disable-line
 

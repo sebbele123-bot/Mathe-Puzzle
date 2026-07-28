@@ -18,6 +18,7 @@ const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null, werkbank: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [reqSeq, setReqSeq] = useState(0); // zählt jede Anforderung — erzwingt ein Neu-Mounten der Ansicht
   const [hand, setHand] = useState(null); // { id, label } aus der Hand (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [xpState, setXpState] = useState(() => levelFromXp(loadXp().xp)); // Level & Fortschritt
@@ -33,9 +34,12 @@ export default function App() {
   const rootRef = useRef(null);
 
   // Aus der Bibliothek eine Mission öffnen: passende Ansicht wählen + laden.
-  // Die Ansichten werden beim Moduswechsel neu gemountet und lesen dann initialId.
+  // Der mitgezählte reqSeq geht in den key der Ansicht: sie wird auch dann neu
+  // gemountet, wenn Modus UND Mission dieselben bleiben (Weiter-Schleife zieht
+  // sonst ins Leere, weil sich keine Prop ändert).
   const openFromLibrary = useCallback((targetMode, targetId) => {
     setOpenReq((r) => ({ ...r, [targetMode]: targetId }));
+    setReqSeq((n) => n + 1);
     setMode(targetMode);
   }, []);
 
@@ -51,7 +55,8 @@ export default function App() {
 
   // nächstes Element der Rotation: gewichteter Zufalls-Zug (Schwächen häufiger)
   const nextInRotation = useCallback((exclude = null) => {
-    const ids = loadRotation();
+    // gemerkte Einträge, die es im Katalog nicht mehr gibt, überspringen
+    const ids = loadRotation().filter((id) => CATALOG_BY_ID[id]);
     if (!ids.length) return false;
     const pick = pickWeighted(ids, loadStats(), exclude);
     const item = CATALOG_BY_ID[pick];
@@ -193,18 +198,18 @@ export default function App() {
       ) : mode === "training" ? (
         <Training onOpen={openFromLibrary} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
       ) : mode === "steckbrief" ? (
-        <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
+        <Steckbrief key={`steckbrief:${reqSeq}`} defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
           onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
       ) : mode === "werkbank" ? (
-        <Werkbank hand={hand} taskId={openReq.werkbank}
+        <Werkbank key={`werkbank:${reqSeq}`} hand={hand} taskId={openReq.werkbank}
           onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />
       ) : mode === "definition" ? (
-        <StrukturBaukasten initialId={openReq.definition}
+        <StrukturBaukasten key={`definition:${reqSeq}`} initialId={openReq.definition}
           onOutcome={(missionId, fails) => recordStat(`def:${missionId}`, "definition", fails)} />
       ) : mode === "bausteine" ? (
         <OpenMathPalette collected={collectedSet} onCollect={collect} />
       ) : (
-        <BeweisCrafter initialId={openReq.beweis}
+        <BeweisCrafter key={`beweis:${reqSeq}`} initialId={openReq.beweis}
           onOutcome={(missionId, fails) => recordStat(`proof:${missionId}`, "beweis", fails)} />
       )}
 
