@@ -138,6 +138,47 @@ export const SCHAETZUNG_OK = new Set([
 export const schwierigkeitFor = (catalogId, roh) =>
   SCHWIERIGKEIT[catalogId] ?? geschaetzt(roh);
 
+/* --------------------------------------------------------------------
+ *  Quizfragen werden nicht mit einer Zahl bewertet, sondern aus drei
+ *  Bestandteilen abgeleitet. Jeder ist für sich zu begründen — und für
+ *  sich zu bestreiten. Die Zahl kann so nicht driften, und man sieht
+ *  jeder Frage an, warum sie ist, was sie ist.
+ * ------------------------------------------------------------------ */
+
+/** Was muss man mit dem Wissen tun? (Hauptachse) */
+export const ANFORDERUNG = {
+  nachschlagen: 1, // die Antwort steht wörtlich in der Definition
+  unterscheiden: 2, // zwei Nachbarbegriffe auseinanderhalten
+  folgern: 3,       // etwas, das nirgends steht, aber folgt
+  grenzfall: 4,     // wissen, wo es bricht — braucht ein Gegenbeispiel
+  beweisidee: 5,    // den tragenden Schritt erkennen
+};
+
+/** Wie nah liegen die falschen Antworten? (nur bei ABCD) */
+export const DISTRAKTOREN = {
+  fern: 0,      // die richtige Antwort sticht heraus
+  plausibel: 1, // klingen möglich, treffen aber ein anderes Thema
+  nah: 2,       // unterscheiden sich nur in einer Bedingung
+};
+
+// Rate-Chance: ja/nein trifft man zur Hälfte, ABCD zu einem Viertel.
+// Eine richtige Antwort belegt dort also weniger.
+const RATE_ABZUG = { janein: 1, abcd: 0 };
+
+/**
+ * Schwierigkeit einer Quizfrage aus ihren Bestandteilen.
+ * @returns 1–10, oder null wenn die Angaben unbrauchbar sind
+ *          (der Test macht das sichtbar, statt still eine 1 zu vergeben)
+ */
+export function frageSchwierigkeit(frage) {
+  if (!frage) return null;
+  const a = ANFORDERUNG[frage.anforderung];
+  if (!Number.isFinite(a)) return null;
+  const d = frage.art === "abcd" ? DISTRAKTOREN[frage.distraktoren] : 0;
+  if (!Number.isFinite(d)) return null;
+  return stufe(a + d - (RATE_ABZUG[frage.art] ?? 0));
+}
+
 /**
  * Schwierigkeit eines Quizdurchgangs: Summe der gestellten Fragen.
  * Jede Frage trägt ihre eigene Stufe bei — mehr Fragen bringen also mehr,
@@ -145,7 +186,7 @@ export const schwierigkeitFor = (catalogId, roh) =>
  * Skala 1–10 gilt je Frage, nicht für den ganzen Durchgang.
  */
 export function quizSchwierigkeit(fragen) {
-  const werte = (fragen || []).map((f) => f.schwierigkeit).filter(Number.isFinite);
+  const werte = (fragen || []).map(frageSchwierigkeit).filter(Number.isFinite);
   if (!werte.length) return MIN;
   return Math.max(MIN, Math.round(werte.reduce((a, b) => a + b, 0)));
 }

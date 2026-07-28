@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { CATALOG, CATALOG_BY_ID } from "./catalog.js";
 import { istUebbar, kannBauen } from "./karten.js";
-import { SCHWIERIGKEIT, SCHAETZUNG_OK, MIN, MAX } from "./schwierigkeit.js";
+import { SCHWIERIGKEIT, SCHAETZUNG_OK, MIN, MAX, frageSchwierigkeit } from "./schwierigkeit.js";
 import { QUIZ } from "./quiz.js";
 
 const bauaufgaben = CATALOG.filter((c) => istUebbar(c) && kannBauen(c));
@@ -20,15 +20,24 @@ describe("Schwierigkeit — Vollständigkeit", () => {
     expect(offen).toEqual([]);
   });
 
-  it("jede Quizfrage trägt eine Schwierigkeit in 1–10", () => {
+  // Die Zahl wird abgeleitet, nicht getippt — fehlt ein Bestandteil,
+  // ergibt frageSchwierigkeit null und diese Prüfung nennt die Frage.
+  it("jede Quizfrage ergibt aus ihren Bestandteilen eine Schwierigkeit in 1–10", () => {
     const schlecht = [];
     for (const [id, fragen] of Object.entries(QUIZ))
       fragen.forEach((f, i) => {
-        if (!Number.isFinite(f.schwierigkeit)) schlecht.push(`${id}[${i}] ohne Schwierigkeit`);
-        else if (f.schwierigkeit < MIN || f.schwierigkeit > MAX)
-          schlecht.push(`${id}[${i}] = ${f.schwierigkeit} außerhalb 1–10`);
+        const w = frageSchwierigkeit(f);
+        if (w === null) schlecht.push(`${id}[${i}]: anforderung/distraktoren fehlen oder sind unbekannt`);
+        else if (w < MIN || w > MAX) schlecht.push(`${id}[${i}] = ${w} außerhalb 1–10`);
       });
     expect(schlecht).toEqual([]);
+  });
+
+  it("tippt die Schwierigkeit nirgends von Hand", () => {
+    const getippt = [];
+    for (const [id, fragen] of Object.entries(QUIZ))
+      fragen.forEach((f, i) => { if ("schwierigkeit" in f) getippt.push(`${id}[${i}]`); });
+    expect(getippt).toEqual([]);
   });
 });
 

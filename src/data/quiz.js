@@ -8,9 +8,12 @@
  *    { art: "janein", frage, richtig: <bool>, hinweis }
  *  `hinweis` wird nach der Antwort gezeigt — er begründet, statt nur zu werten.
  *
- *  SCHWIERIGKEIT: Jede Frage braucht `schwierigkeit` (1–10). Maßstab und
- *  Ankerbeispiele stehen in `schwierigkeit.js`; ohne den Wert schlägt
- *  `schwierigkeit.test.jsx` fehl.
+ *  SCHWIERIGKEIT wird nicht getippt, sondern abgeleitet. Jede Frage
+ *  braucht zwei Angaben (bei ja/nein nur die erste):
+ *    anforderung:  nachschlagen | unterscheiden | folgern | grenzfall | beweisidee
+ *    distraktoren: fern | plausibel | nah      (nur bei „abcd")
+ *  Was die Stufen bedeuten, steht in `schwierigkeit.js`. Fehlt eine
+ *  Angabe, schlägt `schwierigkeit.test.jsx` fehl.
  * ==================================================================== */
 
 export const QUIZ = {
@@ -18,7 +21,8 @@ export const QUIZ = {
   "defcard:d01": [
     {
       art: "abcd",
-      schwierigkeit: 3,
+      anforderung: "unterscheiden",
+      distraktoren: "fern",
       frage: "Welche Eigenschaft gehört nicht zur Definition eines Skalarprodukts?",
       optionen: ["Bilinearität", "Symmetrie", "positive Definitheit", "Assoziativität"],
       richtig: 3,
@@ -26,7 +30,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
-      schwierigkeit: 2,
+      anforderung: "nachschlagen",
       frage: "Positive Definitheit bedeutet s(v,v) > 0 für alle v ≠ 0.",
       richtig: true,
       hinweis: "Genau das ist die Bedingung — für v = 0 ist s(0,0) = 0.",
@@ -35,7 +39,7 @@ export const QUIZ = {
   "defcard:d02": [
     {
       art: "janein",
-      schwierigkeit: 3,
+      anforderung: "nachschlagen",
       frage: "O(Z,s) besteht aus den Elementen von GL(Z), die das Skalarprodukt erhalten.",
       richtig: true,
       hinweis: "O(Z,s) = { g ∈ GL(Z) | s(gv,gw) = s(v,w) für alle v,w }.",
@@ -46,7 +50,8 @@ export const QUIZ = {
   "def:dA1": [
     {
       art: "abcd",
-      schwierigkeit: 3,
+      anforderung: "nachschlagen",
+      distraktoren: "nah",
       frage: "Aus welchen drei Zutaten baust du das Skalarprodukt?",
       optionen: [
         "Bilinearform + symmetrisch + positiv definit",
@@ -61,7 +66,8 @@ export const QUIZ = {
   "def:dA9": [
     {
       art: "abcd",
-      schwierigkeit: 2,
+      anforderung: "nachschlagen",
+      distraktoren: "nah",
       frage: "Wie ist ein Strahl aufgebaut?",
       optionen: [
         "ℝ≥0 · v für einen Vektor v ≠ 0",
@@ -74,7 +80,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
-      schwierigkeit: 3,
+      anforderung: "grenzfall",
       frage: "Auch der Nullvektor ist als Richtung eines Strahls zugelassen.",
       richtig: false,
       hinweis: "Es wird v ≠ 0 verlangt, sonst wäre die Menge nur {0}.",
@@ -85,14 +91,15 @@ export const QUIZ = {
   "proof:p_neutral": [
     {
       art: "janein",
-      schwierigkeit: 4,
+      anforderung: "folgern",
       frage: "In einer Menge mit assoziativer Verknüpfung kann es zwei verschiedene neutrale Elemente geben.",
       richtig: false,
       hinweis: "Sind e und e′ beide neutral, so gilt e = e∘e′ = e′.",
     },
     {
       art: "abcd",
-      schwierigkeit: 5,
+      anforderung: "beweisidee",
+      distraktoren: "plausibel",
       frage: "Welcher Ausdruck trägt den Beweis?",
       optionen: [
         "e∘e′ — einmal von links, einmal von rechts ausgewertet",
@@ -109,7 +116,8 @@ export const QUIZ = {
   "sym:s_halbgruppe": [
     {
       art: "abcd",
-      schwierigkeit: 2,
+      anforderung: "unterscheiden",
+      distraktoren: "nah",
       frage: "Was macht eine Menge mit Verknüpfung zur Halbgruppe?",
       optionen: [
         "abgeschlossen und assoziativ",
@@ -122,7 +130,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
-      schwierigkeit: 3,
+      anforderung: "folgern",
       frage: "Jedes Monoid ist auch eine Halbgruppe.",
       richtig: true,
       hinweis: "Ein Monoid ist eine Halbgruppe mit neutralem Element — die Halbgruppen-Eigenschaften bleiben erhalten.",
@@ -131,7 +139,8 @@ export const QUIZ = {
   "sym:s_gruppe": [
     {
       art: "abcd",
-      schwierigkeit: 2,
+      anforderung: "unterscheiden",
+      distraktoren: "nah",
       frage: "Was fehlt einem Monoid noch zur Gruppe?",
       optionen: [
         "zu jedem Element ein inverses",
@@ -144,7 +153,7 @@ export const QUIZ = {
     },
     {
       art: "janein",
-      schwierigkeit: 3,
+      anforderung: "grenzfall",
       frage: "Jede Gruppe ist kommutativ.",
       richtig: false,
       hinweis: "Nur abelsche Gruppen sind kommutativ — die Drehspiegelgruppe zum Beispiel ist es nicht.",
@@ -153,7 +162,8 @@ export const QUIZ = {
   "sym:s_koerper": [
     {
       art: "abcd",
-      schwierigkeit: 4,
+      anforderung: "unterscheiden",
+      distraktoren: "plausibel",
       frage: "Wodurch wird aus einem Ring ein Körper?",
       optionen: [
         "kommutative Multiplikation und Inverse für alle Elemente ≠ 0",

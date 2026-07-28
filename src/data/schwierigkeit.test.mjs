@@ -6,10 +6,14 @@ globalThis.localStorage = {
   setItem: (k, v) => { store[k] = String(v); },
   removeItem: (k) => { delete store[k]; },
 };
-const { stufe, geschaetzt, quizSchwierigkeit, schwierigkeitFor, SCHWIERIGKEIT, MIN, MAX } =
+const { stufe, geschaetzt, quizSchwierigkeit, schwierigkeitFor, frageSchwierigkeit,
+        ANFORDERUNG, DISTRAKTOREN, SCHWIERIGKEIT, MIN, MAX } =
   await import("./schwierigkeit.js");
 const { QUIZ, mischeOptionen } = await import("./quiz.js");
 const { awardXp } = await import("./xp.js");
+
+const abcd = (anforderung, distraktoren) => ({ art: "abcd", anforderung, distraktoren });
+const janein = (anforderung) => ({ art: "janein", anforderung });
 
 let pass = 0, fail = 0;
 const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${cond ? "ok  " : "FAIL"} ${name}${info ? "  " + info : ""}`); };
@@ -43,31 +47,64 @@ const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${co
   t("ohne Handbewertung wird geschätzt", schwierigkeitFor("def:gibtsnicht", 24) === 10);
 }
 
-// --- Quizdurchgang: Summe der Fragen ----------------------------------
+// --- Schwierigkeit aus den Bestandteilen -------------------------------
 {
-  t("Summe zweier Fragen", quizSchwierigkeit([{ schwierigkeit: 2 }, { schwierigkeit: 4 }]) === 6);
-  t("einzelne Frage", quizSchwierigkeit([{ schwierigkeit: 7 }]) === 7);
-  t("mehr Fragen → höherer Wert",
-    quizSchwierigkeit([{ schwierigkeit: 3 }, { schwierigkeit: 3 }]) >
-    quizSchwierigkeit([{ schwierigkeit: 3 }]));
-  t("schwerere Fragen → höherer Wert bei gleicher Anzahl",
-    quizSchwierigkeit([{ schwierigkeit: 5 }, { schwierigkeit: 5 }]) >
-    quizSchwierigkeit([{ schwierigkeit: 2 }, { schwierigkeit: 2 }]));
-  t("Summe darf 10 überschreiten",
-    quizSchwierigkeit([{ schwierigkeit: 6 }, { schwierigkeit: 7 }]) === 13);
-  t("ohne Fragen → 1", quizSchwierigkeit([]) === MIN && quizSchwierigkeit(null) === MIN);
-  t("unbewertete Fragen zählen nicht mit", quizSchwierigkeit([{ schwierigkeit: 6 }, {}]) === 6);
+  t("Nachschlagen mit fernen Distraktoren ist am leichtesten",
+    frageSchwierigkeit(abcd("nachschlagen", "fern")) === 1);
+  t("Beweisidee mit nahen Distraktoren ist am schwersten",
+    frageSchwierigkeit(abcd("beweisidee", "nah")) === 7);
+  t("nähere Distraktoren machen dieselbe Frage schwerer",
+    frageSchwierigkeit(abcd("unterscheiden", "nah")) >
+    frageSchwierigkeit(abcd("unterscheiden", "fern")));
+  t("höhere Anforderung wiegt schwerer",
+    frageSchwierigkeit(abcd("grenzfall", "fern")) >
+    frageSchwierigkeit(abcd("nachschlagen", "fern")));
+
+  // Rate-Chance: dieselbe Anforderung als ja/nein zählt weniger
+  t("ja/nein zählt weniger als ABCD bei gleicher Anforderung",
+    frageSchwierigkeit(janein("folgern")) < frageSchwierigkeit(abcd("folgern", "fern")));
+  t("ja/nein bleibt bei 1, wenn nur nachgeschlagen wird",
+    frageSchwierigkeit(janein("nachschlagen")) === 1);
+
+  // unbrauchbare Angaben werden nicht stillschweigend zu einer 1
+  t("unbekannte Anforderung → null", frageSchwierigkeit(abcd("erfunden", "nah")) === null);
+  t("fehlende Distraktoren bei ABCD → null", frageSchwierigkeit({ art: "abcd", anforderung: "folgern" }) === null);
+  t("ohne Frage → null", frageSchwierigkeit(null) === null);
+  t("ja/nein braucht keine Distraktoren", frageSchwierigkeit(janein("grenzfall")) === 3);
 }
 
-// --- alle Quizfragen sind bewertet ------------------------------------
+// --- Quizdurchgang: Summe der Fragen ----------------------------------
 {
-  const ohne = [];
+  t("Summe zweier Fragen",
+    quizSchwierigkeit([janein("nachschlagen"), abcd("unterscheiden", "nah")]) === 1 + 4);
+  t("einzelne Frage", quizSchwierigkeit([abcd("beweisidee", "plausibel")]) === 6);
+  t("mehr Fragen → höherer Wert",
+    quizSchwierigkeit([abcd("folgern", "nah"), abcd("folgern", "nah")]) >
+    quizSchwierigkeit([abcd("folgern", "nah")]));
+  t("schwerere Fragen → höherer Wert bei gleicher Anzahl",
+    quizSchwierigkeit([abcd("beweisidee", "nah")]) >
+    quizSchwierigkeit([abcd("nachschlagen", "fern")]));
+  t("Summe darf 10 überschreiten",
+    quizSchwierigkeit([abcd("beweisidee", "nah"), abcd("beweisidee", "nah")]) === 14);
+  t("ohne Fragen → 1", quizSchwierigkeit([]) === MIN && quizSchwierigkeit(null) === MIN);
+  t("unbrauchbare Fragen zählen nicht mit",
+    quizSchwierigkeit([abcd("grenzfall", "fern"), { art: "abcd" }]) === 4);
+}
+
+// --- alle Quizfragen tragen brauchbare Bestandteile -------------------
+{
+  const schlecht = [];
   for (const [id, fragen] of Object.entries(QUIZ))
     fragen.forEach((f, i) => {
-      if (!Number.isFinite(f.schwierigkeit)) ohne.push(`${id}[${i}]`);
-      else if (f.schwierigkeit < MIN || f.schwierigkeit > MAX) ohne.push(`${id}[${i}]=${f.schwierigkeit}`);
+      const w = frageSchwierigkeit(f);
+      if (w === null) schlecht.push(`${id}[${i}] unbrauchbar`);
+      else if (w < MIN || w > MAX) schlecht.push(`${id}[${i}] = ${w}`);
     });
-  t("jede Quizfrage trägt eine Schwierigkeit in 1–10", ohne.length === 0, ohne.join(", "));
+  t("jede Quizfrage ergibt eine Schwierigkeit in 1–10", schlecht.length === 0, schlecht.join(", "));
+  t("Anforderung und Distraktoren sind bekannte Stufen",
+    Object.values(QUIZ).flat().every((f) =>
+      ANFORDERUNG[f.anforderung] != null &&
+      (f.art !== "abcd" || DISTRAKTOREN[f.distraktoren] != null)));
 }
 
 // --- Wirkung auf die XP ------------------------------------------------
@@ -87,8 +124,8 @@ const t = (name, cond, info = "") => { cond ? pass++ : fail++; console.log(`${co
   const ohne = awardXp("a:ohne", "beweis", 0, 0.5);
   t("ohne Schwierigkeit gilt der Typ-Grundwert", ohne.breakdown.base === 18);
   // ein längeres Quiz bringt mehr als ein kürzeres mit denselben Fragen
-  const kurz = awardXp("q:kurz", "quiz", 0, 0.5, quizSchwierigkeit([{ schwierigkeit: 3 }]));
-  const lang = awardXp("q:lang", "quiz", 0, 0.5, quizSchwierigkeit([{ schwierigkeit: 3 }, { schwierigkeit: 3 }]));
+  const kurz = awardXp("q:kurz", "quiz", 0, 0.5, quizSchwierigkeit([abcd("nachschlagen", "nah")]));
+  const lang = awardXp("q:lang", "quiz", 0, 0.5, quizSchwierigkeit([abcd("nachschlagen", "nah"), abcd("nachschlagen", "nah")]));
   t("mehr Fragen bringen mehr XP", lang.gained > kurz.gained, `${kurz.gained} vs ${lang.gained}`);
   t("Summe über 10 wirkt sich aus", awardXp("a:13", "quiz", 0, 0.5, 13).breakdown.base === 52);
   t("Unsinn in den Daten bleibt gedeckelt",
