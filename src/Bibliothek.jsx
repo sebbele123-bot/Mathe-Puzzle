@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from "react";
 import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Target, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   CATALOG_SORTED, FAECHER, TYPEN, RUBRIKEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
-  ALL_TAGS, countBy, loadRotation, saveRotation,
+  ALL_TAGS, countBy, loadRotation, saveRotation, isAbfragbar,
 } from "./data/catalog.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", muted: "#5b6875" };
@@ -11,7 +11,7 @@ const TYP_COUNTS = countBy("typ");
 
 /* ====================================================================
  *  Bibliothek — ein Verzeichnis über alles Material mit Filtern.
- *  onOpen(mode, targetId) springt in die passende Ansicht und lädt sie.
+ *  onOpen(mode, targetId, catalogId) springt in die passende Ansicht und lädt sie.
  * ==================================================================== */
 export default function Bibliothek({ onOpen, onStartRotation }) {
   // Mehrfachauswahl: Fach/Typ/Thema sind Listen (leer = alle)
@@ -33,7 +33,9 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
   const toggleTagSel = toggleIn(setTag);
 
   const inRot = useCallback((id) => rotation.includes(id), [rotation]);
+  // nur abfragbares Material (Bau-, Beweis-, Symbol-Aufgaben) darf in die Rotation
   const toggleRot = useCallback((id) => {
+    if (!isAbfragbar(id)) return;
     setRotation((r) => {
       const next = r.includes(id) ? r.filter((x) => x !== id) : [...r, id];
       saveRotation(next);
@@ -205,7 +207,7 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
                       <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {qg.items.map((c) => (
-                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId)} />
+                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId, c.id)} />
                         ))}
                       </div>
                     </div>
@@ -247,13 +249,15 @@ function ItemCard({ item, inRot, onToggleRot, onOpen }) {
           ))}
         </div>
       </button>
-      {/* Aktionen */}
+      {/* Aktionen — Lesekarten stellen keine Frage und lassen sich nicht üben */}
       <div className="shrink-0 flex flex-col border-l" style={{ borderColor: C.line }}>
-        <button onClick={onToggleRot} title={inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
-          className="flex-1 flex items-center justify-center px-2.5 transition-colors"
-          style={{ background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E", borderBottom: `1px solid ${C.line}` }}>
-          {inRot ? <Check size={15} /> : <Plus size={15} />}
-        </button>
+        {item.abfragbar && (
+          <button onClick={onToggleRot} title={inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
+            className="flex-1 flex items-center justify-center px-2.5 transition-colors"
+            style={{ background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E", borderBottom: `1px solid ${C.line}` }}>
+            {inRot ? <Check size={15} /> : <Plus size={15} />}
+          </button>
+        )}
         <button onClick={onOpen} title="öffnen" className="flex-1 flex items-center justify-center px-2.5 text-slate-500 hover:text-slate-800 transition-colors">
           <ArrowRight size={15} />
         </button>

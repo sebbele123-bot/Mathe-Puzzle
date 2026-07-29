@@ -7,9 +7,10 @@
  * ==================================================================== */
 const KEY = "mp_xp_v1";
 
-const BASE = { beweis: 18, definition: 10, steckbrief: 4 };
+const BASE = { beweis: 18, definition: 10 };
 const CLEAN_BONUS = 6;
 const FIRST_SOLVE_BONUS = 10;
+const FIRST_CONTACT = 4; // einmalig fürs erste Aufschlagen einer Rotationskarte
 const REPEAT = [1, 0.4, 0.2, 0.1]; // 1., 2., 3., ab 4. Mal am selben Tag
 
 // Bedarf für den Aufstieg von `level` auf `level+1`
@@ -26,7 +27,7 @@ export function levelFromXp(totalXp) {
 
 const dayKey = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 
-const empty = () => ({ xp: 0, day: dayKey(), perItemToday: {}, solved: [], streak: 0, lastDay: null });
+const empty = () => ({ xp: 0, day: dayKey(), perItemToday: {}, solved: [], seen: [], streak: 0, lastDay: null });
 
 export function loadXp() {
   try {
@@ -40,9 +41,33 @@ export function saveXp(s) {
 }
 
 /**
+ * Erster Kontakt mit einer Rotationskarte: das Aufschlagen und Lesen wird
+ * einmalig belohnt — danach zählt nur noch das Lösen.
+ * @param id  Katalog-id der Karte
+ * @returns { gained, total, level, leveledUp, kind } oder null, wenn die Karte
+ *          schon einmal aufgeschlagen wurde
+ */
+export function awardFirstContact(id) {
+  if (!id) return null;
+  const s = loadXp();
+  if (s.seen.includes(id)) return null;
+
+  const beforeLevel = levelFromXp(s.xp).level;
+  s.seen = [...s.seen, id];
+  s.xp += FIRST_CONTACT;
+  saveXp(s);
+
+  const after = levelFromXp(s.xp);
+  return {
+    gained: FIRST_CONTACT, total: s.xp, level: after.level,
+    leveledUp: after.level > beforeLevel, kind: "erstkontakt",
+  };
+}
+
+/**
  * XP für eine abgeschlossene Übung vergeben.
  * @param id             Katalog-id
- * @param kind           "beweis" | "definition" | "steckbrief"
+ * @param kind           "beweis" | "definition"
  * @param fails          gemessene Fehlversuche
  * @param strengthBefore Stärke VOR dieser Übung (null = ungeübt)
  * @returns { gained, total, level, leveledUp, streak, breakdown }

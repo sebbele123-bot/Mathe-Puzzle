@@ -21,7 +21,7 @@ export const saveStats = (s) => {
 
 /**
  * Ergebnis einer Übung festhalten.
- * @param id     Katalog-id (z. B. "def:dB17", "proof:p_cos41", "defcard:d01")
+ * @param id     Katalog-id (z. B. "def:dB17", "proof:p_cos41", "sym:s_gruppe")
  * @param fails  gemessene Fehlversuche in dieser Sitzung (0 = fehlerfrei)
  */
 export function recordOutcome(id, fails = 0) {

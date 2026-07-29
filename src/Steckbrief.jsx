@@ -1,32 +1,26 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Check, BookOpen } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { DEFINITIONS, DEF_BY_ID, DEF_THEMES } from "./data/definitions.js";
-import { loadRotation, saveRotation } from "./data/catalog.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", begriff: "#6B4E9E", ziel: "#1F7A63" };
 const THEME_COLOR = ["#31597F", "#6B4E9E", "#1F7A63", "#B26A1E", "#2E6B7D"];
 
 /* ====================================================================
  *  Steckbrief — Lese-Ansicht einer Kern-Definition.
- *  Blättern durch alle Definitionen, in die Rotation legbar.
+ *  Blättern durch alle Definitionen. Reine Lesekarte: sie stellt keine
+ *  Frage, gehört darum nicht in die Rotation und vergibt keine XP.
  * ==================================================================== */
-export default function Steckbrief({ defId, onBack, onReview }) {
+export default function Steckbrief({ defId, onBack }) {
   const startIdx = Math.max(0, DEFINITIONS.findIndex((d) => d.id === defId));
   const [idx, setIdx] = useState(startIdx);
   const d = DEFINITIONS[idx] || DEF_BY_ID[defId] || DEFINITIONS[0];
   const color = THEME_COLOR[d.t] || C.begriff;
 
-  // jede angezeigte Definition als "gesehen" werten (fließt in die Rotations-Gewichtung)
-  useEffect(() => { if (d) onReview?.(d.id); }, [d?.id]); // eslint-disable-line
-
-  const [rotation, setRotation] = useState(() => loadRotation());
-  const rotId = `defcard:${d.id}`;
-  const inRot = rotation.includes(rotId);
-  const toggleRot = () => setRotation((r) => {
-    const next = r.includes(rotId) ? r.filter((x) => x !== rotId) : [...r, rotId];
-    saveRotation(next);
-    return next;
-  });
+  // eine neu angeforderte Karte auch ohne Neu-Mounten aufschlagen
+  useEffect(() => {
+    const i = DEFINITIONS.findIndex((x) => x.id === defId);
+    if (i >= 0) setIdx(i);
+  }, [defId]);
 
   const go = (delta) => setIdx((i) => Math.min(DEFINITIONS.length - 1, Math.max(0, i + delta)));
 
@@ -77,14 +71,9 @@ export default function Steckbrief({ defId, onBack, onReview }) {
             )}
           </div>
 
-          <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderTop: `1px solid ${C.line}` }}>
-            <button onClick={toggleRot}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm border transition-colors"
-              style={{ fontFamily: "ui-monospace, monospace",
-                background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E",
-                borderColor: inRot ? "#B26A1E" : "#E0B77A" }}>
-              {inRot ? <><Check size={14} /> in Rotation</> : <><Plus size={14} /> in Rotation</>}
-            </button>
+          <div className="px-4 py-2.5 flex items-center gap-2 text-[11px] text-slate-500"
+            style={{ borderTop: `1px solid ${C.line}`, fontFamily: "ui-monospace, monospace" }}>
+            Lesekarte — ohne Frage, darum nicht in der Rotation.
           </div>
         </div>
 

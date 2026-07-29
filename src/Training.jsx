@@ -102,11 +102,11 @@ export default function Training({ onOpen, onStart, onBrowse }) {
                 const st = stats[c.id];
                 return (
                   <div key={c.id} className="rounded-xl border flex items-stretch overflow-hidden" style={{ background: "#fff", borderColor: C.line }}>
-                    <button onClick={() => onOpen(c.mode, c.targetId)} className="shrink-0 flex items-center justify-center px-2.5"
+                    <button onClick={() => onOpen(c.mode, c.targetId, c.id)} className="shrink-0 flex items-center justify-center px-2.5"
                       style={{ minWidth: 56, background: `${FACH_COLOR[c.fach]}14`, borderRight: `1px solid ${C.line}` }}>
                       <span className="text-[11px] font-semibold text-center leading-tight" style={{ fontFamily: "ui-monospace, monospace", color: FACH_COLOR[c.fach] }}>{c.code}</span>
                     </button>
-                    <button onClick={() => onOpen(c.mode, c.targetId)} className="flex-1 min-w-0 text-left px-3 py-2">
+                    <button onClick={() => onOpen(c.mode, c.targetId, c.id)} className="flex-1 min-w-0 text-left px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <span style={{ width: 8, height: 8, borderRadius: 99, background: dotColor(s), flexShrink: 0 }} title={stufe(s)} />
                         <span className="text-sm leading-snug truncate" style={{ fontFamily: "Georgia, serif" }}>{c.titel}</span>
@@ -125,7 +125,7 @@ export default function Training({ onOpen, onStart, onBrowse }) {
                         style={{ borderBottom: `1px solid ${C.line}` }}>
                         <X size={15} />
                       </button>
-                      <button onClick={() => onOpen(c.mode, c.targetId)} title="öffnen"
+                      <button onClick={() => onOpen(c.mode, c.targetId, c.id)} title="öffnen"
                         className="flex-1 flex items-center justify-center px-2.5 text-slate-500 hover:text-slate-800 transition-colors">
                         <ArrowRight size={15} />
                       </button>

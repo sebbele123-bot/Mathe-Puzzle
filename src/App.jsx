@@ -11,13 +11,14 @@ import Inventory from "./Inventory.jsx";
 import { loadCollection, saveCollection } from "./data/symbols.js";
 import { recordOutcome, loadStats, pickWeighted, strengthOf } from "./data/stats.js";
 import { loadRotation, CATALOG_BY_ID } from "./data/catalog.js";
-import { awardXp, loadXp, levelFromXp } from "./data/xp.js";
+import { awardXp, awardFirstContact, loadXp, levelFromXp } from "./data/xp.js";
 
 const C = { ink: "#1B2430", ziel: "#1F7A63", fakt: "#31597F", verkn: "#6B4E9E", warn: "#B26A1E", werk: "#2E6B7D" };
 
 export default function App() {
   const [mode, setMode] = useState("bibliothek"); // "bibliothek" | "training" | "werkbank" | "bausteine" | "beweis" | "definition" | "steckbrief"
   const [openReq, setOpenReq] = useState({ definition: null, beweis: null, steckbrief: null, werkbank: null }); // aus der Bibliothek angeforderte Mission je Ansicht
+  const [reqSeq, setReqSeq] = useState(0); // zählt jede Anforderung — erzwingt ein Neu-Mounten der Ansicht
   const [hand, setHand] = useState(null); // { id, label } aus der Hand (für die Werkbank)
   const [collection, setCollection] = useState(loadCollection); // gesammeltes Inventar (leer bis eingesammelt)
   const [xpState, setXpState] = useState(() => levelFromXp(loadXp().xp)); // Level & Fortschritt
@@ -32,12 +33,26 @@ export default function App() {
   const [fsHint, setFsHint] = useState("");
   const rootRef = useRef(null);
 
-  // Aus der Bibliothek eine Mission öffnen: passende Ansicht wählen + laden.
-  // Die Ansichten werden beim Moduswechsel neu gemountet und lesen dann initialId.
-  const openFromLibrary = useCallback((targetMode, targetId) => {
-    setOpenReq((r) => ({ ...r, [targetMode]: targetId }));
-    setMode(targetMode);
+  // Erster Kontakt mit einer Rotationskarte: das Aufschlagen und Lesen wird
+  // einmalig belohnt — wer die Karte kennt, verdient nur noch durchs Lösen.
+  const noteFirstContact = useCallback((catalogId) => {
+    if (!catalogId || !loadRotation().includes(catalogId)) return;
+    const res = awardFirstContact(catalogId);
+    if (!res) return;
+    setXpState(levelFromXp(res.total));
+    setAward({ ...res, id: catalogId });
   }, []);
+
+  // Aus der Bibliothek eine Mission öffnen: passende Ansicht wählen + laden.
+  // Der mitgezählte reqSeq geht in den key der Ansicht: sie wird auch dann neu
+  // gemountet, wenn Modus UND Mission dieselben bleiben (Weiter-Schleife zieht
+  // sonst ins Leere, weil sich keine Prop ändert).
+  const openFromLibrary = useCallback((targetMode, targetId, catalogId = null) => {
+    setOpenReq((r) => ({ ...r, [targetMode]: targetId }));
+    setReqSeq((n) => n + 1);
+    setMode(targetMode);
+    noteFirstContact(catalogId);
+  }, [noteFirstContact]);
 
   // gemessene Übung festhalten (Fehlversuche) → Rotations-Gewichtung + XP
   const recordStat = useCallback((catalogId, kind, fails) => {
@@ -51,13 +66,13 @@ export default function App() {
 
   // nächstes Element der Rotation: gewichteter Zufalls-Zug (Schwächen häufiger)
   const nextInRotation = useCallback((exclude = null) => {
-    const ids = loadRotation();
+    const ids = loadRotation(); // enthält nur abfragbares, noch vorhandenes Material
     if (!ids.length) return false;
     const pick = pickWeighted(ids, loadStats(), exclude);
     const item = CATALOG_BY_ID[pick];
     if (!item) return false;
     setAward(null);
-    openFromLibrary(item.mode, item.targetId);
+    openFromLibrary(item.mode, item.targetId, pick);
     return true;
   }, [openFromLibrary]);
 
@@ -74,9 +89,10 @@ export default function App() {
     setMode("training");
   }, []);
 
-  // außerhalb einer Trainings-Sitzung blendet die XP-Meldung von selbst aus
+  // außerhalb einer Trainings-Sitzung blendet die XP-Meldung von selbst aus;
+  // die Erstkontakt-Meldung immer, denn die Aufgabe wartet ja noch
   useEffect(() => {
-    if (!award || session.active) return;
+    if (!award || (session.active && award.kind !== "erstkontakt")) return;
     const t = setTimeout(() => setAward(null), 2600);
     return () => clearTimeout(t);
   }, [award, session.active]);
@@ -193,18 +209,17 @@ export default function App() {
       ) : mode === "training" ? (
         <Training onOpen={openFromLibrary} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
       ) : mode === "steckbrief" ? (
-        <Steckbrief defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
-          onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
+        <Steckbrief key={`steckbrief:${reqSeq}`} defId={openReq.steckbrief} onBack={() => setMode("bibliothek")} />
       ) : mode === "werkbank" ? (
-        <Werkbank hand={hand} taskId={openReq.werkbank}
+        <Werkbank key={`werkbank:${reqSeq}`} hand={hand} taskId={openReq.werkbank}
           onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />
       ) : mode === "definition" ? (
-        <StrukturBaukasten initialId={openReq.definition}
+        <StrukturBaukasten key={`definition:${reqSeq}`} initialId={openReq.definition}
           onOutcome={(missionId, fails) => recordStat(`def:${missionId}`, "definition", fails)} />
       ) : mode === "bausteine" ? (
         <OpenMathPalette collected={collectedSet} onCollect={collect} />
       ) : (
-        <BeweisCrafter initialId={openReq.beweis}
+        <BeweisCrafter key={`beweis:${reqSeq}`} initialId={openReq.beweis}
           onOutcome={(missionId, fails) => recordStat(`proof:${missionId}`, "beweis", fails)} />
       )}
 
@@ -217,8 +232,10 @@ export default function App() {
             {award.leveledUp && (
               <span className="text-[11px] rounded-full px-2 py-0.5" style={{ background: C.warn }}>Level {award.level}</span>
             )}
-            {session.active && <span className="text-[11px] text-slate-300">{session.done}</span>}
-            {session.active ? (
+            {award.kind === "erstkontakt" && <span className="text-[11px] text-slate-300">erster Kontakt</span>}
+            {session.active && award.kind !== "erstkontakt" && <span className="text-[11px] text-slate-300">{session.done}</span>}
+            {/* die Weiter-Schleife erst anbieten, wenn die Aufgabe auch gelöst ist */}
+            {session.active && award.kind !== "erstkontakt" ? (
               <>
                 <button onClick={() => { if (!nextInRotation(award.id)) endSession(); }}
                   className="ml-1 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium"
