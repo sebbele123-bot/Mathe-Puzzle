@@ -7,7 +7,7 @@
  * ==================================================================== */
 const KEY = "mp_xp_v1";
 
-const BASE = { beweis: 18, definition: 10, steckbrief: 4 };
+const BASE = { beweis: 18, definition: 10 }; // nur gelöste Aufgaben zählen — Lesen gibt keine XP
 const CLEAN_BONUS = 6;
 const FIRST_SOLVE_BONUS = 10;
 const REPEAT = [1, 0.4, 0.2, 0.1]; // 1., 2., 3., ab 4. Mal am selben Tag
@@ -42,7 +42,7 @@ export function saveXp(s) {
 /**
  * XP für eine abgeschlossene Übung vergeben.
  * @param id             Katalog-id
- * @param kind           "beweis" | "definition" | "steckbrief"
+ * @param kind           "beweis" | "definition"
  * @param fails          gemessene Fehlversuche
  * @param strengthBefore Stärke VOR dieser Übung (null = ungeübt)
  * @returns { gained, total, level, leveledUp, streak, breakdown }

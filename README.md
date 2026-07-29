@@ -32,7 +32,12 @@ der Basis-Pfad wird über `BASE_PATH` auf den Repo-Namen gesetzt.
 | **Bausteine** | Symbolbibliothek (243 Symbole, 21 Kategorien). Über **+** wandert ein Symbol ins Inventar. |
 
 Umschalten oben in der Leiste. Die **Steckbrief**-Ansicht (Definitionskarte zum
-Nachlesen) hat keinen eigenen Knopf — sie öffnet sich aus Bibliothek und Training.
+Nachlesen) hat keinen eigenen Knopf — sie öffnet sich aus der Bibliothek.
+
+In die **Rotation** kommt nur Material, das auch eine Frage stellt: Bau-, Beweis-
+und Symbol-Aufgaben. Steckbriefe sind reine Lesekarten — sie lassen sich nicht
+falsch beantworten, geben darum keine Erfahrungspunkte und bleiben aus dem
+Training draußen.
 
 **Mechanik in beiden Craftern gleich:** Baustein antippen → er springt in die
 nächste freie Zelle; eine gefüllte Zelle antippen → sie leert sich; der **Hammer**

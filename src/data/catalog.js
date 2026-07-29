@@ -91,7 +91,7 @@ export const RUBRIKEN = [
 const defItems = DEF_LESSONS.map((m) => {
   const p = parseTitle(m.task);
   return {
-    id: `def:${m.id}`, mode: "definition", targetId: m.id,
+    id: `def:${m.id}`, mode: "definition", targetId: m.id, abfragbar: true,
     typ: "definition", fach: fachFor(p.name, p.code),
     // Bauschema-Lektionen sind Definitionen; die L-Lektionen sind Übungsblatt-Konstruktionen
     rubrik: p.quelle.startsWith("Bauschema") ? "definitionen" : "uebungsblaetter",
@@ -103,16 +103,17 @@ const defItems = DEF_LESSONS.map((m) => {
 const proofItems = PROOF_MISSIONS.map((m) => {
   const p = parseTitle(m.title);
   return {
-    id: `proof:${m.id}`, mode: "beweis", targetId: m.id,
+    id: `proof:${m.id}`, mode: "beweis", targetId: m.id, abfragbar: true,
     typ: "beweis", fach: fachFor(p.name, p.code), rubrik: "saetze",
     code: p.code, kap: p.kap, nr: p.nr, quelle: p.quelle,
     titel: p.name, lektion: null, hatBegriffscheck: !!m.vocab, tags: tagsFor(p.name),
   };
 });
 
-// Kern-Definitionen als Steckbrief-Karten (öffnen in der Steckbrief-Ansicht)
+// Kern-Definitionen als Steckbrief-Karten (öffnen in der Steckbrief-Ansicht).
+// Reine Lesekarten: sie stellen keine Frage und gehören darum nicht in die Rotation.
 const defCards = DEFINITIONS.map((d) => ({
-  id: `defcard:${d.id}`, mode: "steckbrief", targetId: d.id,
+  id: `defcard:${d.id}`, mode: "steckbrief", targetId: d.id, abfragbar: false,
   typ: "definition", fach: "elgeo", rubrik: "definitionen",
   code: `D${d.nr}`, kap: 100 + d.t, nr: d.nr,
   quelle: `Definitionen · ${d.thema}`,
@@ -121,7 +122,7 @@ const defCards = DEFINITIONS.map((d) => ({
 
 // Symbol-Aufgaben: Definition in der Werkbank aus Symbol-Bausteinen bauen
 const symbolItems = SYMBOL_TASKS.map((t, i) => ({
-  id: `sym:${t.id}`, mode: "werkbank", targetId: t.id,
+  id: `sym:${t.id}`, mode: "werkbank", targetId: t.id, abfragbar: true,
   typ: "definition", fach: /Def \d/.test(t.ref) ? "elgeo" : "algebra",
   rubrik: "definitionen",
   code: "⊕", kap: 300, nr: i,
@@ -145,13 +146,21 @@ export const countBy = (key) =>
   CATALOG.reduce((acc, c) => ((acc[c[key]] = (acc[c[key]] || 0) + 1), acc), {});
 
 // --- Rotation (kuratierte Übungsauswahl) im localStorage --------------
+// In die Rotation darf nur, was auch eine Frage stellt (`abfragbar`): Bau-,
+// Beweis- und Symbol-Aufgaben. Reine Lesekarten (Steckbriefe) bleiben draußen —
+// sie ließen sich weder falsch beantworten noch sinnvoll gewichten.
 const ROT_KEY = "mp_rotation_v1";
+export const isAbfragbar = (id) => !!CATALOG_BY_ID[id]?.abfragbar;
+
 export const loadRotation = () => {
   try {
     const r = JSON.parse(localStorage.getItem(ROT_KEY) || "[]");
-    return Array.isArray(r) ? r : [];
+    if (!Array.isArray(r)) return [];
+    const clean = r.filter(isAbfragbar); // Altbestand (Lesekarten, entfallenes Material) aussortieren
+    if (clean.length !== r.length) saveRotation(clean); // einmalig aufräumen
+    return clean;
   } catch { return []; }
 };
 export const saveRotation = (ids) => {
-  try { localStorage.setItem(ROT_KEY, JSON.stringify(ids)); } catch { /* ignore */ }
+  try { localStorage.setItem(ROT_KEY, JSON.stringify(ids.filter(isAbfragbar))); } catch { /* ignore */ }
 };

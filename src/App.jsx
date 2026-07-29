@@ -55,8 +55,7 @@ export default function App() {
 
   // nächstes Element der Rotation: gewichteter Zufalls-Zug (Schwächen häufiger)
   const nextInRotation = useCallback((exclude = null) => {
-    // gemerkte Einträge, die es im Katalog nicht mehr gibt, überspringen
-    const ids = loadRotation().filter((id) => CATALOG_BY_ID[id]);
+    const ids = loadRotation(); // enthält nur abfragbares, noch vorhandenes Material
     if (!ids.length) return false;
     const pick = pickWeighted(ids, loadStats(), exclude);
     const item = CATALOG_BY_ID[pick];
@@ -198,8 +197,7 @@ export default function App() {
       ) : mode === "training" ? (
         <Training onOpen={openFromLibrary} onStart={startRotation} onBrowse={() => setMode("bibliothek")} />
       ) : mode === "steckbrief" ? (
-        <Steckbrief key={`steckbrief:${reqSeq}`} defId={openReq.steckbrief} onBack={() => setMode("bibliothek")}
-          onReview={(defId) => recordStat(`defcard:${defId}`, "steckbrief", 0)} />
+        <Steckbrief key={`steckbrief:${reqSeq}`} defId={openReq.steckbrief} onBack={() => setMode("bibliothek")} />
       ) : mode === "werkbank" ? (
         <Werkbank key={`werkbank:${reqSeq}`} hand={hand} taskId={openReq.werkbank}
           onOutcome={(taskId, fails) => recordStat(`sym:${taskId}`, "definition", fails)} />

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from "react";
 import { Search, X, ArrowRight, Plus, Check, BookOpen, GitBranch, Target, Star, SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   CATALOG_SORTED, FAECHER, TYPEN, RUBRIKEN, FACH_LABEL, FACH_COLOR, TYP_LABEL, TYP_COLOR,
-  ALL_TAGS, countBy, loadRotation, saveRotation,
+  ALL_TAGS, countBy, loadRotation, saveRotation, isAbfragbar,
 } from "./data/catalog.js";
 
 const C = { paper: "#EAEEF2", ink: "#1B2430", line: "#C4D0DB", muted: "#5b6875" };
@@ -33,7 +33,9 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
   const toggleTagSel = toggleIn(setTag);
 
   const inRot = useCallback((id) => rotation.includes(id), [rotation]);
+  // nur abfragbares Material (Bau-, Beweis-, Symbol-Aufgaben) darf in die Rotation
   const toggleRot = useCallback((id) => {
+    if (!isAbfragbar(id)) return;
     setRotation((r) => {
       const next = r.includes(id) ? r.filter((x) => x !== id) : [...r, id];
       saveRotation(next);
@@ -247,13 +249,15 @@ function ItemCard({ item, inRot, onToggleRot, onOpen }) {
           ))}
         </div>
       </button>
-      {/* Aktionen */}
+      {/* Aktionen — Lesekarten stellen keine Frage und lassen sich nicht üben */}
       <div className="shrink-0 flex flex-col border-l" style={{ borderColor: C.line }}>
-        <button onClick={onToggleRot} title={inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
-          className="flex-1 flex items-center justify-center px-2.5 transition-colors"
-          style={{ background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E", borderBottom: `1px solid ${C.line}` }}>
-          {inRot ? <Check size={15} /> : <Plus size={15} />}
-        </button>
+        {item.abfragbar && (
+          <button onClick={onToggleRot} title={inRot ? "aus Rotation entfernen" : "zur Rotation hinzufügen"}
+            className="flex-1 flex items-center justify-center px-2.5 transition-colors"
+            style={{ background: inRot ? "#B26A1E" : "#fff", color: inRot ? "#fff" : "#B26A1E", borderBottom: `1px solid ${C.line}` }}>
+            {inRot ? <Check size={15} /> : <Plus size={15} />}
+          </button>
+        )}
         <button onClick={onOpen} title="öffnen" className="flex-1 flex items-center justify-center px-2.5 text-slate-500 hover:text-slate-800 transition-colors">
           <ArrowRight size={15} />
         </button>

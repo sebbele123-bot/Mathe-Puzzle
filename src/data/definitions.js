@@ -1,8 +1,8 @@
 /* ====================================================================
  *  Elementargeometrie — Kern-Definitionen (Soergel, SS 2026)
  *  Studierbare Steckbriefe: Begriff, Aussage, Übungsbezug, Tags.
- *  Gruppiert nach Themen; erscheinen in der Bibliothek als Definitionen
- *  und lassen sich in die Rotation legen.
+ *  Gruppiert nach Themen; erscheinen in der Bibliothek als Definitionen.
+ *  Reine Lesekarten — ohne Frage, darum nicht in der Rotation.
  * ==================================================================== */
 
 export const DEF_THEMES = [
