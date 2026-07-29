@@ -11,7 +11,7 @@ const TYP_COUNTS = countBy("typ");
 
 /* ====================================================================
  *  Bibliothek — ein Verzeichnis über alles Material mit Filtern.
- *  onOpen(mode, targetId) springt in die passende Ansicht und lädt sie.
+ *  onOpen(mode, targetId, catalogId) springt in die passende Ansicht und lädt sie.
  * ==================================================================== */
 export default function Bibliothek({ onOpen, onStartRotation }) {
   // Mehrfachauswahl: Fach/Typ/Thema sind Listen (leer = alle)
@@ -207,7 +207,7 @@ export default function Bibliothek({ onOpen, onStartRotation }) {
                       <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 ml-0.5" style={{ fontFamily: "ui-monospace, monospace" }}>{qg.quelle}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {qg.items.map((c) => (
-                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId)} />
+                          <ItemCard key={c.id} item={c} inRot={inRot(c.id)} onToggleRot={() => toggleRot(c.id)} onOpen={() => onOpen(c.mode, c.targetId, c.id)} />
                         ))}
                       </div>
                     </div>
