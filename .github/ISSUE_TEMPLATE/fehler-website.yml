@@ -1,0 +1,87 @@
+name: "🐞 Fehler auf der Website"
+description: "Etwas funktioniert auf der Mathe-Puzzle-Website nicht wie erwartet."
+title: "[Fehler]: "
+labels: ["bug", "website"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du hilfst, **Mathe-Puzzle** besser zu machen!
+        Bitte fülle die Felder so genau wie möglich aus – je mehr Details, desto
+        schneller lässt sich das Problem finden und beheben.
+
+  - type: dropdown
+    id: modus
+    attributes:
+      label: In welchem Modus tritt der Fehler auf?
+      description: Oben in der Leiste umschaltbar.
+      options:
+        - Bibliothek
+        - Training
+        - Definitionen
+        - Beweise
+        - Werkbank
+        - Bausteine
+        - Steckbrief
+        - Modusübergreifend / Startseite
+        - Weiß nicht
+    validations:
+      required: true
+
+  - type: textarea
+    id: beschreibung
+    attributes:
+      label: Was ist passiert?
+      description: Beschreibe den Fehler in ein paar Sätzen.
+      placeholder: "Beim Antippen des Hammers im Beweis-Modus passiert nichts …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte zum Nachstellen
+      description: Wie kann man den Fehler reproduzieren?
+      placeholder: |
+        1. Modus „Beweise" öffnen
+        2. Mission „Cosinus-Satz" wählen
+        3. Bausteine legen und Hammer antippen
+        4. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Was hättest du erwartet?
+      description: Was sollte stattdessen passieren?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: geraet
+    attributes:
+      label: Gerät
+      options:
+        - Desktop / Laptop
+        - Tablet
+        - Smartphone
+        - Anderes
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & Version
+      placeholder: "z. B. Chrome 126, Firefox 128, Safari 17"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots (optional)
+      description: Bilder oder eine Bildschirmaufnahme können hier eingefügt werden.
+    validations:
+      required: false
